@@ -89,7 +89,7 @@ function ExpandedBigTask({ task, sessionScore, onComplete, onSwap, onClose }: Ex
           <View style={styles.expandedActions}>
             <TouchableOpacity
               style={[styles.actionBtn, styles.swapBtn, !canSwap && styles.disabledBtn]}
-              onPress={canSwap ? onSwap : () => Alert.alert('Not Enough Points', 'You need at least 25 points to swap a Big Task.')}
+              onPress={canSwap ? onSwap : () => Alert.alert('Not Enough Points', 'You need at least 25 points to swap a Challenge Task.')}
             >
               <Text style={styles.actionBtnText}>↺  Swap (-25 pts)</Text>
             </TouchableOpacity>
@@ -131,7 +131,7 @@ export default function BigBoard({ tasks, sessionScore, onComplete, onSwap }: Pr
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>BIG BOARD</Text>
+      <Text style={styles.sectionTitle}>CHALLENGE TASKS</Text>
       <View style={styles.row}>
         {tasks.map(task => (
           <BigTaskBadge key={task.id} task={task} onPress={() => setExpanded(task)} />
@@ -173,30 +173,30 @@ const styles = StyleSheet.create({
   badge: {
     alignItems: 'center',
     borderWidth: 2,
-    borderRadius: 50,
-    padding: 4,
-    width: 90,
+    borderRadius: 56,
+    padding: 5,
+    width: 105,
     backgroundColor: COLORS.surface,
     ...SHADOWS.chip,
   },
   badgeCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
   badgeIconInner: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   badgeIcon: {
-    fontSize: 22,
+    fontSize: 26,
   },
   badgePoints: {
     color: COLORS.white,

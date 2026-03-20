@@ -17,8 +17,7 @@ const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.62;
 const CARD_PEEK = (width - CARD_WIDTH) / 2 - 8;
 
-// Two-tone blue: darker header, lighter body
-const CARD_HEADER_BG = '#1E2D52';
+// Card colors: category color header (set inline), blue body
 const CARD_BODY_BG = '#3B5998';
 const CARD_BORDER = '#111111';
 
@@ -73,8 +72,8 @@ function TaskCard({ task, onPress, scale = 1, opacity = 1 }: {
       <HalftoneDots side="left" />
       <HalftoneDots side="right" />
 
-      {/* Dark header zone with category label */}
-      <View style={styles.cardHeader}>
+      {/* Category-colored header zone */}
+      <View style={[styles.cardHeader, { backgroundColor: color }]}>
         <Text style={styles.cardHeaderText}>{CATEGORY_LABELS[task.category]}</Text>
       </View>
 
@@ -144,8 +143,8 @@ function ExpandedCardModal({ task, canDiscard, onComplete, onDiscard, onTriviaAn
           <HalftoneDots side="left" />
           <HalftoneDots side="right" />
 
-          {/* Header */}
-          <View style={styles.expandedHeader}>
+          {/* Category-colored header */}
+          <View style={[styles.expandedHeader, { backgroundColor: color }]}>
             <Text style={styles.expandedHeaderText}>{CATEGORY_LABELS[task.category]}</Text>
           </View>
 
@@ -334,9 +333,8 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
 
-  // Dark header zone — darker, more saturated blue
+  // Header zone — colored per category (bg set inline)
   cardHeader: {
-    backgroundColor: CARD_HEADER_BG,
     paddingVertical: 12,
     alignItems: 'center',
   },
@@ -455,7 +453,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   expandedHeader: {
-    backgroundColor: CARD_HEADER_BG,
     paddingVertical: 18,
     alignItems: 'center',
   },
