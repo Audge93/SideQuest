@@ -44,21 +44,81 @@ export const SMALL_TASKS: Task[] = [
   { id: 'photo-h-3', size: 'small', category: 'photo', description: 'Arrange everyone in your group to spell out a word with your bodies', points: 15, difficulty: 'hard' },
 
   // Trivia – Easy (5 pts)
-  { id: 'tri-e-1', size: 'small', category: 'trivia', description: 'Name 3 Disney animated films from the 1990s', points: 5, difficulty: 'easy' },
-  { id: 'tri-e-2', size: 'small', category: 'trivia', description: 'What does "Imagineering" stand for at Disney?', points: 5, difficulty: 'easy' },
-  { id: 'tri-e-3', size: 'small', category: 'trivia', description: 'Name the 4 Walt Disney World theme parks', points: 5, difficulty: 'easy' },
-  { id: 'tri-e-4', size: 'small', category: 'trivia', description: "What year did Walt Disney World open? (1971 — honor system!)", points: 5, difficulty: 'easy' },
+  {
+    id: 'tri-e-1', size: 'small', category: 'trivia', points: 5, difficulty: 'easy',
+    description: 'Which of these is a 1990s Disney animated film?',
+    triviaChoices: ['The Lion King', 'Frozen', 'Bolt', 'Tangled'],
+    triviaAnswer: 0,
+  },
+  {
+    id: 'tri-e-2', size: 'small', category: 'trivia', points: 5, difficulty: 'easy',
+    description: 'What does "Imagineering" combine?',
+    triviaChoices: ['Imagination + Engineering', 'Image + Pioneering', 'Imagine + Designing', 'Imagery + Building'],
+    triviaAnswer: 0,
+  },
+  {
+    id: 'tri-e-3', size: 'small', category: 'trivia', points: 5, difficulty: 'easy',
+    description: 'Which of these is NOT a Walt Disney World theme park?',
+    triviaChoices: ['Magic Kingdom', 'EPCOT', 'Universal Studios', 'Hollywood Studios'],
+    triviaAnswer: 2,
+  },
+  {
+    id: 'tri-e-4', size: 'small', category: 'trivia', points: 5, difficulty: 'easy',
+    description: 'What year did Walt Disney World open?',
+    triviaChoices: ['1965', '1971', '1982', '1955'],
+    triviaAnswer: 1,
+  },
 
   // Trivia – Medium (10 pts)
-  { id: 'tri-m-1', size: 'small', category: 'trivia', description: 'What was the original name of EPCOT Center\'s flagship ride? (Spaceship Earth)', points: 10, difficulty: 'medium' },
-  { id: 'tri-m-2', size: 'small', category: 'trivia', description: 'Name 5 countries represented in EPCOT\'s World Showcase', points: 10, difficulty: 'medium' },
-  { id: 'tri-m-3', size: 'small', category: 'trivia', description: 'What movie inspired Tomorrowland\'s original design concept?', points: 10, difficulty: 'medium' },
-  { id: 'tri-m-4', size: 'small', category: 'trivia', description: 'What does the acronym EPCOT stand for?', points: 10, difficulty: 'medium' },
+  {
+    id: 'tri-m-1', size: 'small', category: 'trivia', points: 10, difficulty: 'medium',
+    description: 'What is the name of the ride inside EPCOT\'s giant sphere?',
+    triviaChoices: ['Spaceship Earth', 'Journey Into Imagination', 'Mission: SPACE', 'Test Track'],
+    triviaAnswer: 0,
+  },
+  {
+    id: 'tri-m-2', size: 'small', category: 'trivia', points: 10, difficulty: 'medium',
+    description: 'Which country is NOT in EPCOT\'s World Showcase?',
+    triviaChoices: ['Japan', 'Morocco', 'Germany', 'Australia'],
+    triviaAnswer: 3,
+  },
+  {
+    id: 'tri-m-3', size: 'small', category: 'trivia', points: 10, difficulty: 'medium',
+    description: 'What mountain is the centerpiece of Animal Kingdom?',
+    triviaChoices: ['Space Mountain', 'Expedition Everest', 'Splash Mountain', 'Big Thunder Mountain'],
+    triviaAnswer: 1,
+  },
+  {
+    id: 'tri-m-4', size: 'small', category: 'trivia', points: 10, difficulty: 'medium',
+    description: 'What does EPCOT stand for?',
+    triviaChoices: [
+      'Experimental Prototype Community of Tomorrow',
+      'Entertainment Park & Center of Technology',
+      'Experimental Park for Creative Original Themes',
+      'Every Person Comes Out Tired',
+    ],
+    triviaAnswer: 0,
+  },
 
   // Trivia – Hard (15 pts)
-  { id: 'tri-h-1', size: 'small', category: 'trivia', description: 'Name the imagineers who created the Haunted Mansion attraction (at least 2)', points: 15, difficulty: 'hard' },
-  { id: 'tri-h-2', size: 'small', category: 'trivia', description: 'What was the working title of the ride now known as Pirates of the Caribbean?', points: 15, difficulty: 'hard' },
-  { id: 'tri-h-3', size: 'small', category: 'trivia', description: 'In what year did Disneyland originally open? (1955 — honor system!)', points: 15, difficulty: 'hard' },
+  {
+    id: 'tri-h-1', size: 'small', category: 'trivia', points: 15, difficulty: 'hard',
+    description: 'How many "Happy Haunts" are said to reside in the Haunted Mansion?',
+    triviaChoices: ['666', '999', '1313', '777'],
+    triviaAnswer: 1,
+  },
+  {
+    id: 'tri-h-2', size: 'small', category: 'trivia', points: 15, difficulty: 'hard',
+    description: 'What was Pirates of the Caribbean originally designed to be?',
+    triviaChoices: ['A walk-through wax museum', 'A roller coaster', 'A restaurant', 'A stage show'],
+    triviaAnswer: 0,
+  },
+  {
+    id: 'tri-h-3', size: 'small', category: 'trivia', points: 15, difficulty: 'hard',
+    description: 'In what year did Disneyland originally open?',
+    triviaChoices: ['1952', '1955', '1958', '1961'],
+    triviaAnswer: 1,
+  },
 ];
 
 // ─── Big Tasks ────────────────────────────────────────────────────────────────

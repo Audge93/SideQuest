@@ -3,6 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
+  ImageBackground,
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
@@ -18,6 +19,8 @@ import DiscardPips from '../components/DiscardPips';
 import { PARKS } from '../data/parks';
 import { COLORS, SHADOWS, RADII } from '../theme/balatro';
 
+const GAME_BG = require('../../assets/HomeScreenBackgroundImage.png');
+
 export default function GameScreen() {
   const navigation = useNavigation<any>();
   const {
@@ -27,6 +30,7 @@ export default function GameScreen() {
     completeTask,
     discardTask,
     swapBigTask,
+    answerTrivia,
     endSession,
     startSession,
   } = useGameStore();
@@ -70,7 +74,8 @@ export default function GameScreen() {
   const maxDiscards = getMaxDiscards(ps.sessionScore);
 
   return (
-    <View style={styles.bg}>
+    <ImageBackground source={GAME_BG} style={styles.bg} resizeMode="cover">
+      <View style={styles.overlay} />
       <StatusBar barStyle="light-content" />
       <SafeAreaView style={styles.safe}>
         <ScrollView
@@ -112,6 +117,7 @@ export default function GameScreen() {
             cards={ps.hand}
             onComplete={id => completeTask(id, false)}
             onDiscard={id => discardTask(id)}
+            onTriviaAnswer={(id, correct) => answerTrivia(id, correct)}
             discardsRemaining={ps.discardsRemaining}
           />
 
@@ -128,7 +134,7 @@ export default function GameScreen() {
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
-    </View>
+    </ImageBackground>
   );
 }
 
@@ -152,7 +158,10 @@ function getMaxDiscards(score: number): number {
 const styles = StyleSheet.create({
   bg: {
     flex: 1,
-    backgroundColor: COLORS.felt,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(10, 30, 20, 0.75)',
   },
   safe: { flex: 1 },
   scroll: {

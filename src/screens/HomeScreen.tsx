@@ -3,6 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
+  ImageBackground,
   TouchableOpacity,
   ScrollView,
   StatusBar,
@@ -12,6 +13,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
 import { PARKS } from '../data/parks';
 import { COLORS, SHADOWS, RADII } from '../theme/balatro';
+
+const HOME_BG = require('../../assets/GameBackgroundImage.png');
 
 const PARK_DISPLAY_GROUPS = [
   {
@@ -48,7 +51,8 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.bg}>
+    <ImageBackground source={HOME_BG} style={styles.bg} resizeMode="cover">
+      <View style={styles.overlay} />
       <StatusBar barStyle="light-content" />
       <SafeAreaView style={styles.safe}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -113,14 +117,17 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   bg: {
     flex: 1,
-    backgroundColor: COLORS.felt,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(10, 30, 20, 0.75)',
   },
   safe: {
     flex: 1,

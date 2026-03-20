@@ -16,6 +16,8 @@ export interface Task {
   parkId?: string;
   rideId?: string;
   heightRequirement?: number; // inches
+  triviaChoices?: string[];   // 4 multiple-choice options (trivia only)
+  triviaAnswer?: number;      // index of correct choice (0-3)
 }
 
 // ─── Park / Ride Types ───────────────────────────────────────────────────────

@@ -93,6 +93,7 @@ interface GameState {
   completeTask: (taskId: string, isBig: boolean, playerId?: string) => void;
   discardTask: (taskId: string, playerId?: string) => void;
   swapBigTask: (taskId: string) => void;
+  answerTrivia: (taskId: string, correct: boolean) => void;
 
   // Persistence
   loadFromStorage: () => Promise<void>;
@@ -329,6 +330,16 @@ export const useGameStore = create<GameState>((set, get) => ({
       activePlayerSession: updatedPs,
     });
     get().saveToStorage();
+  },
+
+  answerTrivia: (taskId, correct) => {
+    if (correct) {
+      // Correct answer = complete the task (awards points, keeps streak)
+      get().completeTask(taskId, false);
+    } else {
+      // Wrong answer = replace the card, no points, reset streak
+      get().discardTask(taskId);
+    }
   },
 
   loadFromStorage: async () => {

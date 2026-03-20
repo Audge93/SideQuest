@@ -17,11 +17,46 @@ const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.62;
 const CARD_PEEK = (width - CARD_WIDTH) / 2 - 8;
 
+// Two-tone blue: darker header, lighter body
+const CARD_HEADER_BG = '#1E2D52';
+const CARD_BODY_BG = '#3B5998';
+const CARD_BORDER = '#111111';
+
 const DIFFICULTY_LABELS: Record<string, string> = {
-  easy: 'Easy',
-  medium: 'Medium',
-  hard: 'Hard',
+  easy: 'Common',
+  medium: 'Uncommon',
+  hard: 'Rare',
 };
+
+const CHOICE_LETTERS = ['A', 'B', 'C', 'D'];
+
+// Halftone dot decoration for retro texture
+function HalftoneDots({ side }: { side: 'left' | 'right' }) {
+  const dots = [];
+  const rows = 5;
+  const cols = 3;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const opacity = 0.12 - (c * 0.03) - (r * 0.015);
+      const size = 4 - c * 0.5;
+      dots.push(
+        <View
+          key={`${r}-${c}`}
+          style={{
+            position: 'absolute',
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: `rgba(255,255,255,${Math.max(opacity, 0.02)})`,
+            top: 60 + r * 12,
+            [side]: 6 + c * 10,
+          }}
+        />
+      );
+    }
+  }
+  return <>{dots}</>;
+}
 
 function TaskCard({ task, onPress, scale = 1, opacity = 1 }: {
   task: Task; onPress: () => void; scale?: number; opacity?: number;
@@ -32,54 +67,89 @@ function TaskCard({ task, onPress, scale = 1, opacity = 1 }: {
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
-      style={[styles.card, { borderColor: color, transform: [{ scale }], opacity }]}
+      style={[styles.card, { transform: [{ scale }], opacity }]}
     >
-      {/* Colored top banner */}
-      <View style={[styles.cardBanner, { backgroundColor: color }]}>
-        <Text style={styles.cardBannerText}>{CATEGORY_LABELS[task.category]}</Text>
+      {/* Halftone texture dots */}
+      <HalftoneDots side="left" />
+      <HalftoneDots side="right" />
+
+      {/* Dark header zone with category label */}
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardHeaderText}>{CATEGORY_LABELS[task.category]}</Text>
       </View>
 
-      {/* White card body */}
+      {/* Subtle divider between header and body */}
+      <View style={styles.headerBodyDivider} />
+
+      {/* Lighter body zone */}
       <View style={styles.cardBody}>
-        {/* Icon area */}
+        {/* Elevated icon tile */}
         <View style={[styles.iconOuter, { backgroundColor: color }]}>
           <View style={styles.iconInner}>
             <Text style={styles.iconEmoji}>{icon}</Text>
           </View>
         </View>
 
-        {/* Points line */}
+        {/* Points line — medium weight, accent color for key terms */}
         <Text style={styles.pointsLine}>
-          Earn <Text style={[styles.pointsHighlight, { color }]}>{task.points} Points</Text>
+          Earn <Text style={[styles.pointsAccent, { color }]}>{task.points} Points</Text>
         </Text>
 
-        {/* Description */}
+        {/* Main description — bold, prominent */}
         <Text style={styles.cardDescription}>{task.description}</Text>
+
+        {/* Flavor/helper text — smaller, lighter */}
+        <Text style={styles.cardFlavor}>
+          {task.category === 'trivia' ? 'Tap to answer the question' :
+           task.category === 'photo' ? 'Take the photo to complete' :
+           task.category === 'observation' ? 'Spot it to earn points' :
+           'Complete this task to earn points'}
+        </Text>
       </View>
 
-      {/* Bottom difficulty label */}
+      {/* Bottom rarity/difficulty bookend — bold, grounding */}
       <View style={styles.cardFooter}>
-        <View style={styles.footerDivider} />
         <Text style={styles.difficultyLabel}>{DIFFICULTY_LABELS[task.difficulty]}</Text>
       </View>
     </TouchableOpacity>
   );
 }
 
-function ExpandedCardModal({ task, canDiscard, onComplete, onDiscard, onClose }: {
+function ExpandedCardModal({ task, canDiscard, onComplete, onDiscard, onTriviaAnswer, onClose }: {
   task: Task; canDiscard: boolean;
-  onComplete: () => void; onDiscard: () => void; onClose: () => void;
+  onComplete: () => void; onDiscard: () => void;
+  onTriviaAnswer: (correct: boolean) => void; onClose: () => void;
 }) {
   const color = CATEGORY_COLORS[task.category] ?? '#888';
   const icon = CATEGORY_ICONS[task.category] ?? '⭐';
+  const isTrivia = task.category === 'trivia' && task.triviaChoices && task.triviaAnswer != null;
+  const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
+  const [answered, setAnswered] = useState(false);
+
+  const handleChoicePress = (index: number) => {
+    if (answered) return;
+    setSelectedChoice(index);
+    setAnswered(true);
+    const correct = index === task.triviaAnswer;
+    setTimeout(() => {
+      onTriviaAnswer(correct);
+    }, 1200);
+  };
+
   return (
     <Modal transparent animationType="slide" visible onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={[styles.expandedCard, { borderColor: color }]} onPress={e => e.stopPropagation()}>
-          {/* Banner */}
-          <View style={[styles.expandedBanner, { backgroundColor: color }]}>
-            <Text style={styles.expandedBannerText}>{CATEGORY_LABELS[task.category]}</Text>
+      <Pressable style={styles.overlay} onPress={answered ? undefined : onClose}>
+        <Pressable style={styles.expandedCard} onPress={e => e.stopPropagation()}>
+          {/* Halftone texture */}
+          <HalftoneDots side="left" />
+          <HalftoneDots side="right" />
+
+          {/* Header */}
+          <View style={styles.expandedHeader}>
+            <Text style={styles.expandedHeaderText}>{CATEGORY_LABELS[task.category]}</Text>
           </View>
+
+          <View style={styles.headerBodyDivider} />
 
           {/* Body */}
           <View style={styles.expandedBody}>
@@ -90,42 +160,97 @@ function ExpandedCardModal({ task, canDiscard, onComplete, onDiscard, onClose }:
             </View>
 
             <Text style={styles.expandedPointsLine}>
-              Earn <Text style={[styles.pointsHighlight, { color }]}>{task.points} Points</Text>
+              Earn <Text style={[styles.pointsAccent, { color }]}>{task.points} Points</Text>
             </Text>
 
             <Text style={styles.expandedDescription}>{task.description}</Text>
 
-            <View style={styles.expandedFooterDivider} />
-            <Text style={styles.expandedDifficulty}>{DIFFICULTY_LABELS[task.difficulty]}</Text>
+            <Text style={styles.expandedFlavor}>
+              {task.category === 'trivia' ? 'Choose the correct answer below' :
+               task.category === 'photo' ? 'Take the photo to complete this challenge' :
+               task.category === 'observation' ? 'Look around you to spot it' :
+               'Complete this task to earn your points'}
+            </Text>
           </View>
 
-          {/* Actions */}
-          <View style={styles.expandedActions}>
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.discardBtn, !canDiscard && styles.disabledBtn]}
-              onPress={canDiscard
-                ? onDiscard
-                : () => Alert.alert('No Discards Remaining', 'Complete a task to restore your discards!')}
-            >
-              <Text style={styles.actionBtnText}>{canDiscard ? '✕  Discard' : 'No Discards Left'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionBtn, styles.completeBtn]} onPress={onComplete}>
-              <Text style={styles.actionBtnText}>✓  Complete</Text>
-            </TouchableOpacity>
+          {/* Rarity bookend */}
+          <View style={styles.expandedRarity}>
+            <Text style={styles.expandedRarityText}>{DIFFICULTY_LABELS[task.difficulty]}</Text>
           </View>
 
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-            <Text style={styles.closeBtnText}>✕</Text>
-          </TouchableOpacity>
+          {isTrivia ? (
+            <View style={styles.triviaChoicesContainer}>
+              {task.triviaChoices!.map((choice, i) => {
+                const isSelected = selectedChoice === i;
+                const isCorrectAnswer = i === task.triviaAnswer;
+                let choiceStyle = styles.triviaChoice;
+                let choiceTextStyle = styles.triviaChoiceText;
+                let letterStyle = styles.triviaChoiceLetter;
+
+                if (answered) {
+                  if (isCorrectAnswer) {
+                    choiceStyle = { ...styles.triviaChoice, ...styles.triviaChoiceCorrect };
+                    choiceTextStyle = { ...styles.triviaChoiceText, color: COLORS.white };
+                    letterStyle = { ...styles.triviaChoiceLetter, ...styles.triviaChoiceLetterAnswered };
+                  } else if (isSelected && !isCorrectAnswer) {
+                    choiceStyle = { ...styles.triviaChoice, ...styles.triviaChoiceWrong };
+                    choiceTextStyle = { ...styles.triviaChoiceText, color: COLORS.white };
+                    letterStyle = { ...styles.triviaChoiceLetter, ...styles.triviaChoiceLetterAnswered };
+                  }
+                }
+
+                return (
+                  <TouchableOpacity
+                    key={i}
+                    style={choiceStyle}
+                    onPress={() => handleChoicePress(i)}
+                    activeOpacity={answered ? 1 : 0.7}
+                    disabled={answered}
+                  >
+                    <View style={letterStyle}>
+                      <Text style={styles.triviaChoiceLetterText}>{CHOICE_LETTERS[i]}</Text>
+                    </View>
+                    <Text style={choiceTextStyle}>{choice}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+              {answered && (
+                <Text style={[styles.triviaResultText, selectedChoice === task.triviaAnswer ? styles.triviaResultCorrect : styles.triviaResultWrong]}>
+                  {selectedChoice === task.triviaAnswer ? '✓ Correct! +' + task.points + ' pts' : '✕ Wrong answer!'}
+                </Text>
+              )}
+            </View>
+          ) : (
+            <View style={styles.expandedActions}>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.discardBtn, !canDiscard && styles.disabledBtn]}
+                onPress={canDiscard
+                  ? onDiscard
+                  : () => Alert.alert('No Discards Remaining', 'Complete a task to restore your discards!')}
+              >
+                <Text style={styles.actionBtnText}>{canDiscard ? '✕  Discard' : 'No Discards Left'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.actionBtn, styles.completeBtn]} onPress={onComplete}>
+                <Text style={styles.actionBtnText}>✓  Complete</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {!answered && (
+            <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+              <Text style={styles.closeBtnText}>✕</Text>
+            </TouchableOpacity>
+          )}
         </Pressable>
       </Pressable>
     </Modal>
   );
 }
 
-export default function CardCarousel({ cards, onComplete, onDiscard, discardsRemaining }: {
+export default function CardCarousel({ cards, onComplete, onDiscard, onTriviaAnswer, discardsRemaining }: {
   cards: Task[]; onComplete: (id: string) => void;
   onDiscard: (id: string) => void; discardsRemaining: number;
+  onTriviaAnswer?: (id: string, correct: boolean) => void;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [expanded, setExpanded] = useState<Task | null>(null);
@@ -172,6 +297,15 @@ export default function CardCarousel({ cards, onComplete, onDiscard, discardsRem
           canDiscard={discardsRemaining > 0}
           onComplete={() => { onComplete(expanded.id); setExpanded(null); }}
           onDiscard={() => { onDiscard(expanded.id); setExpanded(null); }}
+          onTriviaAnswer={(correct) => {
+            if (onTriviaAnswer) {
+              onTriviaAnswer(expanded.id, correct);
+            } else {
+              if (correct) onComplete(expanded.id);
+              else onDiscard(expanded.id);
+            }
+            setExpanded(null);
+          }}
           onClose={() => setExpanded(null)}
         />
       )}
@@ -185,173 +319,238 @@ const styles = StyleSheet.create({
   },
 
   // ── Compact Card ──────────────────────────────────────────────
+  // Solid black border, rounded corners, contained feel
   card: {
-    backgroundColor: COLORS.cardWhite,
-    borderRadius: RADII.card,
-    borderWidth: 2,
+    backgroundColor: CARD_BODY_BG,
+    borderRadius: 16,
+    borderWidth: 3,
+    borderColor: CARD_BORDER,
     overflow: 'hidden',
-    minHeight: 240,
-    ...SHADOWS.card,
+    minHeight: 290,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    elevation: 8,
   },
-  cardBanner: {
-    paddingVertical: 10,
+
+  // Dark header zone — darker, more saturated blue
+  cardHeader: {
+    backgroundColor: CARD_HEADER_BG,
+    paddingVertical: 12,
     alignItems: 'center',
   },
-  cardBannerText: {
+  cardHeaderText: {
     color: COLORS.white,
-    fontWeight: '800',
-    fontSize: 14,
+    fontWeight: '900',
+    fontSize: 16,
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    letterSpacing: 2,
   },
+
+  // Visible divider between header and body zones
+  headerBodyDivider: {
+    height: 2,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+
+  // Lighter body zone
   cardBody: {
     flex: 1,
-    padding: 14,
+    padding: 16,
+    paddingTop: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
   },
+
+  // Icon — rounded-square with thick black border + drop shadow (elevated tile)
   iconOuter: {
-    width: 70,
-    height: 70,
-    borderRadius: 12,
+    width: 78,
+    height: 78,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
+    borderWidth: 3,
+    borderColor: CARD_BORDER,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.6,
+    shadowRadius: 1,
+    elevation: 6,
   },
   iconInner: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: COLORS.white,
+    width: 54,
+    height: 54,
+    borderRadius: 9,
+    backgroundColor: 'rgba(255,255,255,0.93)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconEmoji: {
-    fontSize: 28,
+    fontSize: 30,
   },
+
+  // Points — medium weight, accent color for key terms
   pointsLine: {
-    color: COLORS.textDark,
+    color: 'rgba(255,255,255,0.75)',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
-  pointsHighlight: {
+  pointsAccent: {
     fontWeight: '900',
   },
+
+  // Main description — bold, prominent
   cardDescription: {
-    color: COLORS.textBody,
+    color: COLORS.white,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
-    fontWeight: '700',
+    fontWeight: '800',
   },
+
+  // Flavor text — smaller, lighter weight
+  cardFlavor: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 11,
+    lineHeight: 15,
+    textAlign: 'center',
+    fontWeight: '400',
+    marginTop: 2,
+    paddingHorizontal: 8,
+  },
+
+  // Bottom rarity/difficulty — bold bookend, grounding element
   cardFooter: {
-    paddingBottom: 10,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    paddingVertical: 8,
     alignItems: 'center',
-  },
-  footerDivider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    width: '80%',
-    marginBottom: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.3)',
   },
   difficultyLabel: {
-    color: COLORS.textDark,
-    fontSize: 12,
-    fontWeight: '800',
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 13,
+    fontWeight: '900',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
 
   // ── Expanded Modal ────────────────────────────────────────────
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
   expandedCard: {
     width: '92%',
-    backgroundColor: COLORS.cardWhite,
+    backgroundColor: CARD_BODY_BG,
     borderRadius: 20,
-    borderWidth: 2.5,
+    borderWidth: 3.5,
+    borderColor: CARD_BORDER,
     marginBottom: 40,
     overflow: 'hidden',
   },
-  expandedBanner: {
-    paddingVertical: 16,
+  expandedHeader: {
+    backgroundColor: CARD_HEADER_BG,
+    paddingVertical: 18,
     alignItems: 'center',
   },
-  expandedBannerText: {
+  expandedHeaderText: {
     color: COLORS.white,
-    fontWeight: '800',
-    fontSize: 18,
+    fontWeight: '900',
+    fontSize: 20,
     textTransform: 'uppercase',
-    letterSpacing: 2,
+    letterSpacing: 3,
   },
   expandedBody: {
     padding: 24,
+    paddingBottom: 12,
     alignItems: 'center',
     gap: 10,
   },
   expandedIconOuter: {
-    width: 90,
-    height: 90,
-    borderRadius: 14,
+    width: 100,
+    height: 100,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 3.5,
+    borderColor: CARD_BORDER,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.6,
+    shadowRadius: 2,
+    elevation: 8,
   },
   expandedIconInner: {
-    width: 64,
-    height: 64,
-    borderRadius: 10,
-    backgroundColor: COLORS.white,
+    width: 70,
+    height: 70,
+    borderRadius: 11,
+    backgroundColor: 'rgba(255,255,255,0.93)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   expandedIconEmoji: {
-    fontSize: 36,
+    fontSize: 40,
   },
   expandedPointsLine: {
-    color: COLORS.textDark,
+    color: 'rgba(255,255,255,0.75)',
     fontSize: 16,
-    fontWeight: '600',
-    marginTop: 4,
+    fontWeight: '500',
+    marginTop: 6,
   },
   expandedDescription: {
-    color: COLORS.textBody,
-    fontSize: 18,
-    lineHeight: 26,
+    color: COLORS.white,
+    fontSize: 19,
+    lineHeight: 27,
     textAlign: 'center',
-    fontWeight: '700',
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  expandedFlavor: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    fontWeight: '400',
+    paddingHorizontal: 12,
     marginTop: 4,
   },
-  expandedFooterDivider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    width: '60%',
-    marginTop: 8,
+
+  // Rarity bookend at bottom of card body
+  expandedRarity: {
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.3)',
   },
-  expandedDifficulty: {
-    color: COLORS.textDark,
-    fontSize: 13,
-    fontWeight: '800',
+  expandedRarityText: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 14,
+    fontWeight: '900',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 2,
   },
 
   // ── Action Buttons ────────────────────────────────────────────
   expandedActions: {
     flexDirection: 'row',
     gap: 12,
-    padding: 20,
-    paddingTop: 4,
+    padding: 16,
+    paddingTop: 8,
   },
   actionBtn: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: RADII.button,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: CARD_BORDER,
   },
   completeBtn: {
     backgroundColor: COLORS.red,
@@ -366,24 +565,87 @@ const styles = StyleSheet.create({
     ...SHADOWS.button,
   },
   disabledBtn: {
-    backgroundColor: '#666',
-    borderBottomColor: '#444',
+    backgroundColor: '#555',
+    borderBottomColor: '#333',
     opacity: 0.5,
   },
   actionBtnText: {
     color: COLORS.white,
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 15,
   },
   closeBtn: {
     position: 'absolute',
-    top: 10,
+    top: 12,
     right: 14,
   },
   closeBtnText: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 18,
-    fontWeight: '700',
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 20,
+    fontWeight: '900',
+  },
+
+  // ── Trivia Multiple Choice ────────────────────────────────────
+  triviaChoicesContainer: {
+    padding: 16,
+    paddingTop: 8,
+    gap: 8,
+  },
+  triviaChoice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: RADII.button,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.12)',
+    gap: 12,
+  },
+  triviaChoiceCorrect: {
+    backgroundColor: '#16A34A',
+    borderColor: '#15803D',
+  },
+  triviaChoiceWrong: {
+    backgroundColor: COLORS.red,
+    borderColor: COLORS.redDark,
+  },
+  triviaChoiceText: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: '600',
+    flex: 1,
+  },
+  triviaChoiceLetter: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  triviaChoiceLetterAnswered: {
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  triviaChoiceLetterText: {
+    color: COLORS.white,
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  triviaResultText: {
+    textAlign: 'center',
+    fontWeight: '900',
+    fontSize: 16,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  triviaResultCorrect: {
+    color: '#4ADE80',
+  },
+  triviaResultWrong: {
+    color: '#FCA5A5',
   },
 
   // ── Dot Indicators ────────────────────────────────────────────
