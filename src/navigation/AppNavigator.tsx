@@ -21,6 +21,18 @@ function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
   );
 }
 
+function MiniCardIcon({ focused }: { focused: boolean }) {
+  return (
+    <View style={[styles.tabIconContainer, focused && styles.tabIconFocused]}>
+      <View style={[styles.miniCard, focused && styles.miniCardFocused]}>
+        <Text style={styles.miniCardS}>S</Text>
+        <View style={styles.miniCardLine} />
+        <Text style={styles.miniCardQ}>Q</Text>
+      </View>
+    </View>
+  );
+}
+
 function TabLabel({ label, focused }: { label: string; focused: boolean }) {
   return (
     <Text style={[styles.tabLabel, focused && styles.tabLabelFocused]}>{label}</Text>
@@ -48,7 +60,7 @@ function MainTabs() {
         name="Game"
         component={GameScreen}
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🃏" focused={focused} />,
+          tabBarIcon: ({ focused }) => <MiniCardIcon focused={focused} />,
           tabBarLabel: ({ focused }) => <TabLabel label="Game" focused={focused} />,
         }}
       />
@@ -104,6 +116,42 @@ const styles = StyleSheet.create({
   },
   tabEmoji: {
     fontSize: 20,
+  },
+  miniCard: {
+    width: 22,
+    height: 28,
+    borderRadius: 4,
+    backgroundColor: '#F3EEFA',
+    borderWidth: 1.5,
+    borderColor: '#D4C4EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 2,
+  },
+  miniCardFocused: {
+    borderColor: '#9B7FD4',
+    backgroundColor: '#EDE5F7',
+  },
+  miniCardS: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#B8A9D4',
+    letterSpacing: 1,
+    lineHeight: 11,
+  },
+  miniCardLine: {
+    width: 12,
+    height: 1,
+    backgroundColor: '#D4C4EE',
+    marginVertical: 1,
+    borderRadius: 1,
+  },
+  miniCardQ: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#9B7FD4',
+    letterSpacing: 1,
+    lineHeight: 11,
   },
   tabLabel: {
     fontSize: 10,
