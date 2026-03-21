@@ -234,7 +234,7 @@ function SectionHeader({ title }: { title: string }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg },
   container: { flex: 1 },
-  scroll: { padding: 16, paddingBottom: 40 },
+  scroll: { padding: 16, paddingBottom: 80 },
   pageTitle: {
     color: COLORS.textDark,
     fontSize: 28,

@@ -213,9 +213,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Math.round(12 * sw),
     paddingVertical: Math.round(10 * sh),
     marginTop: Math.round(8 * sh),
-    backgroundColor: COLORS.surface,
+    backgroundColor: 'rgba(255,255,255,0.82)',
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
     ...SHADOWS.chip,
   },
   parkName: {
