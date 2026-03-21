@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ImageBackground,
   TouchableOpacity,
   ScrollView,
   StatusBar,
@@ -14,8 +13,6 @@ import { useGameStore } from '../store/gameStore';
 import { PARKS } from '../data/parks';
 import { COLORS, SHADOWS, RADII } from '../theme/balatro';
 
-const HOME_BG = require('../../assets/GameBackgroundImage.png');
-
 const PARK_DISPLAY_GROUPS = [
   {
     label: 'Walt Disney World',
@@ -23,11 +20,15 @@ const PARK_DISPLAY_GROUPS = [
   },
   {
     label: 'Disneyland Resort',
-    parks: ['dl-dl'],
+    parks: ['dl-dl', 'dl-dca'],
   },
   {
     label: 'Universal Orlando',
-    parks: ['uor-us', 'uor-ioa'],
+    parks: ['uor-us', 'uor-ioa', 'uor-eu'],
+  },
+  {
+    label: 'Universal Hollywood',
+    parks: ['ush-us'],
   },
   {
     label: 'Other',
@@ -39,7 +40,12 @@ export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { settings, updateSettings, session, startSession, player } = useGameStore();
 
-  const selectedPark = PARKS.find(p => p.id === settings.parkId);
+  const selectedParkId = settings.parkIds?.[0];
+  const selectedPark = PARKS.find(p => p.id === selectedParkId);
+
+  const handleSelectPark = (parkId: string) => {
+    updateSettings({ parkIds: [parkId] });
+  };
 
   const handleStartGame = () => {
     startSession();
@@ -51,86 +57,77 @@ export default function HomeScreen() {
   };
 
   return (
-    <ImageBackground source={HOME_BG} style={styles.bg} resizeMode="cover">
-      <View style={styles.overlay} />
-      <StatusBar barStyle="light-content" />
-      <SafeAreaView style={styles.safe}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Side Quest</Text>
-            <Text style={styles.subtitle}>Turn wait times into play time</Text>
-          </View>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="dark-content" />
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Side Quest</Text>
+          <Text style={styles.subtitle}>Turn wait times into play time</Text>
+        </View>
 
-          {/* Player Welcome */}
-          <View style={styles.welcomeCard}>
-            <Text style={styles.welcomeText}>Welcome back, {player.name}!</Text>
-            <View style={styles.lifetimeRow}>
-              <Text style={styles.lifetimeLabel}>Lifetime Score</Text>
-              <Text style={styles.lifetimeScore}>{player.lifetimeScore.toLocaleString()} pts</Text>
-            </View>
+        {/* Player Welcome */}
+        <View style={styles.welcomeCard}>
+          <Text style={styles.welcomeText}>Welcome back, {player.name}!</Text>
+          <View style={styles.lifetimeRow}>
+            <Text style={styles.lifetimeLabel}>Lifetime Score</Text>
+            <Text style={styles.lifetimeScore}>{player.lifetimeScore.toLocaleString()} pts</Text>
           </View>
+        </View>
 
-          {/* Park Picker */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>SELECT YOUR PARK</Text>
-            {PARK_DISPLAY_GROUPS.map(group => (
-              <View key={group.label} style={styles.parkGroup}>
-                <Text style={styles.parkGroupLabel}>{group.label}</Text>
-                <View style={styles.parkRow}>
-                  {group.parks.map(parkId => {
-                    const park = PARKS.find(p => p.id === parkId);
-                    if (!park) return null;
-                    const selected = settings.parkId === parkId;
-                    return (
-                      <TouchableOpacity
-                        key={parkId}
-                        style={[styles.parkChip, selected && styles.parkChipSelected]}
-                        onPress={() => updateSettings({ parkId })}
-                      >
-                        <Text style={[styles.parkChipText, selected && styles.parkChipTextSelected]}>
-                          {park.shortName}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
+        {/* Park Picker */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>SELECT YOUR PARK</Text>
+          {PARK_DISPLAY_GROUPS.map(group => (
+            <View key={group.label} style={styles.parkGroup}>
+              <Text style={styles.parkGroupLabel}>{group.label}</Text>
+              <View style={styles.parkRow}>
+                {group.parks.map(parkId => {
+                  const park = PARKS.find(p => p.id === parkId);
+                  if (!park) return null;
+                  const selected = selectedParkId === parkId;
+                  return (
+                    <TouchableOpacity
+                      key={parkId}
+                      style={[styles.parkChip, selected && styles.parkChipSelected]}
+                      onPress={() => handleSelectPark(parkId)}
+                    >
+                      <Text style={[styles.parkChipText, selected && styles.parkChipTextSelected]}>
+                        {park.shortName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-            ))}
-            {selectedPark && (
-              <Text style={styles.selectedParkName}>{selectedPark.name}</Text>
-            )}
-          </View>
+            </View>
+          ))}
+          {selectedPark && (
+            <Text style={styles.selectedParkName}>{selectedPark.name}</Text>
+          )}
+        </View>
 
-          {/* Action Buttons */}
-          <View style={styles.actions}>
-            {session?.active && (
-              <TouchableOpacity style={styles.continueBtn} onPress={handleContinueGame}>
-                <Text style={styles.continueBtnText}>▶  Continue Game</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity style={styles.startBtn} onPress={handleStartGame}>
-              <Text style={styles.startBtnText}>
-                {session?.active ? '↺  New Game' : '▶  Start Game'}
-              </Text>
+        {/* Action Buttons */}
+        <View style={styles.actions}>
+          {session?.active && (
+            <TouchableOpacity style={styles.continueBtn} onPress={handleContinueGame}>
+              <Text style={styles.continueBtnText}>Continue Game</Text>
             </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </ImageBackground>
+          )}
+          <TouchableOpacity style={styles.startBtn} onPress={handleStartGame}>
+            <Text style={styles.startBtnText}>
+              {session?.active ? 'New Game' : 'Start Game'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  bg: {
-    flex: 1,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10, 30, 20, 0.75)',
-  },
   safe: {
     flex: 1,
+    backgroundColor: COLORS.bg,
   },
   scroll: {
     padding: 20,
@@ -144,11 +141,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 48,
     fontWeight: '900',
-    color: COLORS.gold,
+    color: COLORS.textDark,
     letterSpacing: -1,
   },
   subtitle: {
-    color: 'rgba(255,255,255,0.55)',
+    color: COLORS.textMuted,
     fontSize: 14,
     marginTop: 4,
     letterSpacing: 0.5,
@@ -160,9 +157,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     borderWidth: 1,
     borderColor: COLORS.borderPanel,
+    ...SHADOWS.card,
   },
   welcomeText: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
@@ -173,11 +171,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   lifetimeLabel: {
-    color: 'rgba(255,255,255,0.5)',
+    color: COLORS.textMuted,
     fontSize: 12,
   },
   lifetimeScore: {
-    color: COLORS.gold,
+    color: COLORS.green,
     fontWeight: '800',
     fontSize: 16,
   },
@@ -185,7 +183,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    color: 'rgba(255,255,255,0.45)',
+    color: COLORS.textMuted,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 2,
@@ -195,7 +193,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   parkGroupLabel: {
-    color: 'rgba(255,255,255,0.5)',
+    color: COLORS.textBody,
     fontSize: 12,
     marginBottom: 6,
   },
@@ -206,26 +204,26 @@ const styles = StyleSheet.create({
   },
   parkChip: {
     borderWidth: 1.5,
-    borderColor: COLORS.borderPanel,
+    borderColor: COLORS.borderMedium,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 7,
-    backgroundColor: COLORS.feltLight,
+    backgroundColor: COLORS.surfaceSecondary,
   },
   parkChipSelected: {
-    borderColor: COLORS.red,
-    backgroundColor: 'rgba(254,95,85,0.2)',
+    borderColor: COLORS.green,
+    backgroundColor: '#E8F8EF',
   },
   parkChipText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: COLORS.textBody,
     fontWeight: '600',
     fontSize: 13,
   },
   parkChipTextSelected: {
-    color: COLORS.red,
+    color: COLORS.greenDark,
   },
   selectedParkName: {
-    color: 'rgba(255,255,255,0.6)',
+    color: COLORS.textMuted,
     fontSize: 13,
     marginTop: 10,
     textAlign: 'center',
@@ -236,12 +234,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   startBtn: {
-    backgroundColor: COLORS.red,
+    backgroundColor: COLORS.green,
     borderRadius: RADII.button,
     paddingVertical: 18,
     alignItems: 'center',
     borderBottomWidth: 4,
-    borderBottomColor: COLORS.redDark,
+    borderBottomColor: COLORS.greenDark,
     ...SHADOWS.button,
   },
   startBtnText: {

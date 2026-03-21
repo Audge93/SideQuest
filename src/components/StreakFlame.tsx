@@ -8,27 +8,27 @@ interface Props {
 
 function getFlameEmoji(streak: number): string {
   if (streak === 0) return '';
-  if (streak < 3) return '🔥';
-  if (streak < 6) return '🔥';
-  if (streak < 9) return '🔥🔥';
-  if (streak < 12) return '🔥🔥🔥';
-  return '💙🔥';
+  if (streak < 5) return '\uD83D\uDD25';
+  if (streak < 10) return '\uD83D\uDD25';
+  if (streak < 15) return '\uD83D\uDD25\uD83D\uDD25';
+  if (streak < 20) return '\uD83D\uDD25\uD83D\uDD25\uD83D\uDD25';
+  return '\uD83D\uDC99\uD83D\uDD25';
 }
 
 function getFlameColor(streak: number): string {
-  if (streak === 0) return 'transparent';
-  if (streak < 3) return '#FF6B35';
-  if (streak < 6) return '#FF4500';
-  if (streak < 9) return '#FF2200';
-  if (streak < 12) return '#FF0000';
-  return '#00BFFF';
+  if (streak === 0) return '#A0AEC0'; // Gray
+  if (streak < 5) return '#FF6B35';   // Orange
+  if (streak < 10) return '#FF4500';  // Red-Orange
+  if (streak < 15) return '#FF2200';  // Red
+  if (streak < 20) return '#FF0000';  // Bright Red
+  return '#00BFFF';                    // Cyan
 }
 
 export default function StreakFlame({ streak }: Props) {
   if (streak === 0) {
     return (
       <View style={styles.container}>
-        <Text style={styles.zeroText}>—</Text>
+        <Text style={styles.zeroText}>{'\u2014'}</Text>
       </View>
     );
   }
@@ -48,13 +48,13 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.white,
     borderRadius: 20,
     borderWidth: 1.5,
     paddingHorizontal: 10,
     paddingVertical: 6,
     minWidth: 54,
-    borderColor: COLORS.borderPanel,
+    borderColor: COLORS.borderMedium,
     ...SHADOWS.chip,
   },
   emoji: {
@@ -63,7 +63,6 @@ const styles = StyleSheet.create({
   count: {
     fontWeight: '800',
     fontSize: 15,
-    color: '#fff',
   },
   zeroText: {
     color: COLORS.textMuted,

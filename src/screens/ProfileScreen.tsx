@@ -13,9 +13,9 @@ import {
 import { useGameStore } from '../store/gameStore';
 import { COLORS, SHADOWS, RADII } from '../theme/balatro';
 
-const CARD_BACK_INFO: Record<string, { name: string; color: string; threshold: number }> = {
+const THEME_INFO: Record<string, { name: string; color: string; threshold: number }> = {
   fireworks: { name: 'Fireworks', color: '#FF6B9D', threshold: 250 },
-  retro: { name: 'Retro Poster', color: '#E8A84A', threshold: 500 },
+  twilight: { name: 'Twilight', color: '#7C6BC4', threshold: 500 },
   'gold-foil': { name: 'Gold Foil', color: '#FFD700', threshold: 1000 },
 };
 
@@ -39,7 +39,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
         <Text style={styles.pageTitle}>Profile</Text>
 
@@ -56,8 +56,8 @@ export default function ProfileScreen() {
                 onChangeText={setNameInput}
                 autoFocus
                 maxLength={20}
-                placeholderTextColor="rgba(255,255,255,0.3)"
-                selectionColor={COLORS.gold}
+                placeholderTextColor={COLORS.textLight}
+                selectionColor={COLORS.green}
               />
               <TouchableOpacity style={styles.saveBtn} onPress={handleSaveName}>
                 <Text style={styles.saveBtnText}>Save</Text>
@@ -81,8 +81,8 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.scoreDivider} />
             <View style={styles.scoreItem}>
-              <Text style={styles.scoreValue}>{player.unlockedThemes.length}</Text>
-              <Text style={styles.scoreLabel}>Themes</Text>
+              <Text style={styles.scoreValue}>{player.visitedParks?.length ?? 0}</Text>
+              <Text style={styles.scoreLabel}>Parks Visited</Text>
             </View>
           </View>
         </View>
@@ -118,7 +118,7 @@ export default function ProfileScreen() {
         {/* Unlockable Themes */}
         <SectionHeader title="UNLOCKABLE THEMES" />
         <View style={styles.themesList}>
-          {Object.entries(CARD_BACK_INFO).map(([id, info]) => {
+          {Object.entries(THEME_INFO).map(([id, info]) => {
             const unlocked = player.unlockedThemes.includes(id);
             return (
               <View key={id} style={[styles.themeRow, unlocked && styles.themeRowUnlocked]}>
@@ -127,7 +127,9 @@ export default function ProfileScreen() {
                   <Text style={styles.themeName}>{info.name}</Text>
                   <Text style={styles.themeThreshold}>{info.threshold.toLocaleString()} lifetime pts</Text>
                 </View>
-                <Text style={styles.themeStatus}>{unlocked ? '✓ Unlocked' : '🔒'}</Text>
+                <Text style={[styles.themeStatus, unlocked && styles.themeStatusUnlocked]}>
+                  {unlocked ? '✓ Unlocked' : '🔒'}
+                </Text>
               </View>
             );
           })}
@@ -157,7 +159,7 @@ function NextUnlockBar({ lifetimeScore, unlockedThemes }: { lifetimeScore: numbe
   if (!nextThreshold) {
     return (
       <View style={styles.unlockBar}>
-        <Text style={styles.unlockBarText}>🎉 All themes unlocked!</Text>
+        <Text style={styles.unlockBarText}>All themes unlocked!</Text>
       </View>
     );
   }
@@ -174,11 +176,11 @@ function NextUnlockBar({ lifetimeScore, unlockedThemes }: { lifetimeScore: numbe
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.felt },
+  safe: { flex: 1, backgroundColor: COLORS.bg },
   container: { flex: 1 },
   scroll: { padding: 16, paddingBottom: 40 },
   pageTitle: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontSize: 28,
     fontWeight: '900',
     marginBottom: 20,
@@ -192,17 +194,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: COLORS.borderPanel,
+    ...SHADOWS.card,
   },
   avatarCircle: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: COLORS.red,
+    backgroundColor: COLORS.green,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
     borderBottomWidth: 4,
-    borderBottomColor: COLORS.redDark,
+    borderBottomColor: COLORS.greenDark,
     ...SHADOWS.chip,
   },
   avatarText: {
@@ -217,7 +220,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   playerName: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontSize: 22,
     fontWeight: '700',
   },
@@ -230,20 +233,20 @@ const styles = StyleSheet.create({
   },
   nameInput: {
     flex: 1,
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontSize: 20,
     fontWeight: '700',
     borderBottomWidth: 2,
-    borderBottomColor: COLORS.gold,
+    borderBottomColor: COLORS.green,
     paddingVertical: 4,
   },
   saveBtn: {
-    backgroundColor: COLORS.red,
+    backgroundColor: COLORS.green,
     borderRadius: RADII.button,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderBottomWidth: 3,
-    borderBottomColor: COLORS.redDark,
+    borderBottomColor: COLORS.greenDark,
     ...SHADOWS.button,
   },
   saveBtnText: {
@@ -258,12 +261,12 @@ const styles = StyleSheet.create({
   },
   scoreItem: { flex: 1, alignItems: 'center' },
   scoreValue: {
-    color: COLORS.gold,
+    color: COLORS.green,
     fontSize: 22,
     fontWeight: '900',
   },
   scoreLabel: {
-    color: 'rgba(255,255,255,0.45)',
+    color: COLORS.textMuted,
     fontSize: 11,
     marginTop: 2,
     textAlign: 'center',
@@ -280,37 +283,38 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 1,
     borderColor: COLORS.borderPanel,
+    ...SHADOWS.card,
   },
   unlockBarLabel: {
-    color: 'rgba(255,255,255,0.5)',
+    color: COLORS.textMuted,
     fontSize: 12,
     marginBottom: 8,
   },
   progressTrack: {
     height: 8,
-    backgroundColor: COLORS.feltDark,
+    backgroundColor: COLORS.surfaceSecondary,
     borderRadius: 4,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: COLORS.gold,
+    backgroundColor: COLORS.green,
     borderRadius: 4,
   },
   unlockBarProgress: {
-    color: 'rgba(255,255,255,0.4)',
+    color: COLORS.textMuted,
     fontSize: 11,
     marginTop: 4,
     textAlign: 'right',
   },
   unlockBarText: {
-    color: COLORS.gold,
+    color: COLORS.green,
     fontWeight: '700',
     fontSize: 14,
     textAlign: 'center',
   },
   sectionHeader: {
-    color: 'rgba(255,255,255,0.4)',
+    color: COLORS.textMuted,
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 2,
@@ -318,7 +322,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   badgeSubheader: {
-    color: 'rgba(255,255,255,0.5)',
+    color: COLORS.textBody,
     fontSize: 12,
     marginBottom: 10,
   },
@@ -334,12 +338,13 @@ const styles = StyleSheet.create({
     borderRadius: RADII.panel,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(245,166,35,0.4)',
+    borderColor: COLORS.green,
     alignItems: 'center',
+    ...SHADOWS.card,
   },
   badgeTileLocked: {
     borderColor: COLORS.borderPanel,
-    backgroundColor: COLORS.feltDark,
+    backgroundColor: COLORS.surfaceSecondary,
   },
   badgeIcon: {
     fontSize: 30,
@@ -350,17 +355,17 @@ const styles = StyleSheet.create({
     fontSize: 30,
   },
   badgeName: {
-    color: COLORS.gold,
+    color: COLORS.textDark,
     fontWeight: '700',
     fontSize: 13,
     textAlign: 'center',
     marginBottom: 4,
   },
   badgeNameLocked: {
-    color: 'rgba(255,255,255,0.3)',
+    color: COLORS.textLight,
   },
   badgeDescription: {
-    color: 'rgba(255,255,255,0.4)',
+    color: COLORS.textMuted,
     fontSize: 11,
     textAlign: 'center',
     lineHeight: 16,
@@ -372,7 +377,7 @@ const styles = StyleSheet.create({
   themeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.feltDark,
+    backgroundColor: COLORS.surfaceSecondary,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
@@ -380,8 +385,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   themeRowUnlocked: {
-    borderColor: 'rgba(245,166,35,0.4)',
+    borderColor: COLORS.green,
     backgroundColor: COLORS.surface,
+    ...SHADOWS.card,
   },
   themeColorDot: {
     width: 24,
@@ -390,18 +396,21 @@ const styles = StyleSheet.create({
   },
   themeInfo: { flex: 1 },
   themeName: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontWeight: '600',
     fontSize: 14,
   },
   themeThreshold: {
-    color: 'rgba(255,255,255,0.4)',
+    color: COLORS.textMuted,
     fontSize: 11,
     marginTop: 2,
   },
   themeStatus: {
-    color: COLORS.gold,
+    color: COLORS.textMuted,
     fontSize: 13,
     fontWeight: '600',
+  },
+  themeStatusUnlocked: {
+    color: COLORS.green,
   },
 });

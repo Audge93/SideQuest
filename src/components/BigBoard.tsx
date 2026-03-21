@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { Task } from '../types';
-import { COLORS, SHADOWS, RADII, CATEGORY_COLORS, CATEGORY_LABELS, CATEGORY_ICONS } from '../theme/balatro';
+import { COLORS, SHADOWS, RADII, CATEGORY_COLORS, CATEGORY_ICONS } from '../theme/balatro';
 
 const DIFFICULTY_LABELS: Record<string, string> = {
   easy: 'Easy',
@@ -24,7 +24,7 @@ interface BigTaskBadgeProps {
 
 function BigTaskBadge({ task, onPress }: BigTaskBadgeProps) {
   const color = CATEGORY_COLORS[task.category] ?? '#888';
-  const icon = CATEGORY_ICONS[task.category] ?? '⭐';
+  const icon = CATEGORY_ICONS[task.category] ?? '';
   return (
     <TouchableOpacity style={[styles.badge, { borderColor: color }]} onPress={onPress} activeOpacity={0.8}>
       <View style={[styles.badgeCircle, { backgroundColor: color }]}>
@@ -48,7 +48,7 @@ interface ExpandedBigTaskProps {
 
 function ExpandedBigTask({ task, sessionScore, onComplete, onSwap, onClose }: ExpandedBigTaskProps) {
   const color = CATEGORY_COLORS[task.category] ?? '#888';
-  const icon = CATEGORY_ICONS[task.category] ?? '⭐';
+  const icon = CATEGORY_ICONS[task.category] ?? '';
   const canSwap = sessionScore >= 25;
   return (
     <Modal transparent animationType="slide" visible onRequestClose={onClose}>
@@ -56,7 +56,7 @@ function ExpandedBigTask({ task, sessionScore, onComplete, onSwap, onClose }: Ex
         <Pressable style={[styles.expandedCard, { borderColor: color }]} onPress={e => e.stopPropagation()}>
           {/* Banner */}
           <View style={[styles.expandedBanner, { backgroundColor: color }]}>
-            <Text style={styles.expandedBannerText}>{CATEGORY_LABELS[task.category]}</Text>
+            <Text style={styles.expandedBannerText}>{task.displayCategory}</Text>
           </View>
 
           {/* Body */}
@@ -91,15 +91,17 @@ function ExpandedBigTask({ task, sessionScore, onComplete, onSwap, onClose }: Ex
               style={[styles.actionBtn, styles.swapBtn, !canSwap && styles.disabledBtn]}
               onPress={canSwap ? onSwap : () => Alert.alert('Not Enough Points', 'You need at least 25 points to swap a Challenge Task.')}
             >
-              <Text style={styles.actionBtnText}>↺  Swap (-25 pts)</Text>
+              <Text style={[styles.swapBtnText, !canSwap && { color: COLORS.textMuted }]}>
+                {'\u21BA'}  Swap (-25 pts)
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionBtn, styles.completeBtn]} onPress={onComplete}>
-              <Text style={styles.actionBtnText}>✓  Complete</Text>
+              <Text style={styles.completeBtnText}>{'\u2713'}  Complete</Text>
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-            <Text style={styles.closeBtnText}>✕</Text>
+            <Text style={styles.closeBtnText}>{'\u2715'}</Text>
           </TouchableOpacity>
         </Pressable>
       </Pressable>
@@ -156,7 +158,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    color: 'rgba(255,255,255,0.5)',
+    color: COLORS.textMuted,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 2,
@@ -176,7 +178,7 @@ const styles = StyleSheet.create({
     borderRadius: 56,
     padding: 5,
     width: 105,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.white,
     ...SHADOWS.chip,
   },
   badgeCircle: {
@@ -199,12 +201,12 @@ const styles = StyleSheet.create({
     fontSize: 26,
   },
   badgePoints: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontWeight: '800',
     fontSize: 16,
   },
   badgePtsLabel: {
-    color: 'rgba(255,255,255,0.5)',
+    color: COLORS.textMuted,
     fontSize: 10,
     fontWeight: '600',
   },
@@ -212,15 +214,15 @@ const styles = StyleSheet.create({
   // ── Expanded Modal ────────────────────────────────────────────
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
   expandedCard: {
     width: '92%',
-    backgroundColor: '#2B3E6F',
-    borderRadius: 20,
-    borderWidth: 2.5,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: RADII.card,
+    borderWidth: 2,
     marginBottom: 40,
     overflow: 'hidden',
   },
@@ -247,7 +249,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(0,0,0,0.15)',
+    borderColor: COLORS.borderMedium,
   },
   expandedIconInner: {
     width: 66,
@@ -261,7 +263,7 @@ const styles = StyleSheet.create({
     fontSize: 36,
   },
   expandedPointsLine: {
-    color: 'rgba(255,255,255,0.7)',
+    color: COLORS.textBody,
     fontSize: 16,
     fontWeight: '600',
     marginTop: 4,
@@ -270,14 +272,14 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   expandedDescription: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontSize: 18,
     lineHeight: 26,
     textAlign: 'center',
     fontWeight: '700',
   },
   heightBadge: {
-    backgroundColor: 'rgba(245,166,35,0.15)',
+    backgroundColor: 'rgba(240,216,120,0.15)',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 20,
@@ -289,12 +291,12 @@ const styles = StyleSheet.create({
   },
   expandedFooterDivider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: COLORS.borderLight,
     width: '60%',
     marginTop: 8,
   },
   expandedDifficulty: {
-    color: 'rgba(255,255,255,0.5)',
+    color: COLORS.textMuted,
     fontSize: 13,
     fontWeight: '800',
     textTransform: 'uppercase',
@@ -315,26 +317,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   completeBtn: {
-    backgroundColor: COLORS.red,
+    backgroundColor: '#78D4A0',
     borderBottomWidth: 4,
-    borderBottomColor: COLORS.redDark,
+    borderBottomColor: COLORS.greenDark,
     ...SHADOWS.button,
   },
-  swapBtn: {
-    backgroundColor: COLORS.blue,
-    borderBottomWidth: 4,
-    borderBottomColor: COLORS.blueDark,
-    ...SHADOWS.button,
-  },
-  disabledBtn: {
-    backgroundColor: '#666',
-    borderBottomColor: '#444',
-    opacity: 0.5,
-  },
-  actionBtnText: {
+  completeBtnText: {
     color: COLORS.white,
     fontWeight: '700',
     fontSize: 15,
+  },
+  swapBtn: {
+    backgroundColor: COLORS.white,
+    borderWidth: 2,
+    borderColor: COLORS.borderMedium,
+    ...SHADOWS.button,
+  },
+  swapBtnText: {
+    color: COLORS.textDark,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  disabledBtn: {
+    backgroundColor: COLORS.surfaceSecondary,
+    borderColor: COLORS.borderLight,
+    opacity: 0.5,
   },
   closeBtn: {
     position: 'absolute',
@@ -342,7 +349,7 @@ const styles = StyleSheet.create({
     right: 14,
   },
   closeBtnText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(255,255,255,0.7)',
     fontSize: 18,
     fontWeight: '700',
   },

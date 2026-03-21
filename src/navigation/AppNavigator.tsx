@@ -84,7 +84,7 @@ export default function AppNavigator() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: COLORS.feltDark,
+    backgroundColor: COLORS.surface,
     borderTopColor: COLORS.borderLight,
     borderTopWidth: 1,
     paddingBottom: 4,
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabIconFocused: {
-    backgroundColor: 'rgba(254,95,85,0.2)',
+    backgroundColor: '#E8F8EF',
   },
   tabEmoji: {
     fontSize: 20,
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   tabLabelFocused: {
-    color: COLORS.red,
+    color: COLORS.green,
     fontWeight: '700',
   },
 });

@@ -19,6 +19,7 @@ const CATEGORY_INFO: { key: keyof CategoryToggles; label: string; icon: string }
   { key: 'observation', label: 'Observation', icon: '👁️' },
   { key: 'photo', label: 'Photo Challenges', icon: '📸' },
   { key: 'trivia', label: 'Trivia', icon: '🧠' },
+  { key: 'action', label: 'Act', icon: '🎬' },
   { key: 'ride', label: 'Ride-Based', icon: '🎢' },
   { key: 'food', label: 'Food & Treat', icon: '🍦' },
   { key: 'pin', label: 'Pin Trading', icon: '📌' },
@@ -31,16 +32,17 @@ export default function SettingsScreen() {
   const { settings, updateSettings, updateCategoryToggle, toggleRide } = useGameStore();
   const [showRideDrilldown, setShowRideDrilldown] = useState(false);
 
-  const parkRides = RIDES.filter(r => r.parkId === settings.parkId);
+  const parkId = settings.parkIds?.[0];
+  const parkRides = RIDES.filter(r => r.parkId === parkId);
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
         <Text style={styles.pageTitle}>Settings</Text>
 
         {/* Height Filter */}
-        <SectionCard title="HEIGHT FILTER 📏">
+        <SectionCard title="HEIGHT FILTER">
           <SettingRow
             label="Enable Height Filtering"
             description="Hides rides taller than your shortest rider"
@@ -48,7 +50,7 @@ export default function SettingsScreen() {
             <Switch
               value={settings.heightFilterEnabled}
               onValueChange={v => updateSettings({ heightFilterEnabled: v })}
-              trackColor={{ true: COLORS.red, false: COLORS.feltDark }}
+              trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
               thumbColor="#fff"
             />
           </SettingRow>
@@ -69,9 +71,9 @@ export default function SettingsScreen() {
                 step={1}
                 value={settings.minHeightInches}
                 onValueChange={v => updateSettings({ minHeightInches: v })}
-                minimumTrackTintColor={COLORS.red}
-                maximumTrackTintColor="rgba(255,255,255,0.2)"
-                thumbTintColor={COLORS.gold}
+                minimumTrackTintColor={COLORS.green}
+                maximumTrackTintColor={COLORS.borderMedium}
+                thumbTintColor={COLORS.green}
               />
               <View style={styles.sliderLabels}>
                 <Text style={styles.sliderLabel}>32"</Text>
@@ -89,7 +91,7 @@ export default function SettingsScreen() {
                 <Switch
                   value={settings.categoryToggles[key]}
                   onValueChange={v => updateCategoryToggle(key, v)}
-                  trackColor={{ true: COLORS.red, false: COLORS.feltDark }}
+                  trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
                   thumbColor="#fff"
                 />
               </SettingRow>
@@ -120,7 +122,7 @@ export default function SettingsScreen() {
                         <Switch
                           value={!settings.disabledRideIds.includes(ride.id)}
                           onValueChange={v => toggleRide(ride.id, v)}
-                          trackColor={{ true: COLORS.red, false: COLORS.feltDark }}
+                          trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
                           thumbColor="#fff"
                           style={styles.rideSwitch}
                         />
@@ -142,7 +144,7 @@ export default function SettingsScreen() {
                 style={[styles.themeChip, settings.darkMode === mode && styles.themeChipSelected]}
                 onPress={() => updateSettings({ darkMode: mode })}
               >
-                <Text style={styles.themeChipText}>
+                <Text style={[styles.themeChipText, settings.darkMode === mode && styles.themeChipTextSelected]}>
                   {mode === 'light' ? '☀️' : mode === 'dark' ? '🌙' : '⚙️'} {mode.charAt(0).toUpperCase() + mode.slice(1)}
                 </Text>
               </TouchableOpacity>
@@ -156,7 +158,7 @@ export default function SettingsScreen() {
             <Switch
               value={settings.soundEnabled}
               onValueChange={v => updateSettings({ soundEnabled: v })}
-              trackColor={{ true: COLORS.red, false: COLORS.feltDark }}
+              trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
               thumbColor="#fff"
             />
           </SettingRow>
@@ -164,7 +166,7 @@ export default function SettingsScreen() {
             <Switch
               value={settings.hapticsEnabled}
               onValueChange={v => updateSettings({ hapticsEnabled: v })}
-              trackColor={{ true: COLORS.red, false: COLORS.feltDark }}
+              trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
               thumbColor="#fff"
             />
           </SettingRow>
@@ -206,7 +208,7 @@ function SettingRow({
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: COLORS.felt,
+    backgroundColor: COLORS.bg,
   },
   container: {
     flex: 1,
@@ -216,7 +218,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   pageTitle: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontSize: 28,
     fontWeight: '900',
     marginBottom: 20,
@@ -231,7 +233,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderPanel,
   },
   sectionTitle: {
-    color: 'rgba(255,255,255,0.4)',
+    color: COLORS.textMuted,
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 2,
@@ -253,12 +255,12 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   settingLabel: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontSize: 15,
     fontWeight: '500',
   },
   settingDescription: {
-    color: 'rgba(255,255,255,0.4)',
+    color: COLORS.textMuted,
     fontSize: 12,
     marginTop: 2,
   },
@@ -268,7 +270,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   sliderSign: {
-    backgroundColor: COLORS.surfaceLight,
+    backgroundColor: COLORS.surfaceSecondary,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -277,7 +279,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.gold,
   },
   sliderSignTitle: {
-    color: COLORS.gold,
+    color: COLORS.goldDark,
     fontWeight: '900',
     fontSize: 13,
     letterSpacing: 1,
@@ -285,14 +287,15 @@ const styles = StyleSheet.create({
   sliderSignArrow: {
     fontSize: 24,
     marginVertical: 4,
+    color: COLORS.textBody,
   },
   sliderHeightValue: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontSize: 32,
     fontWeight: '900',
   },
   sliderSignSubtitle: {
-    color: 'rgba(255,255,255,0.5)',
+    color: COLORS.textMuted,
     fontSize: 14,
     marginTop: 4,
   },
@@ -306,7 +309,7 @@ const styles = StyleSheet.create({
     marginTop: -8,
   },
   sliderLabel: {
-    color: 'rgba(255,255,255,0.4)',
+    color: COLORS.textMuted,
     fontSize: 12,
   },
   drilldownToggle: {
@@ -323,7 +326,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   noRidesText: {
-    color: 'rgba(255,255,255,0.4)',
+    color: COLORS.textMuted,
     fontSize: 13,
     paddingVertical: 8,
   },
@@ -339,12 +342,12 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   rideName: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontSize: 14,
     fontWeight: '500',
   },
   rideMeta: {
-    color: 'rgba(255,255,255,0.4)',
+    color: COLORS.textMuted,
     fontSize: 11,
     marginTop: 2,
     textTransform: 'capitalize',
@@ -363,17 +366,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: COLORS.borderPanel,
+    borderColor: COLORS.borderMedium,
     alignItems: 'center',
-    backgroundColor: COLORS.feltLight,
+    backgroundColor: COLORS.surfaceSecondary,
   },
   themeChipSelected: {
-    borderColor: COLORS.red,
-    backgroundColor: 'rgba(254,95,85,0.2)',
+    borderColor: COLORS.green,
+    backgroundColor: '#E8F8EF',
   },
   themeChipText: {
-    color: COLORS.white,
+    color: COLORS.textBody,
     fontSize: 13,
     fontWeight: '600',
+  },
+  themeChipTextSelected: {
+    color: COLORS.greenDark,
   },
 });

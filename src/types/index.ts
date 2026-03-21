@@ -1,42 +1,36 @@
-// ─── Task Types ─────────────────────────────────────────────────────────────
-
+// Task types
 export type TaskSize = 'small' | 'big';
 export type Difficulty = 'easy' | 'medium' | 'hard';
-export type SmallCategory = 'observation' | 'photo' | 'trivia';
+
+// Categories - v3 uses internal names + display names
+export type SmallCategory = 'observation' | 'photo' | 'trivia' | 'action';
 export type BigCategory = 'ride' | 'food' | 'pin' | 'character' | 'exploration' | 'scavenger';
 export type TaskCategory = SmallCategory | BigCategory;
+
+export type RideIntensity = 'gentle' | 'moderate' | 'thrill';
 
 export interface Task {
   id: string;
   size: TaskSize;
   category: TaskCategory;
+  displayCategory: string; // "Find", "Photo", "Trivia", "Act", "Ride", "Treat", "Pins", "Meet", "Explore", "Seek"
   description: string;
+  flavorText?: string;
   points: number;
   difficulty: Difficulty;
   parkId?: string;
   rideId?: string;
-  heightRequirement?: number; // inches
-  triviaChoices?: string[];   // 4 multiple-choice options (trivia only)
-  triviaAnswer?: number;      // index of correct choice (0-3)
+  heightRequirement?: number;
+  triviaChoices?: string[];
+  triviaAnswer?: number;
 }
-
-// ─── Park / Ride Types ───────────────────────────────────────────────────────
-
-export type RideIntensity = 'gentle' | 'moderate' | 'thrill';
 
 export interface Ride {
   id: string;
   name: string;
-  heightRequirement: number; // inches, 0 = no requirement
+  heightRequirement: number;
   intensity: RideIntensity;
   points: 25 | 50 | 75;
-  parkId: string;
-  landId: string;
-}
-
-export interface Land {
-  id: string;
-  name: string;
   parkId: string;
 }
 
@@ -45,12 +39,7 @@ export interface Park {
   name: string;
   shortName: string;
   theme: 'disney' | 'universal' | 'custom';
-  lands: Land[];
 }
-
-// ─── Player / Session Types ──────────────────────────────────────────────────
-
-export type PlayMode = 'solo';
 
 export interface Badge {
   id: string;
@@ -68,34 +57,28 @@ export interface Player {
   lifetimeScore: number;
   badges: Badge[];
   unlockedThemes: string[];
-  unlockedCardBacks: string[];
-}
-
-export interface PlayerSession {
-  playerId: string;
-  sessionScore: number;
-  currentStreak: number;
-  discardsRemaining: number;
-  hand: Task[]; // always 5
-  completedTasks: Task[];
+  visitedParks: string[];
 }
 
 export interface Session {
   id: string;
-  parkId: string;
-  mode: PlayMode;
-  players: PlayerSession[];
-  bigBoard: Task[]; // always 3
+  parkIds: string[];
   startedAt: number;
   active: boolean;
+  sessionScore: number;
+  currentStreak: number;
+  discardsRemaining: number;
+  totalCompletions: number;
+  hand: Task[];
+  challengeTasks: Task[];
+  completedTasks: Task[];
 }
-
-// ─── Settings Types ──────────────────────────────────────────────────────────
 
 export interface CategoryToggles {
   observation: boolean;
   photo: boolean;
   trivia: boolean;
+  action: boolean;
   ride: boolean;
   food: boolean;
   pin: boolean;
@@ -105,12 +88,10 @@ export interface CategoryToggles {
 }
 
 export interface Settings {
-  parkId: string;
-  playMode: PlayMode;
+  parkIds: string[];
   heightFilterEnabled: boolean;
-  minHeightInches: number; // 32–54
+  minHeightInches: number;
   categoryToggles: CategoryToggles;
-  disabledRideIds: string[];
   darkMode: 'light' | 'dark' | 'system';
   soundEnabled: boolean;
   hapticsEnabled: boolean;

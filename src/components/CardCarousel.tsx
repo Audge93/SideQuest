@@ -11,15 +11,11 @@ import {
   Alert,
 } from 'react-native';
 import { Task } from '../types';
-import { COLORS, SHADOWS, RADII, CATEGORY_COLORS, CATEGORY_LABELS, CATEGORY_ICONS } from '../theme/balatro';
+import { COLORS, SHADOWS, RADII, CATEGORY_COLORS, CATEGORY_ICONS } from '../theme/balatro';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.62;
 const CARD_PEEK = (width - CARD_WIDTH) / 2 - 8;
-
-// Card colors: category color header (set inline), blue body
-const CARD_BODY_BG = '#3B5998';
-const CARD_BORDER = '#111111';
 
 const DIFFICULTY_LABELS: Record<string, string> = {
   easy: 'Common',
@@ -29,58 +25,23 @@ const DIFFICULTY_LABELS: Record<string, string> = {
 
 const CHOICE_LETTERS = ['A', 'B', 'C', 'D'];
 
-// Halftone dot decoration for retro texture
-function HalftoneDots({ side }: { side: 'left' | 'right' }) {
-  const dots = [];
-  const rows = 5;
-  const cols = 3;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const opacity = 0.12 - (c * 0.03) - (r * 0.015);
-      const size = 4 - c * 0.5;
-      dots.push(
-        <View
-          key={`${r}-${c}`}
-          style={{
-            position: 'absolute',
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            backgroundColor: `rgba(255,255,255,${Math.max(opacity, 0.02)})`,
-            top: 60 + r * 12,
-            [side]: 6 + c * 10,
-          }}
-        />
-      );
-    }
-  }
-  return <>{dots}</>;
-}
-
 function TaskCard({ task, onPress, scale = 1, opacity = 1 }: {
   task: Task; onPress: () => void; scale?: number; opacity?: number;
 }) {
   const color = CATEGORY_COLORS[task.category] ?? '#888';
-  const icon = CATEGORY_ICONS[task.category] ?? '⭐';
+  const icon = CATEGORY_ICONS[task.category] ?? '';
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
-      style={[styles.card, { transform: [{ scale }], opacity }]}
+      style={[styles.card, { borderColor: color, transform: [{ scale }], opacity }]}
     >
-      {/* Halftone texture dots */}
-      <HalftoneDots side="left" />
-      <HalftoneDots side="right" />
-
       {/* Category-colored header zone */}
       <View style={[styles.cardHeader, { backgroundColor: color }]}>
-        <Text style={styles.cardHeaderText}>{CATEGORY_LABELS[task.category]}</Text>
+        <Text style={styles.cardHeaderText}>{task.displayCategory}</Text>
       </View>
 
-      {/* Subtle divider between header and body */}
-      <View style={styles.headerBodyDivider} />
-
-      {/* Lighter body zone */}
+      {/* Body zone */}
       <View style={styles.cardBody}>
         {/* Elevated icon tile */}
         <View style={[styles.iconOuter, { backgroundColor: color }]}>
@@ -89,15 +50,15 @@ function TaskCard({ task, onPress, scale = 1, opacity = 1 }: {
           </View>
         </View>
 
-        {/* Points line — medium weight, accent color for key terms */}
+        {/* Points line */}
         <Text style={styles.pointsLine}>
           Earn <Text style={[styles.pointsAccent, { color }]}>{task.points} Points</Text>
         </Text>
 
-        {/* Main description — bold, prominent */}
+        {/* Main description */}
         <Text style={styles.cardDescription}>{task.description}</Text>
 
-        {/* Flavor/helper text — smaller, lighter */}
+        {/* Flavor/helper text */}
         <Text style={styles.cardFlavor}>
           {task.category === 'trivia' ? 'Tap to answer the question' :
            task.category === 'photo' ? 'Take the photo to complete' :
@@ -106,7 +67,7 @@ function TaskCard({ task, onPress, scale = 1, opacity = 1 }: {
         </Text>
       </View>
 
-      {/* Bottom rarity/difficulty bookend — bold, grounding */}
+      {/* Bottom rarity/difficulty bookend */}
       <View style={styles.cardFooter}>
         <Text style={styles.difficultyLabel}>{DIFFICULTY_LABELS[task.difficulty]}</Text>
       </View>
@@ -120,7 +81,7 @@ function ExpandedCardModal({ task, canDiscard, onComplete, onDiscard, onTriviaAn
   onTriviaAnswer: (correct: boolean) => void; onClose: () => void;
 }) {
   const color = CATEGORY_COLORS[task.category] ?? '#888';
-  const icon = CATEGORY_ICONS[task.category] ?? '⭐';
+  const icon = CATEGORY_ICONS[task.category] ?? '';
   const isTrivia = task.category === 'trivia' && task.triviaChoices && task.triviaAnswer != null;
   const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
@@ -138,17 +99,11 @@ function ExpandedCardModal({ task, canDiscard, onComplete, onDiscard, onTriviaAn
   return (
     <Modal transparent animationType="slide" visible onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={answered ? undefined : onClose}>
-        <Pressable style={styles.expandedCard} onPress={e => e.stopPropagation()}>
-          {/* Halftone texture */}
-          <HalftoneDots side="left" />
-          <HalftoneDots side="right" />
-
+        <Pressable style={[styles.expandedCard, { borderColor: color }]} onPress={e => e.stopPropagation()}>
           {/* Category-colored header */}
           <View style={[styles.expandedHeader, { backgroundColor: color }]}>
-            <Text style={styles.expandedHeaderText}>{CATEGORY_LABELS[task.category]}</Text>
+            <Text style={styles.expandedHeaderText}>{task.displayCategory}</Text>
           </View>
-
-          <View style={styles.headerBodyDivider} />
 
           {/* Body */}
           <View style={styles.expandedBody}>
@@ -215,7 +170,7 @@ function ExpandedCardModal({ task, canDiscard, onComplete, onDiscard, onTriviaAn
               })}
               {answered && (
                 <Text style={[styles.triviaResultText, selectedChoice === task.triviaAnswer ? styles.triviaResultCorrect : styles.triviaResultWrong]}>
-                  {selectedChoice === task.triviaAnswer ? '✓ Correct! +' + task.points + ' pts' : '✕ Wrong answer!'}
+                  {selectedChoice === task.triviaAnswer ? '\u2713 Correct! +' + task.points + ' pts' : '\u2715 Wrong answer!'}
                 </Text>
               )}
             </View>
@@ -227,17 +182,20 @@ function ExpandedCardModal({ task, canDiscard, onComplete, onDiscard, onTriviaAn
                   ? onDiscard
                   : () => Alert.alert('No Discards Remaining', 'Complete a task to restore your discards!')}
               >
-                <Text style={styles.actionBtnText}>{canDiscard ? '✕  Discard' : 'No Discards Left'}</Text>
+                <Text style={[styles.discardBtnText, !canDiscard && { color: COLORS.textMuted }]}>
+                  {canDiscard ? '\u2715  Discard' : 'No Discards Left'}
+                </Text>
+                {canDiscard && <Text style={styles.discardNote}>resets streak</Text>}
               </TouchableOpacity>
               <TouchableOpacity style={[styles.actionBtn, styles.completeBtn]} onPress={onComplete}>
-                <Text style={styles.actionBtnText}>✓  Complete</Text>
+                <Text style={styles.completeBtnText}>{'\u2713'}  Complete</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {!answered && (
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-              <Text style={styles.closeBtnText}>✕</Text>
+              <Text style={styles.closeBtnText}>{'\u2715'}</Text>
             </TouchableOpacity>
           )}
         </Pressable>
@@ -318,19 +276,13 @@ const styles = StyleSheet.create({
   },
 
   // ── Compact Card ──────────────────────────────────────────────
-  // Solid black border, rounded corners, contained feel
   card: {
-    backgroundColor: CARD_BODY_BG,
-    borderRadius: 16,
-    borderWidth: 3,
-    borderColor: CARD_BORDER,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: RADII.card,
+    borderWidth: 2,
     overflow: 'hidden',
     minHeight: 290,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 2,
-    elevation: 8,
+    ...SHADOWS.card,
   },
 
   // Header zone — colored per category (bg set inline)
@@ -341,18 +293,12 @@ const styles = StyleSheet.create({
   cardHeaderText: {
     color: COLORS.white,
     fontWeight: '900',
-    fontSize: 16,
+    fontSize: 22,
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
 
-  // Visible divider between header and body zones
-  headerBodyDivider: {
-    height: 2,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-
-  // Lighter body zone
+  // Body zone — cream background with dark text
   cardBody: {
     flex: 1,
     padding: 16,
@@ -362,7 +308,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
 
-  // Icon — rounded-square with thick black border + drop shadow (elevated tile)
+  // Icon — rounded-square with category color bg
   iconOuter: {
     width: 78,
     height: 78,
@@ -370,13 +316,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,
-    borderWidth: 3,
-    borderColor: CARD_BORDER,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.6,
-    shadowRadius: 1,
-    elevation: 6,
+    borderWidth: 2,
+    borderColor: COLORS.borderMedium,
+    ...SHADOWS.button,
   },
   iconInner: {
     width: 54,
@@ -390,9 +332,9 @@ const styles = StyleSheet.create({
     fontSize: 30,
   },
 
-  // Points — medium weight, accent color for key terms
+  // Points — dark text with category-colored accent
   pointsLine: {
-    color: 'rgba(255,255,255,0.75)',
+    color: COLORS.textBody,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -400,36 +342,37 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
 
-  // Main description — bold, prominent
+  // Main description — bold, dark text
   cardDescription: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
     fontWeight: '800',
   },
 
-  // Flavor text — smaller, lighter weight
+  // Flavor text — italic, lighter gray
   cardFlavor: {
-    color: 'rgba(255,255,255,0.4)',
+    color: COLORS.textMuted,
     fontSize: 11,
     lineHeight: 15,
     textAlign: 'center',
     fontWeight: '400',
+    fontStyle: 'italic',
     marginTop: 2,
     paddingHorizontal: 8,
   },
 
-  // Bottom rarity/difficulty — bold bookend, grounding element
+  // Bottom rarity/difficulty
   cardFooter: {
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: COLORS.surfaceSecondary,
     paddingVertical: 8,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.3)',
+    borderTopColor: COLORS.borderLight,
   },
   difficultyLabel: {
-    color: 'rgba(255,255,255,0.85)',
+    color: COLORS.textBody,
     fontSize: 13,
     fontWeight: '900',
     textTransform: 'uppercase',
@@ -439,16 +382,15 @@ const styles = StyleSheet.create({
   // ── Expanded Modal ────────────────────────────────────────────
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
   expandedCard: {
     width: '92%',
-    backgroundColor: CARD_BODY_BG,
-    borderRadius: 20,
-    borderWidth: 3.5,
-    borderColor: CARD_BORDER,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: RADII.card,
+    borderWidth: 2,
     marginBottom: 40,
     overflow: 'hidden',
   },
@@ -459,7 +401,7 @@ const styles = StyleSheet.create({
   expandedHeaderText: {
     color: COLORS.white,
     fontWeight: '900',
-    fontSize: 20,
+    fontSize: 22,
     textTransform: 'uppercase',
     letterSpacing: 3,
   },
@@ -475,13 +417,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3.5,
-    borderColor: CARD_BORDER,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.6,
-    shadowRadius: 2,
-    elevation: 8,
+    borderWidth: 2,
+    borderColor: COLORS.borderMedium,
+    ...SHADOWS.button,
   },
   expandedIconInner: {
     width: 70,
@@ -495,13 +433,13 @@ const styles = StyleSheet.create({
     fontSize: 40,
   },
   expandedPointsLine: {
-    color: 'rgba(255,255,255,0.75)',
+    color: COLORS.textBody,
     fontSize: 16,
     fontWeight: '500',
     marginTop: 6,
   },
   expandedDescription: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontSize: 19,
     lineHeight: 27,
     textAlign: 'center',
@@ -509,25 +447,26 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   expandedFlavor: {
-    color: 'rgba(255,255,255,0.4)',
+    color: COLORS.textMuted,
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'center',
     fontWeight: '400',
+    fontStyle: 'italic',
     paddingHorizontal: 12,
     marginTop: 4,
   },
 
   // Rarity bookend at bottom of card body
   expandedRarity: {
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: COLORS.surfaceSecondary,
     paddingVertical: 10,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.3)',
+    borderTopColor: COLORS.borderLight,
   },
   expandedRarityText: {
-    color: 'rgba(255,255,255,0.85)',
+    color: COLORS.textBody,
     fontSize: 14,
     fontWeight: '900',
     textTransform: 'uppercase',
@@ -546,30 +485,39 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: RADII.button,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: CARD_BORDER,
   },
   completeBtn: {
-    backgroundColor: COLORS.red,
+    backgroundColor: '#78D4A0',
     borderBottomWidth: 4,
-    borderBottomColor: COLORS.redDark,
+    borderBottomColor: COLORS.greenDark,
     ...SHADOWS.button,
   },
-  discardBtn: {
-    backgroundColor: COLORS.blue,
-    borderBottomWidth: 4,
-    borderBottomColor: COLORS.blueDark,
-    ...SHADOWS.button,
-  },
-  disabledBtn: {
-    backgroundColor: '#555',
-    borderBottomColor: '#333',
-    opacity: 0.5,
-  },
-  actionBtnText: {
+  completeBtnText: {
     color: COLORS.white,
     fontWeight: '800',
     fontSize: 15,
+  },
+  discardBtn: {
+    backgroundColor: COLORS.white,
+    borderWidth: 2,
+    borderColor: COLORS.borderMedium,
+    ...SHADOWS.button,
+  },
+  discardBtnText: {
+    color: COLORS.textDark,
+    fontWeight: '800',
+    fontSize: 15,
+  },
+  discardNote: {
+    color: COLORS.textMuted,
+    fontSize: 10,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  disabledBtn: {
+    backgroundColor: COLORS.surfaceSecondary,
+    borderColor: COLORS.borderLight,
+    opacity: 0.5,
   },
   closeBtn: {
     position: 'absolute',
@@ -577,7 +525,7 @@ const styles = StyleSheet.create({
     right: 14,
   },
   closeBtnText: {
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(255,255,255,0.7)',
     fontSize: 20,
     fontWeight: '900',
   },
@@ -591,12 +539,12 @@ const styles = StyleSheet.create({
   triviaChoice: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: COLORS.surfaceSecondary,
     borderRadius: RADII.button,
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: COLORS.borderMedium,
     gap: 12,
   },
   triviaChoiceCorrect: {
@@ -608,7 +556,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.redDark,
   },
   triviaChoiceText: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontSize: 15,
     fontWeight: '600',
     flex: 1,
@@ -617,17 +565,17 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: COLORS.borderMedium,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: COLORS.borderLight,
   },
   triviaChoiceLetterAnswered: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.5)',
   },
   triviaChoiceLetterText: {
-    color: COLORS.white,
+    color: COLORS.textDark,
     fontWeight: '800',
     fontSize: 13,
   },
@@ -639,10 +587,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   triviaResultCorrect: {
-    color: '#4ADE80',
+    color: '#16A34A',
   },
   triviaResultWrong: {
-    color: '#FCA5A5',
+    color: COLORS.redDark,
   },
 
   // ── Dot Indicators ────────────────────────────────────────────
@@ -656,10 +604,10 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: COLORS.borderMedium,
   },
   dotActive: {
-    backgroundColor: COLORS.red,
+    backgroundColor: COLORS.green,
     width: 18,
   },
 });

@@ -4,10 +4,10 @@ import { COLORS, SHADOWS } from '../theme/balatro';
 
 interface Props {
   remaining: number;
-  max?: number;
 }
 
-export default function DiscardPips({ remaining, max = 5 }: Props) {
+export default function DiscardPips({ remaining }: Props) {
+  const max = 2;
   return (
     <View style={styles.container}>
       <Text style={styles.label}>DISCARDS</Text>
@@ -26,10 +26,10 @@ export default function DiscardPips({ remaining, max = 5 }: Props) {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: COLORS.borderPanel,
+    borderColor: COLORS.borderMedium,
     paddingHorizontal: 10,
     paddingVertical: 6,
     ...SHADOWS.chip,
@@ -51,9 +51,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   pipActive: {
-    backgroundColor: COLORS.blue,
+    backgroundColor: '#009DFF',
   },
   pipUsed: {
-    backgroundColor: COLORS.feltDark,
+    backgroundColor: '#E2E8F0',
   },
 });

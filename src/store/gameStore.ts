@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Task, Session, PlayerSession, Settings, Player, Badge, CategoryToggles } from '../types';
+import { Task, Session, Settings, Player, Badge, CategoryToggles } from '../types';
 import { SMALL_TASKS, BIG_TASKS, generateRideTasks } from '../data/tasks';
+import { TRIVIA_TASKS } from '../data/trivia';
 import { RIDES } from '../data/parks';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -15,34 +16,40 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function getDiscardsAllowed(score: number): number {
-  if (score <= 50) return 5;
-  if (score <= 150) return 4;
-  if (score <= 300) return 3;
-  if (score <= 500) return 2;
-  return 1;
-}
+// ─── Defaults ────────────────────────────────────────────────────────────────
 
 const DEFAULT_BADGES: Badge[] = [
-  { id: 'eagle-eye', name: 'Eagle Eye', description: 'Complete 10 Observation tasks', icon: '🦅', earned: false },
+  // Category badges (10)
+  { id: 'sharp-eye', name: 'Sharp Eye', description: 'Complete 10 Find tasks', icon: '🔍', earned: false },
+  { id: 'shutterbug', name: 'Shutterbug', description: 'Complete 8 Photo tasks', icon: '📸', earned: false },
+  { id: 'brain-box', name: 'Brain Box', description: 'Complete 10 Trivia tasks', icon: '🧠', earned: false },
+  { id: 'scene-stealer', name: 'Scene Stealer', description: 'Complete 8 Act tasks', icon: '🎬', earned: false },
+  { id: 'thrill-seeker', name: 'Thrill Seeker', description: 'Complete 10 Ride tasks', icon: '🎢', earned: false },
+  { id: 'foodie', name: 'Foodie', description: 'Complete 5 Treat tasks', icon: '🍦', earned: false },
+  { id: 'pin-pro', name: 'Pin Pro', description: 'Complete 5 Pins tasks', icon: '📌', earned: false },
+  { id: 'star-struck', name: 'Star Struck', description: 'Complete 5 Meet tasks', icon: '🎭', earned: false },
+  { id: 'trailblazer', name: 'Trailblazer', description: 'Complete 8 Explore tasks', icon: '🗺️', earned: false },
+  { id: 'treasure-hunter', name: 'Treasure Hunter', description: 'Complete 8 Seek tasks', icon: '🎯', earned: false },
+  // Milestone badges (8)
+  { id: 'first-steps', name: 'First Steps', description: 'Complete your first task', icon: '🎉', earned: false },
   { id: 'on-fire', name: 'On Fire', description: 'Reach a 10-task streak', icon: '🔥', earned: false },
+  { id: 'blazing', name: 'Blazing', description: 'Reach a 20-task streak', icon: '💙', earned: false },
   { id: 'centurion', name: 'Centurion', description: 'Earn 100 lifetime points', icon: '🏅', earned: false },
+  { id: 'high-roller', name: 'High Roller', description: 'Earn 500 lifetime points', icon: '💎', earned: false },
   { id: 'legend', name: 'Legend', description: 'Earn 1,000 lifetime points', icon: '⭐', earned: false },
-  { id: 'foodie', name: 'Foodie', description: 'Complete 5 Food & Treat tasks', icon: '🍦', earned: false },
-  { id: 'explorer', name: 'Explorer', description: 'Complete 5 Exploration tasks', icon: '🗺️', earned: false },
-  { id: 'shutterbug', name: 'Shutterbug', description: 'Complete 5 Photo tasks', icon: '📸', earned: false },
-  { id: 'trivia-master', name: 'Trivia Master', description: 'Complete 5 Trivia tasks', icon: '🧠', earned: false },
+  { id: 'park-hopper', name: 'Park Hopper', description: 'Complete tasks at 2+ parks', icon: '🏰', earned: false },
+  { id: 'completionist', name: 'Completionist', description: 'Earn all category badges', icon: '🏆', earned: false },
 ];
 
 const DEFAULT_SETTINGS: Settings = {
-  parkId: 'wdw-mk',
-  playMode: 'solo',
+  parkIds: ['wdw-mk'],
   heightFilterEnabled: false,
   minHeightInches: 40,
   categoryToggles: {
     observation: true,
     photo: true,
     trivia: true,
+    action: true,
     ride: true,
     food: true,
     pin: true,
@@ -50,7 +57,6 @@ const DEFAULT_SETTINGS: Settings = {
     exploration: true,
     scavenger: true,
   },
-  disabledRideIds: [],
   darkMode: 'system',
   soundEnabled: true,
   hapticsEnabled: true,
@@ -59,11 +65,11 @@ const DEFAULT_SETTINGS: Settings = {
 const DEFAULT_PLAYER: Player = {
   id: 'player-1',
   name: 'Player 1',
-  color: '#4A90E2',
+  color: '#89B4F7',
   lifetimeScore: 0,
   badges: DEFAULT_BADGES,
   unlockedThemes: [],
-  unlockedCardBacks: [],
+  visitedParks: [],
 };
 
 // ─── Store Types ──────────────────────────────────────────────────────────────
@@ -74,28 +80,18 @@ interface GameState {
   session: Session | null;
   isLoading: boolean;
 
-  // Computed helpers
-  activePlayerSession: PlayerSession | null;
-
-  // Actions — Settings
   updateSettings: (patch: Partial<Settings>) => void;
   updateCategoryToggle: (category: keyof CategoryToggles, value: boolean) => void;
-  toggleRide: (rideId: string, enabled: boolean) => void;
-
-  // Actions — Player
   updatePlayerName: (name: string) => void;
 
-  // Actions — Session
   startSession: () => void;
   endSession: () => void;
 
-  // Actions — Gameplay
-  completeTask: (taskId: string, isBig: boolean, playerId?: string) => void;
-  discardTask: (taskId: string, playerId?: string) => void;
-  swapBigTask: (taskId: string) => void;
+  completeTask: (taskId: string, isChallenge: boolean) => void;
+  discardTask: (taskId: string) => void;
+  swapChallengeTask: (taskId: string) => void;
   answerTrivia: (taskId: string, correct: boolean) => void;
 
-  // Persistence
   loadFromStorage: () => Promise<void>;
   saveToStorage: () => Promise<void>;
 }
@@ -103,35 +99,123 @@ interface GameState {
 // ─── Task Pool Builder ────────────────────────────────────────────────────────
 
 function buildTaskPools(settings: Settings): { small: Task[]; big: Task[] } {
-  const { categoryToggles, parkId, heightFilterEnabled, minHeightInches, disabledRideIds } = settings;
+  const { categoryToggles, parkIds, heightFilterEnabled, minHeightInches } = settings;
 
-  const enabledSmall = (['observation', 'photo', 'trivia'] as const).filter(c => categoryToggles[c]);
-  const enabledBig = (['food', 'pin', 'character', 'exploration', 'scavenger'] as const).filter(c => categoryToggles[c]);
+  // Small pool: observation, photo, action from SMALL_TASKS + trivia from TRIVIA_TASKS
+  const enabledSmallCategories = (['observation', 'photo', 'action'] as const).filter(c => categoryToggles[c]);
+  let small: Task[] = SMALL_TASKS.filter(t => enabledSmallCategories.includes(t.category as any));
+  if (categoryToggles.trivia) {
+    small = [...small, ...TRIVIA_TASKS];
+  }
 
-  let small = SMALL_TASKS.filter(t => enabledSmall.includes(t.category as any));
-  let big = BIG_TASKS.filter(t => enabledBig.includes(t.category as any));
+  // Big pool: food, pin, character, exploration, scavenger from BIG_TASKS + ride tasks
+  const enabledBigCategories = (['food', 'pin', 'character', 'exploration', 'scavenger'] as const).filter(c => categoryToggles[c]);
+  let big: Task[] = BIG_TASKS.filter(t => enabledBigCategories.includes(t.category as any));
 
   if (categoryToggles.ride) {
-    const parkRides = RIDES.filter(r => r.parkId === parkId);
+    const parkRides = RIDES.filter(r => parkIds.includes(r.parkId));
     const filteredRides = heightFilterEnabled
       ? parkRides.filter(r => r.heightRequirement === 0 || r.heightRequirement <= minHeightInches)
       : parkRides;
-    const rideTasks = generateRideTasks(filteredRides, disabledRideIds);
+    const rideTasks = generateRideTasks(filteredRides);
     big = [...big, ...rideTasks];
   }
 
   return { small: shuffle(small), big: shuffle(big) };
 }
 
-function drawCards(pool: Task[], existing: Task[], count: number): { drawn: Task[]; remaining: Task[] } {
-  const existingIds = new Set(existing.map(t => t.id));
-  const available = pool.filter(t => !existingIds.has(t.id));
-  const needed = count - existing.length;
-  if (needed <= 0) return { drawn: existing, remaining: pool };
+function drawFromPool(pool: Task[], exclude: Task[], count: number): Task[] {
+  const excludeIds = new Set(exclude.map(t => t.id));
+  const available = pool.filter(t => !excludeIds.has(t.id));
+  return available.slice(0, count);
+}
 
-  const drawn = [...existing, ...available.slice(0, needed)];
-  const remaining = available.slice(needed);
-  return { drawn, remaining };
+function replaceInArray(arr: Task[], taskId: string, replacement: Task | undefined): Task[] {
+  if (!replacement) return arr.filter(t => t.id !== taskId);
+  return arr.map(t => (t.id === taskId ? replacement : t));
+}
+
+function pickReplacement(pool: Task[], exclude: Task[]): Task | undefined {
+  const excludeIds = new Set(exclude.map(t => t.id));
+  const available = pool.filter(t => !excludeIds.has(t.id));
+  if (available.length === 0) return undefined;
+  return available[Math.floor(Math.random() * available.length)];
+}
+
+// ─── Badge / Unlock Helpers ───────────────────────────────────────────────────
+
+function checkBadges(
+  session: Session,
+  badges: Badge[],
+  lifetimeScore: number,
+  visitedParks: string[],
+): Badge[] {
+  const completed = session.completedTasks;
+  const countByCategory = (cat: string) => completed.filter(t => t.category === cat).length;
+
+  return badges.map(b => {
+    if (b.earned) return b;
+    let earned = false;
+    switch (b.id) {
+      // Category badges
+      case 'sharp-eye':
+        earned = countByCategory('observation') >= 10; break;
+      case 'shutterbug':
+        earned = countByCategory('photo') >= 8; break;
+      case 'brain-box':
+        earned = countByCategory('trivia') >= 10; break;
+      case 'scene-stealer':
+        earned = countByCategory('action') >= 8; break;
+      case 'thrill-seeker':
+        earned = countByCategory('ride') >= 10; break;
+      case 'foodie':
+        earned = countByCategory('food') >= 5; break;
+      case 'pin-pro':
+        earned = countByCategory('pin') >= 5; break;
+      case 'star-struck':
+        earned = countByCategory('character') >= 5; break;
+      case 'trailblazer':
+        earned = countByCategory('exploration') >= 8; break;
+      case 'treasure-hunter':
+        earned = countByCategory('scavenger') >= 8; break;
+      // Milestone badges
+      case 'first-steps':
+        earned = completed.length >= 1; break;
+      case 'on-fire':
+        earned = session.currentStreak >= 10; break;
+      case 'blazing':
+        earned = session.currentStreak >= 20; break;
+      case 'centurion':
+        earned = lifetimeScore >= 100; break;
+      case 'high-roller':
+        earned = lifetimeScore >= 500; break;
+      case 'legend':
+        earned = lifetimeScore >= 1000; break;
+      case 'park-hopper':
+        earned = visitedParks.length >= 2; break;
+      case 'completionist': {
+        const categoryBadgeIds = [
+          'sharp-eye', 'shutterbug', 'brain-box', 'scene-stealer', 'thrill-seeker',
+          'foodie', 'pin-pro', 'star-struck', 'trailblazer', 'treasure-hunter',
+        ];
+        // Check against the current badges array (with any newly earned ones)
+        earned = categoryBadgeIds.every(id => {
+          const badge = badges.find(bb => bb.id === id);
+          return badge?.earned;
+        });
+        break;
+      }
+    }
+    return earned ? { ...b, earned: true, earnedAt: Date.now() } : b;
+  });
+}
+
+function checkThemeUnlocks(lifetimeScore: number, current: string[]): string[] {
+  const unlocked = [...current];
+  if (lifetimeScore >= 250 && !unlocked.includes('fireworks')) unlocked.push('fireworks');
+  if (lifetimeScore >= 500 && !unlocked.includes('twilight')) unlocked.push('twilight');
+  if (lifetimeScore >= 1000 && !unlocked.includes('gold-foil')) unlocked.push('gold-foil');
+  return unlocked;
 }
 
 // ─── Zustand Store ────────────────────────────────────────────────────────────
@@ -141,7 +225,6 @@ export const useGameStore = create<GameState>((set, get) => ({
   player: DEFAULT_PLAYER,
   session: null,
   isLoading: true,
-  activePlayerSession: null,
 
   updateSettings: (patch) => {
     set(s => ({ settings: { ...s.settings, ...patch } }));
@@ -158,47 +241,33 @@ export const useGameStore = create<GameState>((set, get) => ({
     get().saveToStorage();
   },
 
-  toggleRide: (rideId, enabled) => {
-    set(s => {
-      const current = s.settings.disabledRideIds;
-      const next = enabled ? current.filter(id => id !== rideId) : [...current, rideId];
-      return { settings: { ...s.settings, disabledRideIds: next } };
-    });
-    get().saveToStorage();
-  },
-
   updatePlayerName: (name) => {
     set(s => ({ player: { ...s.player, name } }));
     get().saveToStorage();
   },
 
   startSession: () => {
-    const { settings, player } = get();
+    const { settings } = get();
     const { small, big } = buildTaskPools(settings);
 
-    const hand = small.slice(0, 5);
-    const bigBoard = big.slice(0, 3);
-
-    const playerSession: PlayerSession = {
-      playerId: player.id,
-      sessionScore: 0,
-      currentStreak: 0,
-      discardsRemaining: 5,
-      hand,
-      completedTasks: [],
-    };
+    const hand = drawFromPool(small, [], 5);
+    const challengeTasks = drawFromPool(big, [], 3);
 
     const session: Session = {
       id: `session-${Date.now()}`,
-      parkId: settings.parkId,
-      mode: settings.playMode,
-      players: [playerSession],
-      bigBoard,
+      parkIds: [...settings.parkIds],
       startedAt: Date.now(),
       active: true,
+      sessionScore: 0,
+      currentStreak: 0,
+      discardsRemaining: 2,
+      totalCompletions: 0,
+      hand,
+      challengeTasks,
+      completedTasks: [],
     };
 
-    set({ session, activePlayerSession: playerSession });
+    set({ session });
     get().saveToStorage();
   },
 
@@ -206,16 +275,23 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { session, player } = get();
     if (!session) return;
 
-    const ps = session.players[0];
-    const newLifetime = player.lifetimeScore + ps.sessionScore;
-    const updatedBadges = checkBadges(ps, player.badges, newLifetime);
+    const newLifetime = player.lifetimeScore + session.sessionScore;
+
+    // Deduplicate visited parks
+    const allVisited = [...new Set([...player.visitedParks, ...session.parkIds])];
+
+    // Check badges (run twice so completionist can see freshly earned category badges)
+    let updatedBadges = checkBadges(session, player.badges, newLifetime, allVisited);
+    updatedBadges = checkBadges(session, updatedBadges, newLifetime, allVisited);
+
     const updatedThemes = checkThemeUnlocks(newLifetime, player.unlockedThemes);
 
-    const updatedPlayer = {
+    const updatedPlayer: Player = {
       ...player,
       lifetimeScore: newLifetime,
       badges: updatedBadges,
       unlockedThemes: updatedThemes,
+      visitedParks: allVisited,
     };
 
     set({
@@ -225,120 +301,122 @@ export const useGameStore = create<GameState>((set, get) => ({
     get().saveToStorage();
   },
 
-  completeTask: (taskId, isBig, _playerId) => {
-    const state = get();
-    const { session, player, settings } = state;
+  completeTask: (taskId, isChallenge) => {
+    const { session, settings } = get();
     if (!session) return;
 
-    const ps = { ...session.players[0] };
-
     let task: Task | undefined;
-    let newBigBoard = [...session.bigBoard];
-    let newHand = [...ps.hand];
+    let newHand = [...session.hand];
+    let newChallengeTasks = [...session.challengeTasks];
 
-    if (isBig) {
-      task = session.bigBoard.find(t => t.id === taskId);
+    if (isChallenge) {
+      task = session.challengeTasks.find(t => t.id === taskId);
       if (!task) return;
       const { big } = buildTaskPools(settings);
-      const unusedBig = big.filter(t => !newBigBoard.find(b => b.id === t.id) && t.id !== taskId);
-      const replacement = unusedBig[Math.floor(Math.random() * unusedBig.length)];
-      newBigBoard = newBigBoard.map(t => (t.id === taskId ? replacement : t)).filter(Boolean);
+      const replacement = pickReplacement(big, newChallengeTasks);
+      newChallengeTasks = replaceInArray(newChallengeTasks, taskId, replacement);
     } else {
-      task = ps.hand.find(t => t.id === taskId);
+      task = session.hand.find(t => t.id === taskId);
       if (!task) return;
       const { small } = buildTaskPools(settings);
-      const unusedSmall = small.filter(t => !newHand.find(h => h.id === t.id) && t.id !== taskId);
-      const replacement = unusedSmall[Math.floor(Math.random() * unusedSmall.length)];
-      newHand = newHand.map(t => (t.id === taskId ? replacement : t)).filter(Boolean);
+      const replacement = pickReplacement(small, newHand);
+      newHand = replaceInArray(newHand, taskId, replacement);
     }
 
-    const newStreak = ps.currentStreak + 1;
+    const newStreak = session.currentStreak + 1;
     let streakBonus = 0;
-    if (newStreak > 0 && newStreak % 3 === 0) {
-      streakBonus = 5;
+    if (newStreak > 0 && newStreak % 5 === 0) {
+      streakBonus = 10;
     }
 
-    const newScore = ps.sessionScore + task.points + streakBonus;
-    const newDiscardsRemaining = getDiscardsAllowed(newScore);
+    const newScore = session.sessionScore + task.points + streakBonus;
+    const newTotalCompletions = session.totalCompletions + 1;
 
-    const updatedPs: PlayerSession = {
-      ...ps,
+    let newDiscards = session.discardsRemaining;
+    if (newTotalCompletions % 5 === 0 && newDiscards < 2) {
+      newDiscards++;
+    }
+
+    const updatedSession: Session = {
+      ...session,
       sessionScore: newScore,
       currentStreak: newStreak,
-      discardsRemaining: newDiscardsRemaining,
+      discardsRemaining: newDiscards,
+      totalCompletions: newTotalCompletions,
       hand: newHand,
-      completedTasks: [...ps.completedTasks, task],
+      challengeTasks: newChallengeTasks,
+      completedTasks: [...session.completedTasks, task],
     };
 
-    set({
-      session: { ...session, players: [updatedPs], bigBoard: newBigBoard },
-      activePlayerSession: updatedPs,
-    });
+    set({ session: updatedSession });
     get().saveToStorage();
   },
 
-  discardTask: (taskId, _playerId) => {
-    const state = get();
-    const { session, settings } = state;
+  discardTask: (taskId) => {
+    const { session, settings } = get();
     if (!session) return;
+    if (session.discardsRemaining <= 0) return;
 
-    const ps = { ...session.players[0] };
-    if (ps.discardsRemaining <= 0) return;
-
-    const task = ps.hand.find(t => t.id === taskId);
+    const task = session.hand.find(t => t.id === taskId);
     if (!task) return;
 
     const { small } = buildTaskPools(settings);
-    const newHand = [...ps.hand];
-    const unusedSmall = small.filter(t => !newHand.find(h => h.id === t.id) && t.id !== taskId);
-    const replacement = unusedSmall[Math.floor(Math.random() * unusedSmall.length)];
-    const updatedHand = newHand.map(t => (t.id === taskId ? replacement : t)).filter(Boolean);
+    const replacement = pickReplacement(small, session.hand);
+    const newHand = replaceInArray(session.hand, taskId, replacement);
 
-    const updatedPs: PlayerSession = {
-      ...ps,
+    const updatedSession: Session = {
+      ...session,
       currentStreak: 0,
-      discardsRemaining: ps.discardsRemaining - 1,
-      hand: updatedHand,
+      discardsRemaining: session.discardsRemaining - 1,
+      hand: newHand,
     };
 
-    set({
-      session: { ...session, players: [updatedPs] },
-      activePlayerSession: updatedPs,
-    });
+    set({ session: updatedSession });
     get().saveToStorage();
   },
 
-  swapBigTask: (taskId) => {
-    const state = get();
-    const { session, settings } = state;
+  swapChallengeTask: (taskId) => {
+    const { session, settings } = get();
     if (!session) return;
-
-    const ps = { ...session.players[0] };
-    if (ps.sessionScore < 25) return;
+    if (session.sessionScore < 25) return;
 
     const { big } = buildTaskPools(settings);
-    const newBigBoard = [...session.bigBoard];
-    const unusedBig = big.filter(t => !newBigBoard.find(b => b.id === t.id) && t.id !== taskId);
-    const replacement = unusedBig[Math.floor(Math.random() * unusedBig.length)];
-    const updatedBoard = newBigBoard.map(t => (t.id === taskId ? replacement : t)).filter(Boolean);
+    const replacement = pickReplacement(big, session.challengeTasks);
+    const newChallengeTasks = replaceInArray(session.challengeTasks, taskId, replacement);
 
-    const newScore = Math.max(0, ps.sessionScore - 25);
-    const updatedPs: PlayerSession = { ...ps, sessionScore: newScore };
+    const updatedSession: Session = {
+      ...session,
+      sessionScore: session.sessionScore - 25,
+      challengeTasks: newChallengeTasks,
+    };
 
-    set({
-      session: { ...session, players: [updatedPs], bigBoard: updatedBoard },
-      activePlayerSession: updatedPs,
-    });
+    set({ session: updatedSession });
     get().saveToStorage();
   },
 
   answerTrivia: (taskId, correct) => {
     if (correct) {
-      // Correct answer = complete the task (awards points, keeps streak)
       get().completeTask(taskId, false);
     } else {
-      // Wrong answer = replace the card, no points, reset streak
-      get().discardTask(taskId);
+      // Wrong trivia: replace card and reset streak, but don't use a discard
+      const { session, settings } = get();
+      if (!session) return;
+
+      const task = session.hand.find(t => t.id === taskId);
+      if (!task) return;
+
+      const { small } = buildTaskPools(settings);
+      const replacement = pickReplacement(small, session.hand);
+      const newHand = replaceInArray(session.hand, taskId, replacement);
+
+      const updatedSession: Session = {
+        ...session,
+        currentStreak: 0,
+        hand: newHand,
+      };
+
+      set({ session: updatedSession });
+      get().saveToStorage();
     }
   },
 
@@ -351,7 +429,6 @@ export const useGameStore = create<GameState>((set, get) => ({
           settings: { ...DEFAULT_SETTINGS, ...saved.settings },
           player: { ...DEFAULT_PLAYER, ...saved.player },
           session: saved.session ?? null,
-          activePlayerSession: saved.session?.players?.[0] ?? null,
           isLoading: false,
         });
       } else {
@@ -367,40 +444,3 @@ export const useGameStore = create<GameState>((set, get) => ({
     await AsyncStorage.setItem('parkquest_state', JSON.stringify({ settings, player, session }));
   },
 }));
-
-// ─── Badge / Unlock Helpers ───────────────────────────────────────────────────
-
-function checkBadges(ps: PlayerSession, badges: Badge[], lifetimeScore: number): Badge[] {
-  const completed = ps.completedTasks;
-  return badges.map(b => {
-    if (b.earned) return b;
-    let earned = false;
-    switch (b.id) {
-      case 'eagle-eye':
-        earned = completed.filter(t => t.category === 'observation').length >= 10; break;
-      case 'on-fire':
-        earned = ps.currentStreak >= 10; break;
-      case 'centurion':
-        earned = lifetimeScore >= 100; break;
-      case 'legend':
-        earned = lifetimeScore >= 1000; break;
-      case 'foodie':
-        earned = completed.filter(t => t.category === 'food').length >= 5; break;
-      case 'explorer':
-        earned = completed.filter(t => t.category === 'exploration').length >= 5; break;
-      case 'shutterbug':
-        earned = completed.filter(t => t.category === 'photo').length >= 5; break;
-      case 'trivia-master':
-        earned = completed.filter(t => t.category === 'trivia').length >= 5; break;
-    }
-    return earned ? { ...b, earned: true, earnedAt: Date.now() } : b;
-  });
-}
-
-function checkThemeUnlocks(lifetimeScore: number, current: string[]): string[] {
-  const unlocked = [...current];
-  if (lifetimeScore >= 250 && !unlocked.includes('fireworks')) unlocked.push('fireworks');
-  if (lifetimeScore >= 500 && !unlocked.includes('retro')) unlocked.push('retro');
-  if (lifetimeScore >= 1000 && !unlocked.includes('gold-foil')) unlocked.push('gold-foil');
-  return unlocked;
-}

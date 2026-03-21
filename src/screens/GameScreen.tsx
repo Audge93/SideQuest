@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ImageBackground,
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
@@ -19,23 +18,21 @@ import DiscardPips from '../components/DiscardPips';
 import { PARKS } from '../data/parks';
 import { COLORS, SHADOWS, RADII } from '../theme/balatro';
 
-const GAME_BG = require('../../assets/HomeScreenBackgroundImage.png');
-
 export default function GameScreen() {
   const navigation = useNavigation<any>();
   const {
     session,
-    activePlayerSession,
     settings,
     completeTask,
     discardTask,
-    swapBigTask,
+    swapChallengeTask,
     answerTrivia,
     endSession,
     startSession,
   } = useGameStore();
 
-  const park = PARKS.find(p => p.id === settings.parkId);
+  const parkId = settings.parkIds?.[0];
+  const park = PARKS.find(p => p.id === parkId);
 
   useEffect(() => {
     if (!session?.active) {
@@ -43,9 +40,7 @@ export default function GameScreen() {
     }
   }, []);
 
-  const ps = activePlayerSession ?? session?.players?.[0];
-
-  if (!session || !ps) {
+  if (!session) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.loadingText}>Loading game...</Text>
@@ -71,70 +66,65 @@ export default function GameScreen() {
     );
   };
 
-  const maxDiscards = getMaxDiscards(ps.sessionScore);
-
   return (
-    <ImageBackground source={GAME_BG} style={styles.bg} resizeMode="cover">
-      <View style={styles.overlay} />
-      <StatusBar barStyle="light-content" />
-      <SafeAreaView style={styles.safe}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-        >
-          {/* Top Bar */}
-          <View style={styles.topBar}>
-            <StreakFlame streak={ps.currentStreak} />
-            <Text style={styles.parkName}>{park?.shortName ?? '?'}</Text>
-            <View style={styles.scoreBubble}>
-              <Text style={styles.scoreValue}>{ps.sessionScore}</Text>
-              <Text style={styles.scorePts}>pts</Text>
-            </View>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="dark-content" />
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        {/* Top Bar */}
+        <View style={styles.topBar}>
+          <StreakFlame streak={session.currentStreak} />
+          <Text style={styles.parkName}>{park?.shortName ?? '?'}</Text>
+          <View style={styles.scoreBubble}>
+            <Text style={styles.scoreValue}>{session.sessionScore}</Text>
+            <Text style={styles.scorePts}>pts</Text>
           </View>
+        </View>
 
-          {/* Big Board */}
-          <View style={styles.bigBoardWrapper}>
-            <BigBoard
-              tasks={session.bigBoard}
-              sessionScore={ps.sessionScore}
-              onComplete={id => completeTask(id, true)}
-              onSwap={id => swapBigTask(id)}
-            />
-          </View>
-
-          {/* Divider */}
-          <View style={styles.divider} />
-
-          {/* Hand Section Label */}
-          <View style={styles.handHeader}>
-            <Text style={styles.handLabel}>YOUR HAND</Text>
-            <DiscardPips remaining={ps.discardsRemaining} max={maxDiscards} />
-          </View>
-
-          {/* Card Carousel */}
-          <CardCarousel
-            cards={ps.hand}
-            onComplete={id => completeTask(id, false)}
-            onDiscard={id => discardTask(id)}
-            onTriviaAnswer={(id, correct) => answerTrivia(id, correct)}
-            discardsRemaining={ps.discardsRemaining}
+        {/* Big Board */}
+        <View style={styles.bigBoardWrapper}>
+          <BigBoard
+            tasks={session.challengeTasks}
+            sessionScore={session.sessionScore}
+            onComplete={id => completeTask(id, true)}
+            onSwap={id => swapChallengeTask(id)}
           />
+        </View>
 
-          {/* Session Stats Bar */}
-          <View style={styles.statsBar}>
-            <StatItem label="Completed" value={ps.completedTasks.length} />
-            <StatItem label="Streak" value={ps.currentStreak} />
-            <StatItem label="Session" value={`${ps.sessionScore} pts`} />
-          </View>
+        {/* Divider */}
+        <View style={styles.divider} />
 
-          {/* End Session */}
-          <TouchableOpacity style={styles.endBtn} onPress={handleEndSession}>
-            <Text style={styles.endBtnText}>End Session</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </SafeAreaView>
-    </ImageBackground>
+        {/* Hand Section Label */}
+        <View style={styles.handHeader}>
+          <Text style={styles.handLabel}>YOUR HAND</Text>
+          <DiscardPips remaining={session.discardsRemaining} max={2} />
+        </View>
+
+        {/* Card Carousel */}
+        <CardCarousel
+          cards={session.hand}
+          onComplete={id => completeTask(id, false)}
+          onDiscard={id => discardTask(id)}
+          onTriviaAnswer={(id, correct) => answerTrivia(id, correct)}
+          discardsRemaining={session.discardsRemaining}
+        />
+
+        {/* Session Stats Bar */}
+        <View style={styles.statsBar}>
+          <StatItem label="Completed" value={session.completedTasks.length} />
+          <StatItem label="Streak" value={session.currentStreak} />
+          <StatItem label="Session" value={`${session.sessionScore} pts`} />
+        </View>
+
+        {/* End Session */}
+        <TouchableOpacity style={styles.endBtn} onPress={handleEndSession}>
+          <Text style={styles.endBtnText}>End Session</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -147,23 +137,11 @@ function StatItem({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function getMaxDiscards(score: number): number {
-  if (score <= 50) return 5;
-  if (score <= 150) return 4;
-  if (score <= 300) return 3;
-  if (score <= 500) return 2;
-  return 1;
-}
-
 const styles = StyleSheet.create({
-  bg: {
+  safe: {
     flex: 1,
+    backgroundColor: COLORS.bg,
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10, 30, 20, 0.75)',
-  },
-  safe: { flex: 1 },
   scroll: {
     paddingBottom: 32,
   },
@@ -171,10 +149,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.felt,
+    backgroundColor: COLORS.bg,
   },
   loadingText: {
-    color: COLORS.white,
+    color: COLORS.textBody,
     fontSize: 16,
   },
   topBar: {
@@ -184,22 +162,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 16,
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+    ...SHADOWS.chip,
   },
   parkName: {
-    color: COLORS.gold,
+    color: COLORS.textDark,
     fontWeight: '900',
     fontSize: 22,
     letterSpacing: 1,
   },
   scoreBubble: {
     alignItems: 'center',
-    backgroundColor: COLORS.red,
+    backgroundColor: COLORS.green,
     borderRadius: RADII.chip,
     paddingHorizontal: 14,
     paddingVertical: 8,
     minWidth: 70,
     borderBottomWidth: 3,
-    borderBottomColor: COLORS.redDark,
+    borderBottomColor: COLORS.greenDark,
     ...SHADOWS.chip,
   },
   scoreValue: {
@@ -209,7 +191,7 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   scorePts: {
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.8)',
     fontSize: 10,
     fontWeight: '600',
   },
@@ -230,7 +212,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   handLabel: {
-    color: 'rgba(255,255,255,0.45)',
+    color: COLORS.textMuted,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 2,
@@ -245,17 +227,18 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderWidth: 1,
     borderColor: COLORS.borderPanel,
+    ...SHADOWS.card,
   },
   statItem: {
     alignItems: 'center',
   },
   statValue: {
-    color: COLORS.gold,
+    color: COLORS.green,
     fontWeight: '800',
     fontSize: 18,
   },
   statLabel: {
-    color: 'rgba(255,255,255,0.4)',
+    color: COLORS.textMuted,
     fontSize: 11,
     marginTop: 2,
   },
@@ -265,13 +248,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: RADII.button,
     alignItems: 'center',
-    backgroundColor: COLORS.red,
-    borderBottomWidth: 4,
-    borderBottomColor: COLORS.redDark,
-    ...SHADOWS.button,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1.5,
+    borderColor: COLORS.red,
   },
   endBtnText: {
-    color: COLORS.white,
+    color: COLORS.red,
     fontWeight: '700',
     fontSize: 15,
   },
