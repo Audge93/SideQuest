@@ -24,6 +24,8 @@ const CARD_WIDTH = Math.round(SCREEN_W * 0.805);
 const CARD_GAP = Math.round(12 * sw);
 const SNAP_INTERVAL = CARD_WIDTH + CARD_GAP;
 const H_PADDING = Math.round((SCREEN_W - CARD_WIDTH) / 2);
+const ACTIVE_SCALE = 1.0;
+const INACTIVE_SCALE = 0.92;
 
 const CHOICE_LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -329,6 +331,7 @@ export default function CardCarousel({
   const [activeIndex, setActiveIndex] = useState(0);
   const [triviaTask, setTriviaTask] = useState<Task | null>(null);
   const flatListRef = useRef<FlatList>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
 
   // Track active card on every scroll frame (auto-select centered card)
   const handleScroll = useCallback(
@@ -343,20 +346,36 @@ export default function CardCarousel({
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <Animated.FlatList
         ref={flatListRef}
         data={cards}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item: Task) => item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
         snapToInterval={SNAP_INTERVAL}
         decelerationRate="fast"
         contentContainerStyle={{ paddingHorizontal: H_PADDING }}
-        onScroll={handleScroll}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          {
+            useNativeDriver: true,
+            listener: handleScroll,
+          }
+        )}
         scrollEventThrottle={16}
-        renderItem={({ item, index }) => {
+        renderItem={({ item, index }: { item: Task; index: number }) => {
+          const inputRange = [
+            (index - 1) * SNAP_INTERVAL,
+            index * SNAP_INTERVAL,
+            (index + 1) * SNAP_INTERVAL,
+          ];
+          const scale = scrollX.interpolate({
+            inputRange,
+            outputRange: [INACTIVE_SCALE, ACTIVE_SCALE, INACTIVE_SCALE],
+            extrapolate: 'clamp',
+          });
           return (
-            <View style={{ width: CARD_WIDTH, marginHorizontal: CARD_GAP / 2 }}>
+            <Animated.View style={{ width: CARD_WIDTH, marginHorizontal: CARD_GAP / 2, transform: [{ scale }] }}>
               <TaskCard
                 task={item}
                 canDiscard={discardsRemaining > 0}
@@ -364,7 +383,7 @@ export default function CardCarousel({
                 onDiscard={() => onDiscard(item.id)}
                 onTriviaPress={() => setTriviaTask(item)}
               />
-            </View>
+            </Animated.View>
           );
         }}
       />

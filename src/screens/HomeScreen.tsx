@@ -10,9 +10,12 @@ import {
   ImageBackground,
   Alert,
   Switch,
+  Modal,
+  TextInput,
   LayoutAnimation,
   Platform,
   UIManager,
+  Dimensions,
 } from 'react-native';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -21,7 +24,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 import Slider from '@react-native-community/slider';
 import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
-import { CategoryToggles } from '../types';
+// CategoryToggles type used indirectly via updateCategoryToggle
 import { PARKS } from '../data/parks';
 import { COLORS, SHADOWS, RADII } from '../theme/balatro';
 
@@ -42,20 +45,7 @@ const RESORTS: Resort[] = [
   { id: 'custom', label: 'Any Park', icon: '🎪', parkIds: ['custom'] },
 ];
 
-// ─── Category toggle info ───────────────────────────────────────────────────
-
-const CATEGORY_INFO: { key: keyof CategoryToggles; label: string; icon: string }[] = [
-  { key: 'observation', label: 'Find', icon: '🔍' },
-  { key: 'photo', label: 'Photo', icon: '📸' },
-  { key: 'trivia', label: 'Trivia', icon: '🧠' },
-  { key: 'action', label: 'Act', icon: '🎬' },
-  { key: 'ride', label: 'Rides', icon: '🎢' },
-  { key: 'food', label: 'Treat', icon: '🍦' },
-  { key: 'pin', label: 'Pins', icon: '📌' },
-  { key: 'character', label: 'Meet', icon: '🎭' },
-  { key: 'exploration', label: 'Explore', icon: '🗺️' },
-  { key: 'scavenger', label: 'Seek', icon: '🎯' },
-];
+// ─── Only these categories are toggleable ───────────────────────────────────
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -65,9 +55,9 @@ export default function HomeScreen() {
     settings,
     updateSettings,
     updateCategoryToggle,
+    updatePlayerName,
     session,
     startSession,
-    endSession,
     player,
   } = useGameStore();
 
@@ -75,7 +65,8 @@ export default function HomeScreen() {
   const selectedParkId = settings.parkIds?.[0];
   const currentResort = RESORTS.find(r => r.parkIds.includes(selectedParkId || ''));
   const [selectedResortId, setSelectedResortId] = useState<string | null>(currentResort?.id ?? null);
-  const [showOptions, setShowOptions] = useState(false);
+  const [showNewGameModal, setShowNewGameModal] = useState(false);
+  const [nameInput, setNameInput] = useState(player.name);
 
   // When resort changes, auto-select if only one park
   useEffect(() => {
@@ -129,6 +120,18 @@ export default function HomeScreen() {
       Alert.alert('Select a Park', 'Please pick a resort and park before starting.');
       return;
     }
+    setNameInput(player.name);
+    setShowNewGameModal(true);
+  };
+
+  const handleConfirmStart = () => {
+    const trimmedName = nameInput.trim();
+    if (!trimmedName) {
+      Alert.alert('Name Required', 'Please enter a player or team name.');
+      return;
+    }
+    updatePlayerName(trimmedName);
+    setShowNewGameModal(false);
     startSession();
     navigation.navigate('Game');
   };
@@ -143,7 +146,7 @@ export default function HomeScreen() {
     <ImageBackground
       source={require('../../assets/GameBackgroundImage.png')}
       style={styles.backgroundImage}
-      resizeMode="cover"
+      resizeMode="stretch"
     >
       <SafeAreaView style={styles.safe}>
         <StatusBar barStyle="dark-content" />
@@ -164,7 +167,11 @@ export default function HomeScreen() {
 
           {/* Player Welcome */}
           <View style={styles.welcomeCard}>
-            <Text style={styles.welcomeText}>Welcome back, {player.name}!</Text>
+            <Text style={styles.welcomeText}>
+              {player.name && player.name !== 'Player 1'
+                ? `Welcome back, ${player.name}!`
+                : 'Welcome!'}
+            </Text>
             <View style={styles.lifetimeRow}>
               <Text style={styles.lifetimeLabel}>Lifetime Score</Text>
               <Text style={styles.lifetimeScore}>{player.lifetimeScore.toLocaleString()} pts</Text>
@@ -261,82 +268,6 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* ── Game Options (collapsible) ── */}
-          {canStart && (
-            <View style={styles.section}>
-              <TouchableOpacity
-                style={styles.optionsToggle}
-                onPress={() => setShowOptions(v => !v)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.sectionTitle}>GAME OPTIONS</Text>
-                <Text style={styles.optionsArrow}>{showOptions ? '▲' : '▼'}</Text>
-              </TouchableOpacity>
-
-              {showOptions && (
-                <View style={styles.optionsCard}>
-                  {/* Category Toggles */}
-                  <Text style={styles.optionsSubheader}>Task Categories</Text>
-                  {CATEGORY_INFO.map(({ key, label, icon }) => (
-                    <View key={key} style={styles.toggleRow}>
-                      <Text style={styles.toggleLabel}>{icon}  {label}</Text>
-                      <Switch
-                        value={settings.categoryToggles[key]}
-                        onValueChange={v => updateCategoryToggle(key, v)}
-                        trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
-                        thumbColor="#fff"
-                        style={styles.toggleSwitch}
-                      />
-                    </View>
-                  ))}
-
-                  {/* Height Filter */}
-                  <View style={styles.heightDivider} />
-                  <Text style={styles.optionsSubheader}>Height Filter</Text>
-                  <View style={styles.toggleRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.toggleLabel}>🎢  Filter by height</Text>
-                      <Text style={styles.toggleDesc}>Hides rides above your shortest rider</Text>
-                    </View>
-                    <Switch
-                      value={settings.heightFilterEnabled}
-                      onValueChange={v => updateSettings({ heightFilterEnabled: v })}
-                      trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
-                      thumbColor="#fff"
-                      style={styles.toggleSwitch}
-                    />
-                  </View>
-
-                  {settings.heightFilterEnabled && (
-                    <View style={styles.sliderArea}>
-                      <View style={styles.heightDisplay}>
-                        <Text style={styles.heightValue}>{settings.minHeightInches}"</Text>
-                        <Text style={styles.heightFeet}>
-                          ({Math.floor(settings.minHeightInches / 12)}'{settings.minHeightInches % 12}")
-                        </Text>
-                      </View>
-                      <Slider
-                        style={styles.slider}
-                        minimumValue={32}
-                        maximumValue={54}
-                        step={1}
-                        value={settings.minHeightInches}
-                        onValueChange={v => updateSettings({ minHeightInches: v })}
-                        minimumTrackTintColor={COLORS.green}
-                        maximumTrackTintColor={COLORS.borderMedium}
-                        thumbTintColor={COLORS.green}
-                      />
-                      <View style={styles.sliderLabels}>
-                        <Text style={styles.sliderLabel}>32"</Text>
-                        <Text style={styles.sliderLabel}>54"</Text>
-                      </View>
-                    </View>
-                  )}
-                </View>
-              )}
-            </View>
-          )}
-
           {/* ── Action Buttons ── */}
           <View style={styles.actions}>
             {session?.active && (
@@ -353,35 +284,124 @@ export default function HomeScreen() {
                 {session?.active ? 'New Game' : 'Start Game'}
               </Text>
             </TouchableOpacity>
-            {session?.active && (
-              <TouchableOpacity
-                style={styles.endSessionBtn}
-                onPress={() =>
-                  Alert.alert(
-                    'End Session?',
-                    'Your session score will be added to your lifetime total.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'End Session', style: 'destructive', onPress: () => endSession() },
-                    ]
-                  )
-                }
-              >
-                <Text style={styles.endSessionBtnText}>End Session</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* ── New Game Setup Modal ── */}
+      <Modal
+        visible={showNewGameModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowNewGameModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>New Game</Text>
+            <Text style={styles.modalSubtitle}>
+              {selectedPark?.name ?? 'Selected Park'}
+            </Text>
+
+            {/* Player / Team Name */}
+            <View style={styles.modalDivider} />
+            <Text style={styles.modalFieldLabel}>PLAYER / TEAM NAME</Text>
+            <TextInput
+              style={styles.modalNameInput}
+              value={nameInput}
+              onChangeText={setNameInput}
+              placeholder="Enter your name..."
+              placeholderTextColor={COLORS.textLight}
+              maxLength={24}
+              autoCapitalize="words"
+              selectionColor={COLORS.green}
+            />
+
+            {/* Pin Trading Toggle */}
+            <View style={styles.modalDivider} />
+            <View style={styles.toggleRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.toggleLabel}>📌  Pin Trading Tasks</Text>
+                <Text style={styles.toggleDesc}>Include pin trading challenges</Text>
+              </View>
+              <Switch
+                value={settings.categoryToggles.pin}
+                onValueChange={v => updateCategoryToggle('pin', v)}
+                trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
+                thumbColor="#fff"
+                style={styles.toggleSwitch}
+              />
+            </View>
+
+            {/* Height Filter */}
+            <View style={styles.modalDivider} />
+            <View style={styles.toggleRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.toggleLabel}>🎢  Filter by height</Text>
+                <Text style={styles.toggleDesc}>Hides rides above your shortest rider</Text>
+              </View>
+              <Switch
+                value={settings.heightFilterEnabled}
+                onValueChange={v => updateSettings({ heightFilterEnabled: v })}
+                trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
+                thumbColor="#fff"
+                style={styles.toggleSwitch}
+              />
+            </View>
+
+            {settings.heightFilterEnabled && (
+              <View style={styles.sliderArea}>
+                <View style={styles.heightDisplay}>
+                  <Text style={styles.heightValue}>{settings.minHeightInches}"</Text>
+                  <Text style={styles.heightFeet}>
+                    ({Math.floor(settings.minHeightInches / 12)}'{settings.minHeightInches % 12}")
+                  </Text>
+                </View>
+                <Slider
+                  style={styles.slider}
+                  minimumValue={32}
+                  maximumValue={54}
+                  step={1}
+                  value={settings.minHeightInches}
+                  onValueChange={v => updateSettings({ minHeightInches: v })}
+                  minimumTrackTintColor={COLORS.green}
+                  maximumTrackTintColor={COLORS.borderMedium}
+                  thumbTintColor={COLORS.green}
+                />
+                <View style={styles.sliderLabels}>
+                  <Text style={styles.sliderLabel}>32"</Text>
+                  <Text style={styles.sliderLabel}>54"</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Action Buttons */}
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalStartBtn} onPress={handleConfirmStart}>
+                <Text style={styles.modalStartBtnText}>Start Game</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setShowNewGameModal(false)}
+              >
+                <Text style={styles.modalCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ImageBackground>
   );
 }
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
+    width: SCREEN_W,
+    height: SCREEN_H,
   },
   safe: {
     flex: 1,
@@ -564,33 +584,89 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
 
-  // Options toggle
-  optionsToggle: {
-    flexDirection: 'row',
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    padding: 24,
   },
-  optionsArrow: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    marginBottom: 10,
-  },
-
-  // Options card
-  optionsCard: {
-    backgroundColor: 'rgba(255,255,255,0.90)',
-    borderRadius: RADII.panel,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: COLORS.borderPanel,
+  modalCard: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
     ...SHADOWS.card,
   },
-  optionsSubheader: {
+  modalTitle: {
     color: COLORS.textDark,
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: 24,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    color: COLORS.textMuted,
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  modalFieldLabel: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 2,
+    alignSelf: 'flex-start',
     marginBottom: 8,
-    marginTop: 2,
+  },
+  modalNameInput: {
+    width: '100%',
+    backgroundColor: COLORS.bg,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.textDark,
+    borderWidth: 1.5,
+    borderColor: COLORS.borderMedium,
+  },
+  modalDivider: {
+    height: 1,
+    backgroundColor: COLORS.borderLight,
+    marginVertical: 12,
+    width: '100%',
+  },
+  modalActions: {
+    marginTop: 20,
+    gap: 10,
+  },
+  modalStartBtn: {
+    backgroundColor: COLORS.green,
+    borderRadius: RADII.button,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderBottomWidth: 4,
+    borderBottomColor: COLORS.greenDark,
+    ...SHADOWS.button,
+  },
+  modalStartBtnText: {
+    color: COLORS.white,
+    fontWeight: '900',
+    fontSize: 17,
+    letterSpacing: 0.5,
+  },
+  modalCancelBtn: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalCancelBtnText: {
+    color: COLORS.textMuted,
+    fontWeight: '600',
+    fontSize: 15,
   },
   toggleRow: {
     flexDirection: 'row',
@@ -691,18 +767,5 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: '700',
     fontSize: 16,
-  },
-  endSessionBtn: {
-    paddingVertical: 14,
-    borderRadius: RADII.button,
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderWidth: 1.5,
-    borderColor: COLORS.red,
-  },
-  endSessionBtnText: {
-    color: COLORS.red,
-    fontWeight: '700',
-    fontSize: 15,
   },
 });

@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Modal,
 } from 'react-native';
 import { useGameStore } from '../store/gameStore';
 import { Badge, BadgeTier } from '../types';
@@ -52,9 +53,10 @@ function getCategoryForBadge(badgeId: string): string | null {
 }
 
 export default function ProfileScreen() {
-  const { player, session, updatePlayerName } = useGameStore();
+  const { player, session, updatePlayerName, resetAllData } = useGameStore();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(player.name);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const handleSaveName = () => {
     const trimmed = nameInput.trim();
@@ -167,7 +169,52 @@ export default function ProfileScreen() {
             </View>
           );
         })}
+        {/* Reset All Data */}
+        <TouchableOpacity
+          style={styles.resetBtn}
+          onPress={() => setShowResetConfirm(true)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.resetBtnText}>Reset All Data</Text>
+        </TouchableOpacity>
       </ScrollView>
+
+      {/* Reset Confirmation Modal */}
+      <Modal
+        visible={showResetConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowResetConfirm(false)}
+      >
+        <View style={styles.resetOverlay}>
+          <View style={styles.resetCard}>
+            <Text style={styles.resetCardIcon}>⚠️</Text>
+            <Text style={styles.resetCardTitle}>Reset All Data?</Text>
+            <Text style={styles.resetCardMessage}>
+              This will permanently erase all badges, lifetime score, and profile progress. This cannot be undone.
+            </Text>
+            <View style={styles.resetCardActions}>
+              <TouchableOpacity
+                style={styles.resetConfirmBtn}
+                onPress={() => {
+                  resetAllData();
+                  setShowResetConfirm(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.resetConfirmBtnText}>Reset Everything</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.resetCancelBtn}
+                onPress={() => setShowResetConfirm(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.resetCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -441,5 +488,84 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  resetBtn: {
+    marginTop: 32,
+    marginBottom: 8,
+    paddingVertical: 14,
+    borderRadius: RADII.button,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: COLORS.red,
+    backgroundColor: COLORS.surface,
+  },
+  resetBtnText: {
+    color: COLORS.red,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  resetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 28,
+  },
+  resetCard: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 28,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  resetCardIcon: {
+    fontSize: 44,
+    marginBottom: 12,
+  },
+  resetCardTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: COLORS.textDark,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  resetCardMessage: {
+    fontSize: 15,
+    color: COLORS.textBody,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  resetCardActions: {
+    width: '100%',
+    gap: 10,
+  },
+  resetConfirmBtn: {
+    backgroundColor: COLORS.red,
+    borderRadius: RADII.button,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderBottomWidth: 4,
+    borderBottomColor: '#C0392B',
+  },
+  resetConfirmBtnText: {
+    color: COLORS.white,
+    fontWeight: '900',
+    fontSize: 16,
+  },
+  resetCancelBtn: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  resetCancelBtnText: {
+    color: COLORS.textMuted,
+    fontWeight: '600',
+    fontSize: 15,
   },
 });

@@ -122,6 +122,7 @@ interface GameState {
   swapChallengeTask: (taskId: string) => void;
   answerTrivia: (taskId: string, correct: boolean) => void;
   clearNewBadges: () => void;
+  resetAllData: () => void;
 
   loadFromStorage: () => Promise<void>;
   saveToStorage: () => Promise<void>;
@@ -550,6 +551,27 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   clearNewBadges: () => {
     set({ newlyEarnedBadges: [] });
+  },
+
+  resetAllData: async () => {
+    // Deep-clone badges so earned state is fully reset
+    const freshBadges = DEFAULT_BADGES.map(b => ({ ...b, earned: false, earnedAt: undefined }));
+    const freshPlayer = {
+      ...DEFAULT_PLAYER,
+      badges: freshBadges,
+      lifetimeScore: 0,
+      visitedParks: [] as string[],
+      categoryCompletions: {} as Record<string, number>,
+    };
+    // Clear storage first to prevent stale data on reload
+    await AsyncStorage.removeItem('parkquest_state');
+    set({
+      player: freshPlayer,
+      session: null,
+      newlyEarnedBadges: [],
+    });
+    // Save clean state
+    await get().saveToStorage();
   },
 
   loadFromStorage: async () => {

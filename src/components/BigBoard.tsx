@@ -44,13 +44,13 @@ function BigTaskBadge({ task, onPress }: BigTaskBadgeProps) {
   return (
     <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
       <Animated.View style={[styles.badge, { borderColor: color, transform: [{ scale: pulseAnim }] }]}>
+        <Text style={styles.badgeCategory} numberOfLines={1}>{task.displayCategory}</Text>
         <View style={[styles.badgeCircle, { backgroundColor: color }]}>
           <View style={styles.badgeIconInner}>
             <Text style={styles.badgeIcon}>{icon}</Text>
           </View>
         </View>
-        <Text style={styles.badgePoints}>{task.points}</Text>
-        <Text style={styles.badgePtsLabel}>pts</Text>
+        <Text style={styles.badgePoints}>{task.points} <Text style={styles.badgePtsLabel}>pts</Text></Text>
       </Animated.View>
     </TouchableOpacity>
   );
@@ -193,30 +193,38 @@ const styles = StyleSheet.create({
   badge: {
     alignItems: 'center',
     borderWidth: 2,
-    borderRadius: Math.round(44 * sw),
-    padding: Math.round(3 * sw),
-    width: Math.round(78 * sw),
+    borderRadius: Math.round(16 * sw),
+    padding: Math.round(6 * sw),
+    width: Math.round(90 * sw),
     backgroundColor: COLORS.white,
     ...SHADOWS.chip,
   },
   badgeCircle: {
     width: Math.round(48 * sw),
     height: Math.round(48 * sw),
-    borderRadius: Math.round(24 * sw),
+    borderRadius: Math.round(12 * sw),
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Math.round(1 * sh),
+    marginBottom: Math.round(3 * sh),
   },
   badgeIconInner: {
     width: Math.round(32 * sw),
     height: Math.round(32 * sw),
-    borderRadius: Math.round(16 * sw),
+    borderRadius: Math.round(8 * sw),
     backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   badgeIcon: {
     fontSize: Math.round(18 * sw),
+  },
+  badgeCategory: {
+    color: COLORS.textMuted,
+    fontSize: Math.round(8 * sw),
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: Math.round(3 * sh),
   },
   badgePoints: {
     color: COLORS.textDark,
