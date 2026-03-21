@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Task, Session, Settings, Player, Badge, CategoryToggles } from '../types';
+import { Task, Session, Settings, Player, Badge, BadgeTier, CategoryToggles } from '../types';
 import { SMALL_TASKS, BIG_TASKS, generateRideTasks } from '../data/tasks';
 import { TRIVIA_TASKS } from '../data/trivia';
 import { RIDES } from '../data/parks';
@@ -18,27 +18,56 @@ function shuffle<T>(arr: T[]): T[] {
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
+// Helper to generate tiered badges for a category
+function catBadges(
+  baseId: string, name: string, icon: string, category: string, displayCat: string,
+  tiers: [number, number, number, number],
+): Badge[] {
+  const tierNames: BadgeTier[] = ['bronze', 'silver', 'gold', 'platinum'];
+  return tierNames.map((tier, i) => ({
+    id: `${baseId}-${tier}`,
+    name: `${name} (${tier.charAt(0).toUpperCase() + tier.slice(1)})`,
+    description: `Complete ${tiers[i]} ${displayCat} tasks`,
+    icon,
+    tier,
+    earned: false,
+  }));
+}
+
 const DEFAULT_BADGES: Badge[] = [
-  // Category badges (10)
-  { id: 'sharp-eye', name: 'Sharp Eye', description: 'Complete 10 Find tasks', icon: '🔍', earned: false },
-  { id: 'shutterbug', name: 'Shutterbug', description: 'Complete 8 Photo tasks', icon: '📸', earned: false },
-  { id: 'brain-box', name: 'Brain Box', description: 'Complete 10 Trivia tasks', icon: '🧠', earned: false },
-  { id: 'scene-stealer', name: 'Scene Stealer', description: 'Complete 8 Act tasks', icon: '🎬', earned: false },
-  { id: 'thrill-seeker', name: 'Thrill Seeker', description: 'Complete 10 Ride tasks', icon: '🎢', earned: false },
-  { id: 'foodie', name: 'Foodie', description: 'Complete 5 Treat tasks', icon: '🍦', earned: false },
-  { id: 'pin-pro', name: 'Pin Pro', description: 'Complete 5 Pins tasks', icon: '📌', earned: false },
-  { id: 'star-struck', name: 'Star Struck', description: 'Complete 5 Meet tasks', icon: '🎭', earned: false },
-  { id: 'trailblazer', name: 'Trailblazer', description: 'Complete 8 Explore tasks', icon: '🗺️', earned: false },
-  { id: 'treasure-hunter', name: 'Treasure Hunter', description: 'Complete 8 Seek tasks', icon: '🎯', earned: false },
-  // Milestone badges (8)
-  { id: 'first-steps', name: 'First Steps', description: 'Complete your first task', icon: '🎉', earned: false },
-  { id: 'on-fire', name: 'On Fire', description: 'Reach a 10-task streak', icon: '🔥', earned: false },
-  { id: 'blazing', name: 'Blazing', description: 'Reach a 20-task streak', icon: '💙', earned: false },
-  { id: 'centurion', name: 'Centurion', description: 'Earn 100 lifetime points', icon: '🏅', earned: false },
-  { id: 'high-roller', name: 'High Roller', description: 'Earn 500 lifetime points', icon: '💎', earned: false },
-  { id: 'legend', name: 'Legend', description: 'Earn 1,000 lifetime points', icon: '⭐', earned: false },
-  { id: 'park-hopper', name: 'Park Hopper', description: 'Complete tasks at 2+ parks', icon: '🏰', earned: false },
-  { id: 'completionist', name: 'Completionist', description: 'Earn all category badges', icon: '🏆', earned: false },
+  // Category badges (10 categories x 4 tiers = 40)
+  ...catBadges('sharp-eye', 'Sharp Eye', '🔍', 'observation', 'Find', [5, 15, 30, 50]),
+  ...catBadges('shutterbug', 'Shutterbug', '📸', 'photo', 'Photo', [5, 12, 25, 40]),
+  ...catBadges('brain-box', 'Brain Box', '🧠', 'trivia', 'Trivia', [5, 15, 30, 50]),
+  ...catBadges('scene-stealer', 'Scene Stealer', '🎬', 'action', 'Act', [5, 12, 25, 40]),
+  ...catBadges('thrill-seeker', 'Thrill Seeker', '🎢', 'ride', 'Ride', [5, 15, 30, 50]),
+  ...catBadges('foodie', 'Foodie', '🍦', 'food', 'Treat', [3, 8, 15, 25]),
+  ...catBadges('pin-pro', 'Pin Pro', '📌', 'pin', 'Pins', [3, 8, 15, 25]),
+  ...catBadges('star-struck', 'Star Struck', '🎭', 'character', 'Meet', [3, 8, 15, 25]),
+  ...catBadges('trailblazer', 'Trailblazer', '🗺️', 'exploration', 'Explore', [5, 12, 25, 40]),
+  ...catBadges('treasure-hunter', 'Treasure Hunter', '🎯', 'scavenger', 'Seek', [5, 12, 25, 40]),
+  // Milestone badges (tiered)
+  { id: 'first-steps', name: 'First Steps', description: 'Complete your first task', icon: '🎉', tier: 'bronze', earned: false },
+  // Streak tiers
+  { id: 'streak-bronze', name: 'On Fire (Bronze)', description: 'Reach a 5-task streak', icon: '🔥', tier: 'bronze', earned: false },
+  { id: 'streak-silver', name: 'On Fire (Silver)', description: 'Reach a 10-task streak', icon: '🔥', tier: 'silver', earned: false },
+  { id: 'streak-gold', name: 'Blazing (Gold)', description: 'Reach a 20-task streak', icon: '🔥', tier: 'gold', earned: false },
+  { id: 'streak-platinum', name: 'Inferno (Platinum)', description: 'Reach a 30-task streak', icon: '💙', tier: 'platinum', earned: false },
+  // Lifetime score tiers
+  { id: 'score-bronze', name: 'Centurion (Bronze)', description: 'Earn 100 lifetime points', icon: '🏅', tier: 'bronze', earned: false },
+  { id: 'score-silver', name: 'High Roller (Silver)', description: 'Earn 500 lifetime points', icon: '💎', tier: 'silver', earned: false },
+  { id: 'score-gold', name: 'Legend (Gold)', description: 'Earn 1,000 lifetime points', icon: '⭐', tier: 'gold', earned: false },
+  { id: 'score-platinum', name: 'Mythic (Platinum)', description: 'Earn 5,000 lifetime points', icon: '👑', tier: 'platinum', earned: false },
+  // Park hopper tiers
+  { id: 'hopper-bronze', name: 'Park Hopper (Bronze)', description: 'Visit 2 parks', icon: '🏰', tier: 'bronze', earned: false },
+  { id: 'hopper-silver', name: 'Park Hopper (Silver)', description: 'Visit 4 parks', icon: '🏰', tier: 'silver', earned: false },
+  { id: 'hopper-gold', name: 'Park Hopper (Gold)', description: 'Visit 6 parks', icon: '🏰', tier: 'gold', earned: false },
+  { id: 'hopper-platinum', name: 'Park Hopper (Platinum)', description: 'Visit 10 parks', icon: '🏰', tier: 'platinum', earned: false },
+  // Completionist tiers
+  { id: 'completionist-bronze', name: 'Completionist (Bronze)', description: 'Earn all bronze category badges', icon: '🏆', tier: 'bronze', earned: false },
+  { id: 'completionist-silver', name: 'Completionist (Silver)', description: 'Earn all silver category badges', icon: '🏆', tier: 'silver', earned: false },
+  { id: 'completionist-gold', name: 'Completionist (Gold)', description: 'Earn all gold category badges', icon: '🏆', tier: 'gold', earned: false },
+  { id: 'completionist-platinum', name: 'Completionist (Platinum)', description: 'Earn all platinum category badges', icon: '🏆', tier: 'platinum', earned: false },
 ];
 
 const DEFAULT_SETTINGS: Settings = {
@@ -68,7 +97,6 @@ const DEFAULT_PLAYER: Player = {
   color: '#89B4F7',
   lifetimeScore: 0,
   badges: DEFAULT_BADGES,
-  unlockedThemes: [],
   visitedParks: [],
 };
 
@@ -144,6 +172,37 @@ function pickReplacement(pool: Task[], exclude: Task[]): Task | undefined {
 
 // ─── Badge / Unlock Helpers ───────────────────────────────────────────────────
 
+// Category badge tier thresholds (must match catBadges calls above)
+const CAT_THRESHOLDS: Record<string, [number, number, number, number]> = {
+  'sharp-eye': [5, 15, 30, 50],
+  'shutterbug': [5, 12, 25, 40],
+  'brain-box': [5, 15, 30, 50],
+  'scene-stealer': [5, 12, 25, 40],
+  'thrill-seeker': [5, 15, 30, 50],
+  'foodie': [3, 8, 15, 25],
+  'pin-pro': [3, 8, 15, 25],
+  'star-struck': [3, 8, 15, 25],
+  'trailblazer': [5, 12, 25, 40],
+  'treasure-hunter': [5, 12, 25, 40],
+};
+
+const CAT_TO_CATEGORY: Record<string, string> = {
+  'sharp-eye': 'observation',
+  'shutterbug': 'photo',
+  'brain-box': 'trivia',
+  'scene-stealer': 'action',
+  'thrill-seeker': 'ride',
+  'foodie': 'food',
+  'pin-pro': 'pin',
+  'star-struck': 'character',
+  'trailblazer': 'exploration',
+  'treasure-hunter': 'scavenger',
+};
+
+const TIER_INDEX: Record<BadgeTier, number> = { bronze: 0, silver: 1, gold: 2, platinum: 3 };
+
+const CAT_BASE_IDS = Object.keys(CAT_THRESHOLDS);
+
 function checkBadges(
   session: Session,
   badges: Badge[],
@@ -156,66 +215,54 @@ function checkBadges(
   return badges.map(b => {
     if (b.earned) return b;
     let earned = false;
+
+    // Check category tiered badges (e.g. "sharp-eye-bronze")
+    for (const baseId of CAT_BASE_IDS) {
+      const tiers: BadgeTier[] = ['bronze', 'silver', 'gold', 'platinum'];
+      for (const tier of tiers) {
+        if (b.id === `${baseId}-${tier}`) {
+          const cat = CAT_TO_CATEGORY[baseId];
+          const threshold = CAT_THRESHOLDS[baseId][TIER_INDEX[tier]];
+          earned = countByCategory(cat) >= threshold;
+        }
+      }
+    }
+
+    // Milestone badges
     switch (b.id) {
-      // Category badges
-      case 'sharp-eye':
-        earned = countByCategory('observation') >= 10; break;
-      case 'shutterbug':
-        earned = countByCategory('photo') >= 8; break;
-      case 'brain-box':
-        earned = countByCategory('trivia') >= 10; break;
-      case 'scene-stealer':
-        earned = countByCategory('action') >= 8; break;
-      case 'thrill-seeker':
-        earned = countByCategory('ride') >= 10; break;
-      case 'foodie':
-        earned = countByCategory('food') >= 5; break;
-      case 'pin-pro':
-        earned = countByCategory('pin') >= 5; break;
-      case 'star-struck':
-        earned = countByCategory('character') >= 5; break;
-      case 'trailblazer':
-        earned = countByCategory('exploration') >= 8; break;
-      case 'treasure-hunter':
-        earned = countByCategory('scavenger') >= 8; break;
-      // Milestone badges
-      case 'first-steps':
-        earned = completed.length >= 1; break;
-      case 'on-fire':
-        earned = session.currentStreak >= 10; break;
-      case 'blazing':
-        earned = session.currentStreak >= 20; break;
-      case 'centurion':
-        earned = lifetimeScore >= 100; break;
-      case 'high-roller':
-        earned = lifetimeScore >= 500; break;
-      case 'legend':
-        earned = lifetimeScore >= 1000; break;
-      case 'park-hopper':
-        earned = visitedParks.length >= 2; break;
-      case 'completionist': {
-        const categoryBadgeIds = [
-          'sharp-eye', 'shutterbug', 'brain-box', 'scene-stealer', 'thrill-seeker',
-          'foodie', 'pin-pro', 'star-struck', 'trailblazer', 'treasure-hunter',
-        ];
-        // Check against the current badges array (with any newly earned ones)
-        earned = categoryBadgeIds.every(id => {
-          const badge = badges.find(bb => bb.id === id);
-          return badge?.earned;
-        });
+      case 'first-steps': earned = completed.length >= 1; break;
+      case 'streak-bronze': earned = session.currentStreak >= 5; break;
+      case 'streak-silver': earned = session.currentStreak >= 10; break;
+      case 'streak-gold': earned = session.currentStreak >= 20; break;
+      case 'streak-platinum': earned = session.currentStreak >= 30; break;
+      case 'score-bronze': earned = lifetimeScore >= 100; break;
+      case 'score-silver': earned = lifetimeScore >= 500; break;
+      case 'score-gold': earned = lifetimeScore >= 1000; break;
+      case 'score-platinum': earned = lifetimeScore >= 5000; break;
+      case 'hopper-bronze': earned = visitedParks.length >= 2; break;
+      case 'hopper-silver': earned = visitedParks.length >= 4; break;
+      case 'hopper-gold': earned = visitedParks.length >= 6; break;
+      case 'hopper-platinum': earned = visitedParks.length >= 10; break;
+      case 'completionist-bronze': {
+        earned = CAT_BASE_IDS.every(id => badges.find(bb => bb.id === `${id}-bronze`)?.earned);
+        break;
+      }
+      case 'completionist-silver': {
+        earned = CAT_BASE_IDS.every(id => badges.find(bb => bb.id === `${id}-silver`)?.earned);
+        break;
+      }
+      case 'completionist-gold': {
+        earned = CAT_BASE_IDS.every(id => badges.find(bb => bb.id === `${id}-gold`)?.earned);
+        break;
+      }
+      case 'completionist-platinum': {
+        earned = CAT_BASE_IDS.every(id => badges.find(bb => bb.id === `${id}-platinum`)?.earned);
         break;
       }
     }
+
     return earned ? { ...b, earned: true, earnedAt: Date.now() } : b;
   });
-}
-
-function checkThemeUnlocks(lifetimeScore: number, current: string[]): string[] {
-  const unlocked = [...current];
-  if (lifetimeScore >= 250 && !unlocked.includes('fireworks')) unlocked.push('fireworks');
-  if (lifetimeScore >= 500 && !unlocked.includes('twilight')) unlocked.push('twilight');
-  if (lifetimeScore >= 1000 && !unlocked.includes('gold-foil')) unlocked.push('gold-foil');
-  return unlocked;
 }
 
 // ─── Zustand Store ────────────────────────────────────────────────────────────
@@ -284,13 +331,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     let updatedBadges = checkBadges(session, player.badges, newLifetime, allVisited);
     updatedBadges = checkBadges(session, updatedBadges, newLifetime, allVisited);
 
-    const updatedThemes = checkThemeUnlocks(newLifetime, player.unlockedThemes);
-
     const updatedPlayer: Player = {
       ...player,
       lifetimeScore: newLifetime,
       badges: updatedBadges,
-      unlockedThemes: updatedThemes,
       visitedParks: allVisited,
     };
 

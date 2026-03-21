@@ -138,11 +138,37 @@ function TaskCard({
       {isTrivia ? (
         <View style={styles.cardActions}>
           <TouchableOpacity
-            style={[styles.cardActionBtn, styles.completeBtn, { flex: 1 }]}
+            style={[styles.cardActionBtn, styles.completeBtn]}
             onPress={onTriviaPress}
             activeOpacity={0.8}
           >
             <Text style={styles.completeBtnText}>Answer</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.cardActionBtn,
+              styles.discardBtn,
+              !canDiscard && styles.disabledBtn,
+            ]}
+            onPress={
+              canDiscard
+                ? handleDiscard
+                : () =>
+                    Alert.alert(
+                      'No Discards Remaining',
+                      'Complete a task to restore your discards!'
+                    )
+            }
+            activeOpacity={0.8}
+          >
+            <Text
+              style={[
+                styles.discardBtnText,
+                !canDiscard && { color: COLORS.textMuted },
+              ]}
+            >
+              Discard
+            </Text>
           </TouchableOpacity>
         </View>
       ) : (

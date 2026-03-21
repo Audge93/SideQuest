@@ -41,11 +41,14 @@ export interface Park {
   theme: 'disney' | 'universal' | 'custom';
 }
 
+export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum';
+
 export interface Badge {
   id: string;
   name: string;
   description: string;
   icon: string;
+  tier: BadgeTier;
   earned: boolean;
   earnedAt?: number;
 }
@@ -56,7 +59,6 @@ export interface Player {
   color: string;
   lifetimeScore: number;
   badges: Badge[];
-  unlockedThemes: string[];
   visitedParks: string[];
 }
 

@@ -11,13 +11,17 @@ import {
   Alert,
 } from 'react-native';
 import { useGameStore } from '../store/gameStore';
+import { Badge, BadgeTier } from '../types';
 import { COLORS, SHADOWS, RADII } from '../theme/balatro';
 
-const THEME_INFO: Record<string, { name: string; color: string; threshold: number }> = {
-  fireworks: { name: 'Fireworks', color: '#FF6B9D', threshold: 250 },
-  twilight: { name: 'Twilight', color: '#7C6BC4', threshold: 500 },
-  'gold-foil': { name: 'Gold Foil', color: '#FFD700', threshold: 1000 },
+const TIER_COLORS: Record<BadgeTier, string> = {
+  bronze: '#CD7F32',
+  silver: '#C0C0C0',
+  gold: '#FFD700',
+  platinum: '#E5E4E2',
 };
+
+const TIER_LABELS: BadgeTier[] = ['bronze', 'silver', 'gold', 'platinum'];
 
 export default function ProfileScreen() {
   const { player, updatePlayerName } = useGameStore();
@@ -35,7 +39,17 @@ export default function ProfileScreen() {
   };
 
   const earnedBadges = player.badges.filter(b => b.earned);
-  const unearnedBadges = player.badges.filter(b => !b.earned);
+
+  // Group badges by tier
+  const badgesByTier: Record<BadgeTier, Badge[]> = {
+    bronze: [],
+    silver: [],
+    gold: [],
+    platinum: [],
+  };
+  player.badges.forEach(b => {
+    badgesByTier[b.tier].push(b);
+  });
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -87,92 +101,54 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Progress to next unlock */}
-        <NextUnlockBar lifetimeScore={player.lifetimeScore} unlockedThemes={player.unlockedThemes} />
-
-        {/* Badges */}
+        {/* Badges by tier */}
         <SectionHeader title="BADGES" />
-
-        {earnedBadges.length > 0 && (
-          <>
-            <Text style={styles.badgeSubheader}>Earned</Text>
-            <View style={styles.badgeGrid}>
-              {earnedBadges.map(badge => (
-                <BadgeTile key={badge.id} badge={badge} earned />
-              ))}
-            </View>
-          </>
-        )}
-
-        {unearnedBadges.length > 0 && (
-          <>
-            <Text style={styles.badgeSubheader}>Locked</Text>
-            <View style={styles.badgeGrid}>
-              {unearnedBadges.map(badge => (
-                <BadgeTile key={badge.id} badge={badge} earned={false} />
-              ))}
-            </View>
-          </>
-        )}
-
-        {/* Unlockable Themes */}
-        <SectionHeader title="UNLOCKABLE THEMES" />
-        <View style={styles.themesList}>
-          {Object.entries(THEME_INFO).map(([id, info]) => {
-            const unlocked = player.unlockedThemes.includes(id);
-            return (
-              <View key={id} style={[styles.themeRow, unlocked && styles.themeRowUnlocked]}>
-                <View style={[styles.themeColorDot, { backgroundColor: info.color }]} />
-                <View style={styles.themeInfo}>
-                  <Text style={styles.themeName}>{info.name}</Text>
-                  <Text style={styles.themeThreshold}>{info.threshold.toLocaleString()} lifetime pts</Text>
-                </View>
-                <Text style={[styles.themeStatus, unlocked && styles.themeStatusUnlocked]}>
-                  {unlocked ? '✓ Unlocked' : '🔒'}
+        {TIER_LABELS.map(tier => {
+          const tierBadges = badgesByTier[tier];
+          if (tierBadges.length === 0) return null;
+          const earnedCount = tierBadges.filter(b => b.earned).length;
+          return (
+            <View key={tier} style={styles.tierSection}>
+              <View style={styles.tierHeader}>
+                <View style={[styles.tierDot, { backgroundColor: TIER_COLORS[tier] }]} />
+                <Text style={styles.tierLabel}>
+                  {tier.charAt(0).toUpperCase() + tier.slice(1)}
+                </Text>
+                <Text style={styles.tierCount}>
+                  {earnedCount} / {tierBadges.length}
                 </Text>
               </View>
-            );
-          })}
-        </View>
+              <View style={styles.badgeGrid}>
+                {tierBadges.map(badge => (
+                  <BadgeTile key={badge.id} badge={badge} tierColor={TIER_COLORS[tier]} />
+                ))}
+              </View>
+            </View>
+          );
+        })}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function BadgeTile({ badge, earned }: { badge: any; earned: boolean }) {
+function BadgeTile({ badge, tierColor }: { badge: Badge; tierColor: string }) {
+  const earned = badge.earned;
   return (
-    <View style={[styles.badgeTile, !earned && styles.badgeTileLocked]}>
+    <View style={[styles.badgeTile, earned ? { borderColor: tierColor } : styles.badgeTileLocked]}>
       <Text style={[styles.badgeIcon, !earned && styles.badgeIconLocked]}>{badge.icon}</Text>
       <Text style={[styles.badgeName, !earned && styles.badgeNameLocked]}>{badge.name}</Text>
       <Text style={styles.badgeDescription}>{badge.description}</Text>
+      {earned && badge.earnedAt && (
+        <Text style={styles.badgeDate}>
+          {new Date(badge.earnedAt).toLocaleDateString()}
+        </Text>
+      )}
     </View>
   );
 }
 
 function SectionHeader({ title }: { title: string }) {
   return <Text style={styles.sectionHeader}>{title}</Text>;
-}
-
-function NextUnlockBar({ lifetimeScore, unlockedThemes }: { lifetimeScore: number; unlockedThemes: string[] }) {
-  const thresholds = [250, 500, 1000];
-  const nextThreshold = thresholds.find(t => lifetimeScore < t);
-  if (!nextThreshold) {
-    return (
-      <View style={styles.unlockBar}>
-        <Text style={styles.unlockBarText}>All themes unlocked!</Text>
-      </View>
-    );
-  }
-  const progress = Math.min(lifetimeScore / nextThreshold, 1);
-  return (
-    <View style={styles.unlockBar}>
-      <Text style={styles.unlockBarLabel}>Next unlock at {nextThreshold.toLocaleString()} pts</Text>
-      <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-      </View>
-      <Text style={styles.unlockBarProgress}>{lifetimeScore} / {nextThreshold}</Text>
-    </View>
-  );
 }
 
 const styles = StyleSheet.create({
@@ -276,43 +252,6 @@ const styles = StyleSheet.create({
     height: 32,
     backgroundColor: COLORS.borderLight,
   },
-  unlockBar: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADII.panel,
-    padding: 14,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: COLORS.borderPanel,
-    ...SHADOWS.card,
-  },
-  unlockBarLabel: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  progressTrack: {
-    height: 8,
-    backgroundColor: COLORS.surfaceSecondary,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: COLORS.green,
-    borderRadius: 4,
-  },
-  unlockBarProgress: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-    marginTop: 4,
-    textAlign: 'right',
-  },
-  unlockBarText: {
-    color: COLORS.green,
-    fontWeight: '700',
-    fontSize: 14,
-    textAlign: 'center',
-  },
   sectionHeader: {
     color: COLORS.textMuted,
     fontSize: 10,
@@ -321,29 +260,49 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 4,
   },
-  badgeSubheader: {
-    color: COLORS.textBody,
-    fontSize: 12,
+  tierSection: {
+    marginBottom: 16,
+  },
+  tierHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 10,
+  },
+  tierDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  tierLabel: {
+    color: COLORS.textDark,
+    fontSize: 14,
+    fontWeight: '800',
+    flex: 1,
+  },
+  tierCount: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
   },
   badgeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginBottom: 16,
   },
   badgeTile: {
     width: '47%',
     backgroundColor: COLORS.surface,
     borderRadius: RADII.panel,
     padding: 14,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: COLORS.green,
     alignItems: 'center',
     ...SHADOWS.card,
   },
   badgeTileLocked: {
     borderColor: COLORS.borderPanel,
+    borderWidth: 1,
     backgroundColor: COLORS.surfaceSecondary,
   },
   badgeIcon: {
@@ -370,47 +329,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 16,
   },
-  themesList: {
-    gap: 10,
-    marginBottom: 16,
-  },
-  themeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surfaceSecondary,
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: COLORS.borderPanel,
-    gap: 12,
-  },
-  themeRowUnlocked: {
-    borderColor: COLORS.green,
-    backgroundColor: COLORS.surface,
-    ...SHADOWS.card,
-  },
-  themeColorDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-  },
-  themeInfo: { flex: 1 },
-  themeName: {
-    color: COLORS.textDark,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  themeThreshold: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  themeStatus: {
-    color: COLORS.textMuted,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  themeStatusUnlocked: {
-    color: COLORS.green,
+  badgeDate: {
+    color: COLORS.textLight,
+    fontSize: 10,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
 });
