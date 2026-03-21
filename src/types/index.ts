@@ -9,6 +9,8 @@ export type TaskCategory = SmallCategory | BigCategory;
 
 export type RideIntensity = 'gentle' | 'moderate' | 'thrill';
 
+export type ParkThemeTag = 'disney' | 'universal';
+
 export interface Task {
   id: string;
   size: TaskSize;
@@ -23,6 +25,7 @@ export interface Task {
   heightRequirement?: number;
   triviaChoices?: string[];
   triviaAnswer?: number;
+  tag?: ParkThemeTag; // Filter trivia by park theme; undefined = show everywhere
 }
 
 export interface Ride {

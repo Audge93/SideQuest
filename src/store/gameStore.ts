@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Task, Session, Settings, Player, Badge, BadgeTier, CategoryToggles } from '../types';
+import { Task, Session, Settings, Player, Badge, BadgeTier, CategoryToggles, ParkThemeTag } from '../types';
 import { SMALL_TASKS, BIG_TASKS, generateRideTasks } from '../data/tasks';
 import { TRIVIA_TASKS } from '../data/trivia';
-import { RIDES } from '../data/parks';
+import { RIDES, PARKS } from '../data/parks';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -132,11 +132,26 @@ interface GameState {
 function buildTaskPools(settings: Settings): { small: Task[]; big: Task[] } {
   const { categoryToggles, parkIds, heightFilterEnabled, minHeightInches } = settings;
 
+  // Determine which park themes are active (disney, universal, or both)
+  const activeThemes = new Set<ParkThemeTag>();
+  for (const pid of parkIds) {
+    const park = PARKS.find(p => p.id === pid);
+    if (!park || park.theme === 'custom') {
+      // "Any Park" / custom → include all themes
+      activeThemes.add('disney');
+      activeThemes.add('universal');
+    } else {
+      activeThemes.add(park.theme as ParkThemeTag);
+    }
+  }
+
   // Small pool: observation, photo, action from SMALL_TASKS + trivia from TRIVIA_TASKS
   const enabledSmallCategories = (['observation', 'photo', 'action'] as const).filter(c => categoryToggles[c]);
   let small: Task[] = SMALL_TASKS.filter(t => enabledSmallCategories.includes(t.category as any));
   if (categoryToggles.trivia) {
-    small = [...small, ...TRIVIA_TASKS];
+    // Filter trivia by park theme — include untagged trivia always
+    const filteredTrivia = TRIVIA_TASKS.filter(t => !t.tag || activeThemes.has(t.tag));
+    small = [...small, ...filteredTrivia];
   }
 
   // Big pool: food, pin, character, exploration, scavenger from BIG_TASKS + ride tasks
@@ -166,8 +181,11 @@ function replaceInArray(arr: Task[], taskId: string, replacement: Task | undefin
   return arr.map(t => (t.id === taskId ? replacement : t));
 }
 
-function pickReplacement(pool: Task[], exclude: Task[]): Task | undefined {
+function pickReplacement(pool: Task[], exclude: Task[], alsoExclude?: Task[]): Task | undefined {
   const excludeIds = new Set(exclude.map(t => t.id));
+  if (alsoExclude) {
+    for (const t of alsoExclude) excludeIds.add(t.id);
+  }
   const available = pool.filter(t => !excludeIds.has(t.id));
   if (available.length === 0) return undefined;
   return available[Math.floor(Math.random() * available.length)];
@@ -394,13 +412,13 @@ export const useGameStore = create<GameState>((set, get) => ({
       task = session.challengeTasks.find(t => t.id === taskId);
       if (!task) return;
       const { big } = buildTaskPools(settings);
-      const replacement = pickReplacement(big, newChallengeTasks);
+      const replacement = pickReplacement(big, newChallengeTasks, session.completedTasks);
       newChallengeTasks = replaceInArray(newChallengeTasks, taskId, replacement);
     } else {
       task = session.hand.find(t => t.id === taskId);
       if (!task) return;
       const { small } = buildTaskPools(settings);
-      const replacement = pickReplacement(small, newHand);
+      const replacement = pickReplacement(small, newHand, session.completedTasks);
       newHand = replaceInArray(newHand, taskId, replacement);
     }
 
@@ -469,7 +487,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!task) return;
 
     const { small } = buildTaskPools(settings);
-    const replacement = pickReplacement(small, session.hand);
+    const replacement = pickReplacement(small, session.hand, session.completedTasks);
     const newHand = replaceInArray(session.hand, taskId, replacement);
 
     const updatedSession: Session = {
@@ -489,7 +507,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (session.sessionScore < 25) return;
 
     const { big } = buildTaskPools(settings);
-    const replacement = pickReplacement(big, session.challengeTasks);
+    const replacement = pickReplacement(big, session.challengeTasks, session.completedTasks);
     const newChallengeTasks = replaceInArray(session.challengeTasks, taskId, replacement);
 
     const updatedSession: Session = {
@@ -514,7 +532,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       if (!task) return;
 
       const { small } = buildTaskPools(settings);
-      const replacement = pickReplacement(small, session.hand);
+      const replacement = pickReplacement(small, session.hand, session.completedTasks);
       const newHand = replaceInArray(session.hand, taskId, replacement);
 
       const updatedSession: Session = {
