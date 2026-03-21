@@ -145,18 +145,20 @@ function buildTaskPools(settings: Settings): { small: Task[]; big: Task[] } {
     }
   }
 
+  // Theme filter: only include tasks that match the active park themes (or have no tag)
+  const matchesTheme = (t: Task) => !t.tag || activeThemes.has(t.tag);
+
   // Small pool: observation, photo, action from SMALL_TASKS + trivia from TRIVIA_TASKS
   const enabledSmallCategories = (['observation', 'photo', 'action'] as const).filter(c => categoryToggles[c]);
-  let small: Task[] = SMALL_TASKS.filter(t => enabledSmallCategories.includes(t.category as any));
+  let small: Task[] = SMALL_TASKS.filter(t => enabledSmallCategories.includes(t.category as any) && matchesTheme(t));
   if (categoryToggles.trivia) {
-    // Filter trivia by park theme — include untagged trivia always
-    const filteredTrivia = TRIVIA_TASKS.filter(t => !t.tag || activeThemes.has(t.tag));
+    const filteredTrivia = TRIVIA_TASKS.filter(matchesTheme);
     small = [...small, ...filteredTrivia];
   }
 
   // Big pool: food, pin, character, exploration, scavenger from BIG_TASKS + ride tasks
   const enabledBigCategories = (['food', 'pin', 'character', 'exploration', 'scavenger'] as const).filter(c => categoryToggles[c]);
-  let big: Task[] = BIG_TASKS.filter(t => enabledBigCategories.includes(t.category as any));
+  let big: Task[] = BIG_TASKS.filter(t => enabledBigCategories.includes(t.category as any) && matchesTheme(t));
 
   if (categoryToggles.ride) {
     const parkRides = RIDES.filter(r => parkIds.includes(r.parkId));
