@@ -148,9 +148,17 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.safe}>
         <StatusBar barStyle="dark-content" />
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          {/* Header */}
+          {/* Logo */}
           <View style={styles.header}>
-            <Text style={styles.title}>Side Quest</Text>
+            <View style={styles.logoContainer}>
+              <Text style={styles.logoSide}>SIDE</Text>
+              <View style={styles.logoDivider}>
+                <View style={styles.logoDividerLine} />
+                <Text style={styles.logoDividerIcon}>🃏</Text>
+                <View style={styles.logoDividerLine} />
+              </View>
+              <Text style={styles.logoQuest}>QUEST</Text>
+            </View>
             <Text style={styles.subtitle}>Turn wait times into play time</Text>
           </View>
 
@@ -383,23 +391,52 @@ const styles = StyleSheet.create({
     paddingBottom: 80,
   },
 
-  // Header
+  // Logo
   header: {
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 28,
+    marginTop: 16,
+    marginBottom: 24,
   },
-  title: {
-    fontSize: 48,
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  logoSide: {
+    fontSize: 38,
     fontWeight: '900',
     color: COLORS.textDark,
-    letterSpacing: -1,
+    letterSpacing: 12,
+    textAlign: 'center',
+  },
+  logoDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: -2,
+    width: 180,
+  },
+  logoDividerLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: COLORS.green,
+    borderRadius: 1,
+  },
+  logoDividerIcon: {
+    fontSize: 28,
+    marginHorizontal: 10,
+  },
+  logoQuest: {
+    fontSize: 44,
+    fontWeight: '900',
+    color: COLORS.green,
+    letterSpacing: 6,
+    textAlign: 'center',
   },
   subtitle: {
     color: COLORS.textMuted,
-    fontSize: 14,
+    fontSize: 13,
     marginTop: 4,
-    letterSpacing: 0.5,
+    letterSpacing: 1,
+    fontWeight: '500',
   },
 
   // Welcome
