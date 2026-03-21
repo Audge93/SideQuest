@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,14 @@ import {
   ImageBackground,
   Alert,
   Switch,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import Slider from '@react-native-community/slider';
 import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
@@ -84,8 +91,17 @@ export default function HomeScreen() {
   const selectedPark = PARKS.find(p => p.id === selectedParkId);
   const parkIsInResort = selectedResort?.parkIds.includes(selectedParkId || '');
 
+  const [resortDropdownOpen, setResortDropdownOpen] = useState(false);
+  const [parkDropdownOpen, setParkDropdownOpen] = useState(false);
+
+  const animateLayout = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  }, []);
+
   const handleSelectResort = (resortId: string) => {
+    animateLayout();
     setSelectedResortId(resortId);
+    setResortDropdownOpen(false);
     // Clear park selection if switching resort
     const resort = RESORTS.find(r => r.id === resortId);
     if (resort && !resort.parkIds.includes(selectedParkId || '')) {
@@ -93,12 +109,19 @@ export default function HomeScreen() {
         updateSettings({ parkIds: [resort.parkIds[0]] });
       } else {
         updateSettings({ parkIds: [] });
+        // Auto-open park dropdown for multi-park resorts
+        setTimeout(() => {
+          animateLayout();
+          setParkDropdownOpen(true);
+        }, 300);
       }
     }
   };
 
   const handleSelectPark = (parkId: string) => {
+    animateLayout();
     updateSettings({ parkIds: [parkId] });
+    setParkDropdownOpen(false);
   };
 
   const handleStartGame = () => {
@@ -140,53 +163,93 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* ── Step 1: Resort Selection ── */}
+          {/* ── Step 1: Resort Dropdown ── */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>WHERE ARE YOU?</Text>
-            <View style={styles.resortList}>
-              {RESORTS.map(resort => {
-                const isSelected = selectedResortId === resort.id;
-                return (
-                  <TouchableOpacity
-                    key={resort.id}
-                    style={[styles.resortChip, isSelected && styles.resortChipSelected]}
-                    onPress={() => handleSelectResort(resort.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.resortIcon}>{resort.icon}</Text>
-                    <Text style={[styles.resortLabel, isSelected && styles.resortLabelSelected]}>
-                      {resort.label}
-                    </Text>
-                    {isSelected && <Text style={styles.resortCheck}>✓</Text>}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* ── Step 2: Park Selection (only if resort has multiple parks) ── */}
-          {selectedResort && selectedResort.parkIds.length > 1 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>SELECT YOUR PARK</Text>
-              <View style={styles.parkChipRow}>
-                {selectedResort.parkIds.map(parkId => {
-                  const park = PARKS.find(p => p.id === parkId);
-                  if (!park) return null;
-                  const isSelected = selectedParkId === parkId;
+            <TouchableOpacity
+              style={styles.dropdown}
+              onPress={() => { animateLayout(); setResortDropdownOpen(v => !v); }}
+              activeOpacity={0.7}
+            >
+              {selectedResort ? (
+                <View style={styles.dropdownSelected}>
+                  <Text style={styles.dropdownSelectedIcon}>{selectedResort.icon}</Text>
+                  <Text style={styles.dropdownSelectedText}>{selectedResort.label}</Text>
+                </View>
+              ) : (
+                <Text style={styles.dropdownPlaceholder}>Choose a resort...</Text>
+              )}
+              <Text style={styles.dropdownArrow}>{resortDropdownOpen ? '▲' : '▼'}</Text>
+            </TouchableOpacity>
+            {resortDropdownOpen && (
+              <View style={styles.dropdownList}>
+                {RESORTS.map((resort, i) => {
+                  const isSelected = selectedResortId === resort.id;
                   return (
                     <TouchableOpacity
-                      key={parkId}
-                      style={[styles.parkChip, isSelected && styles.parkChipSelected]}
-                      onPress={() => handleSelectPark(parkId)}
+                      key={resort.id}
+                      style={[
+                        styles.dropdownItem,
+                        isSelected && styles.dropdownItemSelected,
+                        i < RESORTS.length - 1 && styles.dropdownItemBorder,
+                      ]}
+                      onPress={() => handleSelectResort(resort.id)}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.parkChipText, isSelected && styles.parkChipTextSelected]}>
-                        {park.name}
+                      <Text style={styles.dropdownItemIcon}>{resort.icon}</Text>
+                      <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
+                        {resort.label}
                       </Text>
+                      {isSelected && <Text style={styles.dropdownCheck}>✓</Text>}
                     </TouchableOpacity>
                   );
                 })}
               </View>
+            )}
+          </View>
+
+          {/* ── Step 2: Park Dropdown (only if resort has multiple parks) ── */}
+          {selectedResort && selectedResort.parkIds.length > 1 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>SELECT YOUR PARK</Text>
+              <TouchableOpacity
+                style={styles.dropdown}
+                onPress={() => { animateLayout(); setParkDropdownOpen(v => !v); }}
+                activeOpacity={0.7}
+              >
+                {selectedPark && parkIsInResort ? (
+                  <Text style={styles.dropdownSelectedText}>{selectedPark.name}</Text>
+                ) : (
+                  <Text style={styles.dropdownPlaceholder}>Choose a park...</Text>
+                )}
+                <Text style={styles.dropdownArrow}>{parkDropdownOpen ? '▲' : '▼'}</Text>
+              </TouchableOpacity>
+              {parkDropdownOpen && (
+                <View style={styles.dropdownList}>
+                  {selectedResort.parkIds.map((parkId, i) => {
+                    const park = PARKS.find(p => p.id === parkId);
+                    if (!park) return null;
+                    const isSelected = selectedParkId === parkId;
+                    return (
+                      <TouchableOpacity
+                        key={parkId}
+                        style={[
+                          styles.dropdownItem,
+                          isSelected && styles.dropdownItemSelected,
+                          i < selectedResort.parkIds.length - 1 && styles.dropdownItemBorder,
+                        ]}
+                        onPress={() => handleSelectPark(parkId)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
+                          {park.name}
+                        </Text>
+                        {isSelected && <Text style={styles.dropdownCheck}>✓</Text>}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
             </View>
           )}
 
@@ -382,14 +445,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  // Resort selection
-  resortList: {
-    gap: 8,
-  },
-  resortChip: {
+  // Dropdown
+  dropdown: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.88)',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.90)',
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -397,57 +458,72 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderMedium,
     ...SHADOWS.chip,
   },
-  resortChipSelected: {
-    borderColor: COLORS.green,
-    backgroundColor: 'rgba(232,248,239,0.92)',
+  dropdownSelected: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
-  resortIcon: {
-    fontSize: 22,
+  dropdownSelectedIcon: {
+    fontSize: 20,
+    marginRight: 10,
+  },
+  dropdownSelectedText: {
+    color: COLORS.textDark,
+    fontSize: 16,
+    fontWeight: '700',
+    flex: 1,
+  },
+  dropdownPlaceholder: {
+    color: COLORS.textMuted,
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
+  },
+  dropdownArrow: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    marginLeft: 8,
+  },
+  dropdownList: {
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    borderRadius: 14,
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: COLORS.borderPanel,
+    overflow: 'hidden',
+    ...SHADOWS.card,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  dropdownItemSelected: {
+    backgroundColor: 'rgba(120,212,160,0.12)',
+  },
+  dropdownItemBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.borderLight,
+  },
+  dropdownItemIcon: {
+    fontSize: 20,
     marginRight: 12,
   },
-  resortLabel: {
+  dropdownItemText: {
+    color: COLORS.textBody,
+    fontSize: 15,
+    fontWeight: '500',
     flex: 1,
-    color: COLORS.textBody,
-    fontSize: 16,
-    fontWeight: '600',
   },
-  resortLabelSelected: {
+  dropdownItemTextSelected: {
     color: COLORS.greenDark,
     fontWeight: '700',
   },
-  resortCheck: {
+  dropdownCheck: {
     color: COLORS.green,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '900',
-  },
-
-  // Park chip selection
-  parkChipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  parkChip: {
-    borderWidth: 1.5,
-    borderColor: COLORS.borderMedium,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    ...SHADOWS.chip,
-  },
-  parkChipSelected: {
-    borderColor: COLORS.green,
-    backgroundColor: 'rgba(232,248,239,0.92)',
-  },
-  parkChipText: {
-    color: COLORS.textBody,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  parkChipTextSelected: {
-    color: COLORS.greenDark,
-    fontWeight: '700',
   },
 
   // Options toggle
