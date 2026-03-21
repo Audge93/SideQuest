@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Pressable,
   Alert,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { Task } from '../types';
 import { COLORS, SHADOWS, RADII, CATEGORY_COLORS, CATEGORY_ICONS } from '../theme/balatro';
@@ -30,15 +31,27 @@ interface BigTaskBadgeProps {
 function BigTaskBadge({ task, onPress }: BigTaskBadgeProps) {
   const color = CATEGORY_COLORS[task.category] ?? '#888';
   const icon = CATEGORY_ICONS[task.category] ?? '';
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePress = () => {
+    Animated.sequence([
+      Animated.timing(pulseAnim, { toValue: 0.9, duration: 80, useNativeDriver: true }),
+      Animated.timing(pulseAnim, { toValue: 1, duration: 80, useNativeDriver: true }),
+    ]).start();
+    onPress();
+  };
+
   return (
-    <TouchableOpacity style={[styles.badge, { borderColor: color }]} onPress={onPress} activeOpacity={0.8}>
-      <View style={[styles.badgeCircle, { backgroundColor: color }]}>
-        <View style={styles.badgeIconInner}>
-          <Text style={styles.badgeIcon}>{icon}</Text>
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
+      <Animated.View style={[styles.badge, { borderColor: color, transform: [{ scale: pulseAnim }] }]}>
+        <View style={[styles.badgeCircle, { backgroundColor: color }]}>
+          <View style={styles.badgeIconInner}>
+            <Text style={styles.badgeIcon}>{icon}</Text>
+          </View>
         </View>
-      </View>
-      <Text style={styles.badgePoints}>{task.points}</Text>
-      <Text style={styles.badgePtsLabel}>pts</Text>
+        <Text style={styles.badgePoints}>{task.points}</Text>
+        <Text style={styles.badgePtsLabel}>pts</Text>
+      </Animated.View>
     </TouchableOpacity>
   );
 }
@@ -160,16 +173,15 @@ export default function BigBoard({ tasks, sessionScore, onComplete, onSwap }: Pr
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: Math.round(16 * sw),
-    marginBottom: Math.round(2 * sh),
   },
   sectionTitle: {
     color: COLORS.textMuted,
-    fontSize: Math.round(10 * sw),
+    fontSize: Math.round(9 * sw),
     fontWeight: '700',
     letterSpacing: 2,
     textAlign: 'center',
-    marginBottom: Math.round(8 * sh),
-    marginTop: Math.round(6 * sh),
+    marginBottom: Math.round(6 * sh),
+    marginTop: Math.round(4 * sh),
   },
   row: {
     flexDirection: 'row',
@@ -177,43 +189,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // ── Badge (compact) — fits ~100pt row ────────────────────────
+  // ── Badge (compact) ────────────────────────────────────────
   badge: {
     alignItems: 'center',
     borderWidth: 2,
-    borderRadius: Math.round(50 * sw),
-    padding: Math.round(4 * sw),
-    width: Math.round(90 * sw),
+    borderRadius: Math.round(44 * sw),
+    padding: Math.round(3 * sw),
+    width: Math.round(78 * sw),
     backgroundColor: COLORS.white,
     ...SHADOWS.chip,
   },
   badgeCircle: {
-    width: Math.round(58 * sw),
-    height: Math.round(58 * sw),
-    borderRadius: Math.round(29 * sw),
+    width: Math.round(48 * sw),
+    height: Math.round(48 * sw),
+    borderRadius: Math.round(24 * sw),
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Math.round(2 * sh),
+    marginBottom: Math.round(1 * sh),
   },
   badgeIconInner: {
-    width: Math.round(38 * sw),
-    height: Math.round(38 * sw),
-    borderRadius: Math.round(19 * sw),
+    width: Math.round(32 * sw),
+    height: Math.round(32 * sw),
+    borderRadius: Math.round(16 * sw),
     backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   badgeIcon: {
-    fontSize: Math.round(22 * sw),
+    fontSize: Math.round(18 * sw),
   },
   badgePoints: {
     color: COLORS.textDark,
     fontWeight: '800',
-    fontSize: Math.round(13 * sw),
+    fontSize: Math.round(11 * sw),
   },
   badgePtsLabel: {
     color: COLORS.textMuted,
-    fontSize: Math.round(9 * sw),
+    fontSize: Math.round(8 * sw),
     fontWeight: '600',
   },
 

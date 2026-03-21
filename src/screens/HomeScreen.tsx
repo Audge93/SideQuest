@@ -8,6 +8,7 @@ import {
   StatusBar,
   SafeAreaView,
   ImageBackground,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
@@ -39,7 +40,7 @@ const PARK_DISPLAY_GROUPS = [
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
-  const { settings, updateSettings, session, startSession, player } = useGameStore();
+  const { settings, updateSettings, session, startSession, endSession, player } = useGameStore();
 
   const selectedParkId = settings.parkIds?.[0];
   const selectedPark = PARKS.find(p => p.id === selectedParkId);
@@ -124,6 +125,23 @@ export default function HomeScreen() {
                 {session?.active ? 'New Game' : 'Start Game'}
               </Text>
             </TouchableOpacity>
+            {session?.active && (
+              <TouchableOpacity
+                style={styles.endSessionBtn}
+                onPress={() =>
+                  Alert.alert(
+                    'End Session?',
+                    'Your session score will be added to your lifetime total.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'End Session', style: 'destructive', onPress: () => endSession() },
+                    ]
+                  )
+                }
+              >
+                <Text style={styles.endSessionBtnText}>End Session</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -270,5 +288,18 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: '700',
     fontSize: 16,
+  },
+  endSessionBtn: {
+    paddingVertical: 14,
+    borderRadius: RADII.button,
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1.5,
+    borderColor: COLORS.red,
+  },
+  endSessionBtnText: {
+    color: COLORS.red,
+    fontWeight: '700',
+    fontSize: 15,
   },
 });

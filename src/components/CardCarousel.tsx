@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,9 @@ import {
   Modal,
   Pressable,
   Alert,
+  Animated,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { Task } from '../types';
 import { COLORS, SHADOWS, RADII, CATEGORY_COLORS, CATEGORY_ICONS } from '../theme/balatro';
@@ -17,34 +20,34 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const sw = SCREEN_W / 390;
 const sh = SCREEN_H / 844;
 
-const CARD_WIDTH = Math.round(SCREEN_W * 0.78);
+const CARD_WIDTH = Math.round(SCREEN_W * 0.805);
 const CARD_GAP = Math.round(12 * sw);
 const SNAP_INTERVAL = CARD_WIDTH + CARD_GAP;
 const H_PADDING = Math.round((SCREEN_W - CARD_WIDTH) / 2);
 
 const CHOICE_LETTERS = ['A', 'B', 'C', 'D'];
 
-// ── Standard task card (non-trivia) with inline buttons ──────
+// ── Animated task card with pop/complete effects ─────────────
 function TaskCard({
   task,
-  distance = 0,
   canDiscard,
   onComplete,
   onDiscard,
   onTriviaPress,
 }: {
   task: Task;
-  distance?: number;
   canDiscard: boolean;
   onComplete: () => void;
   onDiscard: () => void;
   onTriviaPress: () => void;
 }) {
-  const scale = distance === 0 ? 1 : distance === 1 ? 0.88 : 0.82;
-  const opacity = distance === 0 ? 1 : 0.6;
   const color = CATEGORY_COLORS[task.category] ?? '#888';
   const icon = CATEGORY_ICONS[task.category] ?? '';
   const isTrivia = task.category === 'trivia' && task.triviaChoices && task.triviaAnswer != null;
+
+  // Animation values
+  const popAnim = useRef(new Animated.Value(1)).current;
+  const completeAnim = useRef(new Animated.Value(1)).current;
 
   const flavorText =
     task.flavorText ??
@@ -56,8 +59,62 @@ function TaskCard({
       ? 'Spot it to earn points'
       : 'Complete this task to earn points');
 
+  const handleDiscard = () => {
+    // Pop animation: scale up then shrink to 0
+    Animated.sequence([
+      Animated.timing(popAnim, {
+        toValue: 1.15,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+      Animated.timing(popAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      popAnim.setValue(1);
+      onDiscard();
+    });
+  };
+
+  const handleComplete = () => {
+    // Celebrate: pulse up then settle
+    Animated.sequence([
+      Animated.timing(completeAnim, {
+        toValue: 1.08,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(completeAnim, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(completeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      completeAnim.setValue(1);
+      popAnim.setValue(1);
+      onComplete();
+    });
+  };
+
+  const animatedScale = Animated.multiply(popAnim, completeAnim);
+
   return (
-    <View style={[styles.card, { borderColor: color, transform: [{ scale }], opacity }]}>
+    <Animated.View
+      style={[
+        styles.card,
+        {
+          borderColor: color,
+          transform: [{ scale: animatedScale }],
+        },
+      ]}
+    >
       {/* Category header */}
       <View style={[styles.cardHeader, { backgroundColor: color }]}>
         <Text style={styles.cardHeaderText}>{task.displayCategory}</Text>
@@ -65,7 +122,6 @@ function TaskCard({
 
       {/* Body */}
       <View style={styles.cardBody}>
-        {/* Icon + points row */}
         <View style={styles.iconPtsRow}>
           <View style={[styles.iconOuter, { backgroundColor: color }]}>
             <View style={styles.iconInner}>
@@ -74,11 +130,7 @@ function TaskCard({
           </View>
           <Text style={[styles.ptsText, { color }]}>{task.points} pts</Text>
         </View>
-
-        {/* Description */}
         <Text style={styles.cardDescription}>{task.description}</Text>
-
-        {/* Flavor */}
         <Text style={styles.cardFlavor}>{flavorText}</Text>
       </View>
 
@@ -97,7 +149,7 @@ function TaskCard({
         <View style={styles.cardActions}>
           <TouchableOpacity
             style={[styles.cardActionBtn, styles.completeBtn]}
-            onPress={onComplete}
+            onPress={handleComplete}
             activeOpacity={0.8}
           >
             <Text style={styles.completeBtnText}>Complete</Text>
@@ -110,7 +162,7 @@ function TaskCard({
             ]}
             onPress={
               canDiscard
-                ? onDiscard
+                ? handleDiscard
                 : () =>
                     Alert.alert(
                       'No Discards Remaining',
@@ -130,11 +182,11 @@ function TaskCard({
           </TouchableOpacity>
         </View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
-// ── Trivia modal (shown when "Answer" tapped on trivia card) ─
+// ── Trivia modal ─────────────────────────────────────────────
 function TriviaModal({
   task,
   onTriviaAnswer,
@@ -154,27 +206,16 @@ function TriviaModal({
     setSelectedChoice(index);
     setAnswered(true);
     const correct = index === task.triviaAnswer;
-    setTimeout(() => {
-      onTriviaAnswer(correct);
-    }, 1200);
+    setTimeout(() => onTriviaAnswer(correct), 1200);
   };
 
   return (
     <Modal transparent animationType="slide" visible onRequestClose={onClose}>
-      <Pressable
-        style={styles.overlay}
-        onPress={answered ? undefined : onClose}
-      >
-        <Pressable
-          style={[styles.modalCard, { borderColor: color }]}
-          onPress={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
+      <Pressable style={styles.overlay} onPress={answered ? undefined : onClose}>
+        <Pressable style={[styles.modalCard, { borderColor: color }]} onPress={e => e.stopPropagation()}>
           <View style={[styles.modalHeader, { backgroundColor: color }]}>
             <Text style={styles.modalHeaderText}>{task.displayCategory}</Text>
           </View>
-
-          {/* Body */}
           <View style={styles.modalBody}>
             <View style={[styles.modalIconOuter, { backgroundColor: color }]}>
               <View style={styles.modalIconInner}>
@@ -184,8 +225,6 @@ function TriviaModal({
             <Text style={[styles.modalPts, { color }]}>{task.points} pts</Text>
             <Text style={styles.modalDescription}>{task.description}</Text>
           </View>
-
-          {/* Choices */}
           <View style={styles.triviaChoicesContainer}>
             {task.triviaChoices!.map((choice, i) => {
               const isSelected = selectedChoice === i;
@@ -196,31 +235,13 @@ function TriviaModal({
 
               if (answered) {
                 if (isCorrectAnswer) {
-                  choiceStyle = {
-                    ...styles.triviaChoice,
-                    ...styles.triviaChoiceCorrect,
-                  };
-                  choiceTextStyle = {
-                    ...styles.triviaChoiceText,
-                    color: COLORS.white,
-                  };
-                  letterStyle = {
-                    ...styles.triviaChoiceLetter,
-                    ...styles.triviaChoiceLetterAnswered,
-                  };
+                  choiceStyle = { ...styles.triviaChoice, ...styles.triviaChoiceCorrect };
+                  choiceTextStyle = { ...styles.triviaChoiceText, color: COLORS.white };
+                  letterStyle = { ...styles.triviaChoiceLetter, ...styles.triviaChoiceLetterAnswered };
                 } else if (isSelected && !isCorrectAnswer) {
-                  choiceStyle = {
-                    ...styles.triviaChoice,
-                    ...styles.triviaChoiceWrong,
-                  };
-                  choiceTextStyle = {
-                    ...styles.triviaChoiceText,
-                    color: COLORS.white,
-                  };
-                  letterStyle = {
-                    ...styles.triviaChoiceLetter,
-                    ...styles.triviaChoiceLetterAnswered,
-                  };
+                  choiceStyle = { ...styles.triviaChoice, ...styles.triviaChoiceWrong };
+                  choiceTextStyle = { ...styles.triviaChoiceText, color: COLORS.white };
+                  letterStyle = { ...styles.triviaChoiceLetter, ...styles.triviaChoiceLetterAnswered };
                 }
               }
 
@@ -233,9 +254,7 @@ function TriviaModal({
                   disabled={answered}
                 >
                   <View style={letterStyle}>
-                    <Text style={styles.triviaChoiceLetterText}>
-                      {CHOICE_LETTERS[i]}
-                    </Text>
+                    <Text style={styles.triviaChoiceLetterText}>{CHOICE_LETTERS[i]}</Text>
                   </View>
                   <Text style={choiceTextStyle}>{choice}</Text>
                 </TouchableOpacity>
@@ -256,7 +275,6 @@ function TriviaModal({
               </Text>
             )}
           </View>
-
           {!answered && (
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
               <Text style={styles.closeBtnText}>{'\u2715'}</Text>
@@ -286,6 +304,17 @@ export default function CardCarousel({
   const [triviaTask, setTriviaTask] = useState<Task | null>(null);
   const flatListRef = useRef<FlatList>(null);
 
+  // Track active card on every scroll frame (auto-select centered card)
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const offsetX = e.nativeEvent.contentOffset.x;
+      const idx = Math.round(offsetX / SNAP_INTERVAL);
+      const clamped = Math.max(0, Math.min(idx, cards.length - 1));
+      if (clamped !== activeIndex) setActiveIndex(clamped);
+    },
+    [activeIndex, cards.length]
+  );
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -297,19 +326,13 @@ export default function CardCarousel({
         snapToInterval={SNAP_INTERVAL}
         decelerationRate="fast"
         contentContainerStyle={{ paddingHorizontal: H_PADDING }}
-        onMomentumScrollEnd={(e) => {
-          const idx = Math.round(
-            e.nativeEvent.contentOffset.x / SNAP_INTERVAL
-          );
-          setActiveIndex(Math.max(0, Math.min(idx, cards.length - 1)));
-        }}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         renderItem={({ item, index }) => {
-          const dist = Math.abs(index - activeIndex);
           return (
             <View style={{ width: CARD_WIDTH, marginHorizontal: CARD_GAP / 2 }}>
               <TaskCard
                 task={item}
-                distance={dist}
                 canDiscard={discardsRemaining > 0}
                 onComplete={() => onComplete(item.id)}
                 onDiscard={() => onDiscard(item.id)}
@@ -323,10 +346,7 @@ export default function CardCarousel({
       {/* Dot indicators */}
       <View style={styles.dots}>
         {cards.map((_, i) => (
-          <View
-            key={i}
-            style={[styles.dot, i === activeIndex && styles.dotActive]}
-          />
+          <View key={i} style={[styles.dot, i === activeIndex && styles.dotActive]} />
         ))}
       </View>
 
@@ -353,46 +373,45 @@ export default function CardCarousel({
 // ─────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
-    marginVertical: Math.round(4 * sh),
+    flex: 1,
+    justifyContent: 'center',
   },
 
   // ── Inline Card ────────────────────────────────────────────
   card: {
     backgroundColor: COLORS.cardBg,
-    borderRadius: Math.round(18 * sw),
+    borderRadius: Math.round(16 * sw),
     borderWidth: 2,
     overflow: 'hidden',
     ...SHADOWS.card,
   },
   cardHeader: {
-    paddingVertical: Math.round(10 * sh),
+    paddingVertical: Math.round(7 * sh),
     alignItems: 'center',
   },
   cardHeaderText: {
     color: COLORS.white,
     fontWeight: '900',
-    fontSize: Math.round(20 * sw),
+    fontSize: Math.round(17 * sw),
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
   cardBody: {
-    paddingHorizontal: Math.round(16 * sw),
-    paddingTop: Math.round(12 * sh),
-    paddingBottom: Math.round(6 * sh),
+    paddingHorizontal: Math.round(14 * sw),
+    paddingTop: Math.round(9 * sh),
+    paddingBottom: Math.round(5 * sh),
     alignItems: 'center',
-    gap: Math.round(8 * sh),
+    gap: Math.round(6 * sh),
   },
-
-  // Icon + points on same row
   iconPtsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Math.round(10 * sw),
+    gap: Math.round(8 * sw),
   },
   iconOuter: {
-    width: Math.round(48 * sw),
-    height: Math.round(48 * sw),
-    borderRadius: Math.round(12 * sw),
+    width: Math.round(41 * sw),
+    height: Math.round(41 * sw),
+    borderRadius: Math.round(10 * sw),
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
@@ -400,50 +419,47 @@ const styles = StyleSheet.create({
     ...SHADOWS.chip,
   },
   iconInner: {
-    width: Math.round(34 * sw),
-    height: Math.round(34 * sw),
-    borderRadius: Math.round(8 * sw),
+    width: Math.round(29 * sw),
+    height: Math.round(29 * sw),
+    borderRadius: Math.round(7 * sw),
     backgroundColor: 'rgba(255,255,255,0.93)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconEmoji: {
-    fontSize: Math.round(20 * sw),
+    fontSize: Math.round(16 * sw),
   },
   ptsText: {
     fontWeight: '900',
-    fontSize: Math.round(16 * sw),
+    fontSize: Math.round(15 * sw),
   },
-
   cardDescription: {
     color: COLORS.textDark,
-    fontSize: Math.round(15 * sw),
-    lineHeight: Math.round(21 * sw),
+    fontSize: Math.round(14 * sw),
+    lineHeight: Math.round(18 * sw),
     textAlign: 'center',
     fontWeight: '700',
   },
   cardFlavor: {
     color: COLORS.textMuted,
     fontSize: Math.round(12 * sw),
-    lineHeight: Math.round(16 * sw),
+    lineHeight: Math.round(15 * sw),
     textAlign: 'center',
     fontWeight: '400',
     fontStyle: 'italic',
-    paddingHorizontal: Math.round(4 * sw),
+    paddingHorizontal: Math.round(5 * sw),
   },
-
-  // Inline action buttons on card
   cardActions: {
     flexDirection: 'row',
-    gap: Math.round(10 * sw),
-    paddingHorizontal: Math.round(14 * sw),
-    paddingTop: Math.round(8 * sh),
-    paddingBottom: Math.round(14 * sh),
+    gap: Math.round(8 * sw),
+    paddingHorizontal: Math.round(12 * sw),
+    paddingTop: Math.round(6 * sh),
+    paddingBottom: Math.round(12 * sh),
   },
   cardActionBtn: {
     flex: 1,
-    paddingVertical: Math.round(12 * sh),
-    borderRadius: Math.round(12 * sw),
+    paddingVertical: Math.round(9 * sh),
+    borderRadius: Math.round(10 * sw),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -456,7 +472,7 @@ const styles = StyleSheet.create({
   completeBtnText: {
     color: COLORS.white,
     fontWeight: '800',
-    fontSize: Math.round(15 * sw),
+    fontSize: Math.round(14 * sw),
   },
   discardBtn: {
     backgroundColor: COLORS.white,
@@ -467,7 +483,7 @@ const styles = StyleSheet.create({
   discardBtnText: {
     color: COLORS.textBody,
     fontWeight: '700',
-    fontSize: Math.round(15 * sw),
+    fontSize: Math.round(14 * sw),
   },
   disabledBtn: {
     backgroundColor: COLORS.surfaceSecondary,
@@ -539,8 +555,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '800',
   },
-
-  // ── Trivia Choices ─────────────────────────────────────────
   triviaChoicesContainer: {
     padding: Math.round(14 * sw),
     paddingTop: Math.round(4 * sh),
@@ -602,7 +616,6 @@ const styles = StyleSheet.create({
   triviaResultWrong: {
     color: COLORS.redDark,
   },
-
   closeBtn: {
     position: 'absolute',
     top: Math.round(10 * sh),
@@ -619,7 +632,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: Math.round(6 * sw),
-    marginTop: Math.round(8 * sh),
+    marginTop: Math.round(6 * sh),
   },
   dot: {
     width: Math.round(6 * sw),

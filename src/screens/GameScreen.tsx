@@ -1,17 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
   StatusBar,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
   ImageBackground,
   Dimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import Confetti from '../components/Confetti';
 import { useGameStore } from '../store/gameStore';
 import CardCarousel from '../components/CardCarousel';
 import BigBoard from '../components/BigBoard';
@@ -25,7 +22,6 @@ const sw = SCREEN_W / 390;
 const sh = SCREEN_H / 844;
 
 export default function GameScreen() {
-  const navigation = useNavigation<any>();
   const {
     session,
     settings,
@@ -33,12 +29,14 @@ export default function GameScreen() {
     discardTask,
     swapChallengeTask,
     answerTrivia,
-    endSession,
     startSession,
   } = useGameStore();
 
   const parkId = settings.parkIds?.[0];
   const park = PARKS.find(p => p.id === parkId);
+
+  const [showSmallConfetti, setShowSmallConfetti] = useState(false);
+  const [showBigFirework, setShowBigFirework] = useState(false);
 
   useEffect(() => {
     if (!session?.active) {
@@ -54,22 +52,14 @@ export default function GameScreen() {
     );
   }
 
-  const handleEndSession = () => {
-    Alert.alert(
-      'End Session?',
-      'Your session score will be added to your lifetime total.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'End Session',
-          style: 'destructive',
-          onPress: () => {
-            endSession();
-            navigation.navigate('Home');
-          },
-        },
-      ]
-    );
+  const handleCompleteSmall = (id: string) => {
+    completeTask(id, false);
+    setShowSmallConfetti(true);
+  };
+
+  const handleCompleteBig = (id: string) => {
+    completeTask(id, true);
+    setShowBigFirework(true);
   };
 
   return (
@@ -80,11 +70,7 @@ export default function GameScreen() {
     >
       <SafeAreaView style={styles.safe}>
         <StatusBar barStyle="dark-content" />
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-        >
+
         {/* Top Bar */}
         <View style={styles.topBar}>
           <StreakFlame streak={session.currentStreak} />
@@ -95,47 +81,51 @@ export default function GameScreen() {
           </View>
         </View>
 
-        {/* Big Board */}
+        {/* Challenge Tasks */}
         <View style={styles.bigBoardWrapper}>
           <BigBoard
             tasks={session.challengeTasks}
             sessionScore={session.sessionScore}
-            onComplete={id => completeTask(id, true)}
+            onComplete={handleCompleteBig}
             onSwap={id => swapChallengeTask(id)}
           />
         </View>
 
-        {/* Divider */}
+        {/* Divider + Hand label */}
         <View style={styles.divider} />
-
-        {/* Hand Section Label */}
         <View style={styles.handHeader}>
           <Text style={styles.handLabel}>YOUR HAND</Text>
-          <DiscardPips remaining={session.discardsRemaining} max={2} />
+          <DiscardPips remaining={session.discardsRemaining} />
         </View>
 
         {/* Card Carousel */}
-        <CardCarousel
-          cards={session.hand}
-          onComplete={id => completeTask(id, false)}
-          onDiscard={id => discardTask(id)}
-          onTriviaAnswer={(id, correct) => answerTrivia(id, correct)}
-          discardsRemaining={session.discardsRemaining}
-        />
+        <View style={styles.carouselWrapper}>
+          <CardCarousel
+            cards={session.hand}
+            onComplete={handleCompleteSmall}
+            onDiscard={id => discardTask(id)}
+            onTriviaAnswer={(id, correct) => answerTrivia(id, correct)}
+            discardsRemaining={session.discardsRemaining}
+          />
+        </View>
 
-        {/* Session Stats Bar */}
+        {/* Stats Bar */}
         <View style={styles.statsBar}>
           <StatItem label="Completed" value={session.completedTasks.length} />
           <StatItem label="Streak" value={session.currentStreak} />
           <StatItem label="Session" value={`${session.sessionScore} pts`} />
         </View>
 
-        {/* End Session */}
-        <TouchableOpacity style={styles.endBtn} onPress={handleEndSession}>
-          <Text style={styles.endBtnText}>End Session</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+        {/* Small confetti for hand card completion */}
+        {showSmallConfetti && (
+          <Confetti type="small" onDone={() => setShowSmallConfetti(false)} />
+        )}
+
+        {/* Big firework for challenge task completion */}
+        {showBigFirework && (
+          <Confetti type="big" onDone={() => setShowBigFirework(false)} />
+        )}
+      </SafeAreaView>
     </ImageBackground>
   );
 }
@@ -156,9 +146,6 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
   },
-  scroll: {
-    paddingBottom: Math.round(16 * sh),
-  },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
@@ -169,13 +156,13 @@ const styles = StyleSheet.create({
     color: COLORS.textBody,
     fontSize: Math.round(16 * sw),
   },
-  // Top bar: ~44pt height
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Math.round(12 * sw),
-    height: Math.round(44 * sh),
+    paddingVertical: Math.round(10 * sh),
+    marginTop: Math.round(8 * sh),
     backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
@@ -184,7 +171,7 @@ const styles = StyleSheet.create({
   parkName: {
     color: COLORS.textDark,
     fontWeight: '900',
-    fontSize: Math.round(14 * sw),
+    fontSize: Math.round(13 * sw),
     letterSpacing: 0.5,
     flexShrink: 1,
     textAlign: 'center',
@@ -193,58 +180,59 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.green,
     borderRadius: RADII.chip,
-    paddingHorizontal: Math.round(12 * sw),
-    paddingVertical: Math.round(4 * sh),
-    minWidth: Math.round(60 * sw),
-    borderBottomWidth: 3,
+    paddingHorizontal: Math.round(10 * sw),
+    paddingVertical: Math.round(3 * sh),
+    minWidth: Math.round(52 * sw),
+    borderBottomWidth: 2,
     borderBottomColor: COLORS.greenDark,
     ...SHADOWS.chip,
   },
   scoreValue: {
     color: COLORS.white,
     fontWeight: '900',
-    fontSize: Math.round(18 * sw),
-    lineHeight: Math.round(22 * sw),
+    fontSize: Math.round(16 * sw),
+    lineHeight: Math.round(20 * sw),
   },
   scorePts: {
     color: 'rgba(255,255,255,0.8)',
-    fontSize: Math.round(9 * sw),
+    fontSize: Math.round(8 * sw),
     fontWeight: '600',
   },
-  // Challenge Tasks row: ~100pt
   bigBoardWrapper: {
-    marginBottom: Math.round(2 * sh),
+    marginTop: Math.round(8 * sh),
   },
-  // Divider + label + pips: ~36pt total
   divider: {
     height: 1,
     backgroundColor: COLORS.borderLight,
     marginHorizontal: Math.round(20 * sw),
-    marginVertical: Math.round(6 * sh),
+    marginTop: Math.round(10 * sh),
+    marginBottom: Math.round(6 * sh),
   },
   handHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Math.round(20 * sw),
-    marginBottom: Math.round(2 * sh),
-    height: Math.round(24 * sh),
+    marginBottom: Math.round(8 * sh),
   },
   handLabel: {
     color: COLORS.textMuted,
-    fontSize: Math.round(11 * sw),
+    fontSize: Math.round(10 * sw),
     fontWeight: '700',
     letterSpacing: 2,
   },
-  // Stats bar: ~40pt
+  carouselWrapper: {
+    flex: 1,
+  },
   statsBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     backgroundColor: COLORS.surface,
     marginHorizontal: Math.round(16 * sw),
     borderRadius: RADII.panel,
-    paddingVertical: Math.round(8 * sh),
-    marginTop: Math.round(10 * sh),
+    paddingVertical: Math.round(6 * sh),
+    marginTop: Math.round(6 * sh),
+    marginBottom: Math.round(8 * sh),
     borderWidth: 1,
     borderColor: COLORS.borderPanel,
     ...SHADOWS.card,
@@ -255,27 +243,11 @@ const styles = StyleSheet.create({
   statValue: {
     color: COLORS.green,
     fontWeight: '800',
-    fontSize: Math.round(16 * sw),
+    fontSize: Math.round(14 * sw),
   },
   statLabel: {
     color: COLORS.textMuted,
-    fontSize: Math.round(10 * sw),
+    fontSize: Math.round(9 * sw),
     marginTop: 1,
-  },
-  // End Session button: ~50pt
-  endBtn: {
-    marginHorizontal: Math.round(16 * sw),
-    marginTop: Math.round(10 * sh),
-    paddingVertical: Math.round(12 * sh),
-    borderRadius: RADII.button,
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1.5,
-    borderColor: COLORS.red,
-  },
-  endBtnText: {
-    color: COLORS.red,
-    fontWeight: '700',
-    fontSize: Math.round(14 * sw),
   },
 });
