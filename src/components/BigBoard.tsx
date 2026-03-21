@@ -7,9 +7,14 @@ import {
   Modal,
   Pressable,
   Alert,
+  Dimensions,
 } from 'react-native';
 import { Task } from '../types';
 import { COLORS, SHADOWS, RADII, CATEGORY_COLORS, CATEGORY_ICONS } from '../theme/balatro';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const sw = SCREEN_W / 390;
+const sh = SCREEN_H / 844;
 
 const DIFFICULTY_LABELS: Record<string, string> = {
   easy: 'Easy',
@@ -154,16 +159,17 @@ export default function BigBoard({ tasks, sessionScore, onComplete, onSwap }: Pr
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    marginBottom: 8,
+    paddingHorizontal: Math.round(16 * sw),
+    marginBottom: Math.round(2 * sh),
   },
   sectionTitle: {
     color: COLORS.textMuted,
-    fontSize: 11,
+    fontSize: Math.round(10 * sw),
     fontWeight: '700',
     letterSpacing: 2,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: Math.round(8 * sh),
+    marginTop: Math.round(6 * sh),
   },
   row: {
     flexDirection: 'row',
@@ -171,43 +177,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // ── Badge (compact) ───────────────────────────────────────────
+  // ── Badge (compact) — fits ~100pt row ────────────────────────
   badge: {
     alignItems: 'center',
     borderWidth: 2,
-    borderRadius: 56,
-    padding: 5,
-    width: 105,
+    borderRadius: Math.round(50 * sw),
+    padding: Math.round(4 * sw),
+    width: Math.round(90 * sw),
     backgroundColor: COLORS.white,
     ...SHADOWS.chip,
   },
   badgeCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: Math.round(58 * sw),
+    height: Math.round(58 * sw),
+    borderRadius: Math.round(29 * sw),
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: Math.round(2 * sh),
   },
   badgeIconInner: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: Math.round(38 * sw),
+    height: Math.round(38 * sw),
+    borderRadius: Math.round(19 * sw),
     backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   badgeIcon: {
-    fontSize: 26,
+    fontSize: Math.round(22 * sw),
   },
   badgePoints: {
     color: COLORS.textDark,
     fontWeight: '800',
-    fontSize: 16,
+    fontSize: Math.round(13 * sw),
   },
   badgePtsLabel: {
     color: COLORS.textMuted,
-    fontSize: 10,
+    fontSize: Math.round(9 * sw),
     fontWeight: '600',
   },
 

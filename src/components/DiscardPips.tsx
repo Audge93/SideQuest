@@ -1,6 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { COLORS, SHADOWS } from '../theme/balatro';
+
+const { width: SCREEN_W } = Dimensions.get('window');
+const sw = SCREEN_W / 390;
 
 interface Props {
   remaining: number;
@@ -27,28 +30,28 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    borderRadius: 16,
+    borderRadius: Math.round(12 * sw),
     borderWidth: 1.5,
     borderColor: COLORS.borderMedium,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: Math.round(8 * sw),
+    paddingVertical: Math.round(4 * sw),
     ...SHADOWS.chip,
   },
   label: {
     color: COLORS.textMuted,
-    fontSize: 8,
+    fontSize: Math.round(7 * sw),
     fontWeight: '700',
     letterSpacing: 1,
-    marginBottom: 4,
+    marginBottom: Math.round(3 * sw),
   },
   pips: {
     flexDirection: 'row',
-    gap: 4,
+    gap: Math.round(4 * sw),
   },
   pip: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: Math.round(7 * sw),
+    height: Math.round(7 * sw),
+    borderRadius: Math.round(3.5 * sw),
   },
   pipActive: {
     backgroundColor: '#009DFF',

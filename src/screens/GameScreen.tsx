@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
   ImageBackground,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
@@ -18,6 +19,10 @@ import StreakFlame from '../components/StreakFlame';
 import DiscardPips from '../components/DiscardPips';
 import { PARKS } from '../data/parks';
 import { COLORS, SHADOWS, RADII } from '../theme/balatro';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const sw = SCREEN_W / 390;
+const sh = SCREEN_H / 844;
 
 export default function GameScreen() {
   const navigation = useNavigation<any>();
@@ -152,7 +157,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scroll: {
-    paddingBottom: 32,
+    paddingBottom: Math.round(16 * sh),
   },
   loadingContainer: {
     flex: 1,
@@ -162,15 +167,15 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: COLORS.textBody,
-    fontSize: 16,
+    fontSize: Math.round(16 * sw),
   },
+  // Top bar: ~44pt height
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
+    paddingHorizontal: Math.round(12 * sw),
+    height: Math.round(44 * sh),
     backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
@@ -179,7 +184,7 @@ const styles = StyleSheet.create({
   parkName: {
     color: COLORS.textDark,
     fontWeight: '900',
-    fontSize: 16,
+    fontSize: Math.round(14 * sw),
     letterSpacing: 0.5,
     flexShrink: 1,
     textAlign: 'center',
@@ -188,9 +193,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.green,
     borderRadius: RADII.chip,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    minWidth: 70,
+    paddingHorizontal: Math.round(12 * sw),
+    paddingVertical: Math.round(4 * sh),
+    minWidth: Math.round(60 * sw),
     borderBottomWidth: 3,
     borderBottomColor: COLORS.greenDark,
     ...SHADOWS.chip,
@@ -198,44 +203,48 @@ const styles = StyleSheet.create({
   scoreValue: {
     color: COLORS.white,
     fontWeight: '900',
-    fontSize: 22,
-    lineHeight: 26,
+    fontSize: Math.round(18 * sw),
+    lineHeight: Math.round(22 * sw),
   },
   scorePts: {
     color: 'rgba(255,255,255,0.8)',
-    fontSize: 10,
+    fontSize: Math.round(9 * sw),
     fontWeight: '600',
   },
+  // Challenge Tasks row: ~100pt
   bigBoardWrapper: {
-    marginBottom: 8,
+    marginBottom: Math.round(2 * sh),
   },
+  // Divider + label + pips: ~36pt total
   divider: {
     height: 1,
     backgroundColor: COLORS.borderLight,
-    marginHorizontal: 20,
-    marginVertical: 12,
+    marginHorizontal: Math.round(20 * sw),
+    marginVertical: Math.round(6 * sh),
   },
   handHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 4,
+    paddingHorizontal: Math.round(20 * sw),
+    marginBottom: Math.round(2 * sh),
+    height: Math.round(24 * sh),
   },
   handLabel: {
     color: COLORS.textMuted,
-    fontSize: 11,
+    fontSize: Math.round(11 * sw),
     fontWeight: '700',
     letterSpacing: 2,
   },
+  // Stats bar: ~40pt
   statsBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     backgroundColor: COLORS.surface,
-    marginHorizontal: 16,
+    marginHorizontal: Math.round(16 * sw),
     borderRadius: RADII.panel,
-    paddingVertical: 12,
-    marginTop: 16,
+    paddingVertical: Math.round(8 * sh),
+    marginTop: Math.round(10 * sh),
     borderWidth: 1,
     borderColor: COLORS.borderPanel,
     ...SHADOWS.card,
@@ -246,17 +255,18 @@ const styles = StyleSheet.create({
   statValue: {
     color: COLORS.green,
     fontWeight: '800',
-    fontSize: 18,
+    fontSize: Math.round(16 * sw),
   },
   statLabel: {
     color: COLORS.textMuted,
-    fontSize: 11,
-    marginTop: 2,
+    fontSize: Math.round(10 * sw),
+    marginTop: 1,
   },
+  // End Session button: ~50pt
   endBtn: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    paddingVertical: 14,
+    marginHorizontal: Math.round(16 * sw),
+    marginTop: Math.round(10 * sh),
+    paddingVertical: Math.round(12 * sh),
     borderRadius: RADII.button,
     alignItems: 'center',
     backgroundColor: COLORS.surface,
@@ -266,6 +276,6 @@ const styles = StyleSheet.create({
   endBtnText: {
     color: COLORS.red,
     fontWeight: '700',
-    fontSize: 15,
+    fontSize: Math.round(14 * sw),
   },
 });

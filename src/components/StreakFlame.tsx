@@ -1,6 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { COLORS, SHADOWS } from '../theme/balatro';
+
+const { width: SCREEN_W } = Dimensions.get('window');
+const sw = SCREEN_W / 390;
 
 interface Props {
   streak: number;
@@ -49,24 +52,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.white,
-    borderRadius: 20,
+    borderRadius: Math.round(16 * sw),
     borderWidth: 1.5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    minWidth: 54,
+    paddingHorizontal: Math.round(8 * sw),
+    paddingVertical: Math.round(3 * sw),
+    minWidth: Math.round(44 * sw),
     borderColor: COLORS.borderMedium,
     ...SHADOWS.chip,
   },
   emoji: {
-    fontSize: 16,
+    fontSize: Math.round(14 * sw),
   },
   count: {
     fontWeight: '800',
-    fontSize: 15,
+    fontSize: Math.round(13 * sw),
   },
   zeroText: {
     color: COLORS.textMuted,
-    fontSize: 18,
+    fontSize: Math.round(16 * sw),
     fontWeight: '700',
   },
 });
