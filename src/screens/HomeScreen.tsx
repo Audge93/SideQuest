@@ -7,6 +7,7 @@ import {
   ScrollView,
   StatusBar,
   SafeAreaView,
+  ImageBackground,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
@@ -57,77 +58,85 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Side Quest</Text>
-          <Text style={styles.subtitle}>Turn wait times into play time</Text>
-        </View>
-
-        {/* Player Welcome */}
-        <View style={styles.welcomeCard}>
-          <Text style={styles.welcomeText}>Welcome back, {player.name}!</Text>
-          <View style={styles.lifetimeRow}>
-            <Text style={styles.lifetimeLabel}>Lifetime Score</Text>
-            <Text style={styles.lifetimeScore}>{player.lifetimeScore.toLocaleString()} pts</Text>
+    <ImageBackground
+      source={require('../../assets/GameBackgroundImage.png')}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <SafeAreaView style={styles.safe}>
+        <StatusBar barStyle="dark-content" />
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>Side Quest</Text>
+            <Text style={styles.subtitle}>Turn wait times into play time</Text>
           </View>
-        </View>
 
-        {/* Park Picker */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>SELECT YOUR PARK</Text>
-          {PARK_DISPLAY_GROUPS.map(group => (
-            <View key={group.label} style={styles.parkGroup}>
-              <Text style={styles.parkGroupLabel}>{group.label}</Text>
-              <View style={styles.parkRow}>
-                {group.parks.map(parkId => {
-                  const park = PARKS.find(p => p.id === parkId);
-                  if (!park) return null;
-                  const selected = selectedParkId === parkId;
-                  return (
-                    <TouchableOpacity
-                      key={parkId}
-                      style={[styles.parkChip, selected && styles.parkChipSelected]}
-                      onPress={() => handleSelectPark(parkId)}
-                    >
-                      <Text style={[styles.parkChipText, selected && styles.parkChipTextSelected]}>
-                        {park.shortName}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+          {/* Player Welcome */}
+          <View style={styles.welcomeCard}>
+            <Text style={styles.welcomeText}>Welcome back, {player.name}!</Text>
+            <View style={styles.lifetimeRow}>
+              <Text style={styles.lifetimeLabel}>Lifetime Score</Text>
+              <Text style={styles.lifetimeScore}>{player.lifetimeScore.toLocaleString()} pts</Text>
             </View>
-          ))}
-          {selectedPark && (
-            <Text style={styles.selectedParkName}>{selectedPark.name}</Text>
-          )}
-        </View>
+          </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actions}>
-          {session?.active && (
-            <TouchableOpacity style={styles.continueBtn} onPress={handleContinueGame}>
-              <Text style={styles.continueBtnText}>Continue Game</Text>
+          {/* Park Picker */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>SELECT YOUR PARK</Text>
+            {PARK_DISPLAY_GROUPS.map(group => (
+              <View key={group.label} style={styles.parkGroup}>
+                <Text style={styles.parkGroupLabel}>{group.label}</Text>
+                <View style={styles.parkRow}>
+                  {group.parks.map(parkId => {
+                    const park = PARKS.find(p => p.id === parkId);
+                    if (!park) return null;
+                    const selected = selectedParkId === parkId;
+                    return (
+                      <TouchableOpacity
+                        key={parkId}
+                        style={[styles.parkChip, selected && styles.parkChipSelected]}
+                        onPress={() => handleSelectPark(parkId)}
+                      >
+                        <Text style={[styles.parkChipText, selected && styles.parkChipTextSelected]}>
+                          {park.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
+            {selectedPark && (
+              <Text style={styles.selectedParkName}>{selectedPark.name}</Text>
+            )}
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.actions}>
+            {session?.active && (
+              <TouchableOpacity style={styles.continueBtn} onPress={handleContinueGame}>
+                <Text style={styles.continueBtnText}>Continue Game</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.startBtn} onPress={handleStartGame}>
+              <Text style={styles.startBtnText}>
+                {session?.active ? 'New Game' : 'Start Game'}
+              </Text>
             </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.startBtn} onPress={handleStartGame}>
-            <Text style={styles.startBtnText}>
-              {session?.active ? 'New Game' : 'Start Game'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+  },
   safe: {
     flex: 1,
-    backgroundColor: COLORS.bg,
   },
   scroll: {
     padding: 20,

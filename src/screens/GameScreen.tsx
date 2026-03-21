@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  ImageBackground,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
@@ -67,17 +68,22 @@ export default function GameScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
+    <ImageBackground
+      source={require('../../assets/HomeScreenBackgroundImage.png')}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <SafeAreaView style={styles.safe}>
+        <StatusBar barStyle="dark-content" />
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
         {/* Top Bar */}
         <View style={styles.topBar}>
           <StreakFlame streak={session.currentStreak} />
-          <Text style={styles.parkName}>{park?.shortName ?? '?'}</Text>
+          <Text style={styles.parkName}>{park?.name ?? '?'}</Text>
           <View style={styles.scoreBubble}>
             <Text style={styles.scoreValue}>{session.sessionScore}</Text>
             <Text style={styles.scorePts}>pts</Text>
@@ -125,6 +131,7 @@ export default function GameScreen() {
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
+    </ImageBackground>
   );
 }
 
@@ -138,9 +145,11 @@ function StatItem({ label, value }: { label: string; value: string | number }) {
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+  },
   safe: {
     flex: 1,
-    backgroundColor: COLORS.bg,
   },
   scroll: {
     paddingBottom: 32,
@@ -170,8 +179,10 @@ const styles = StyleSheet.create({
   parkName: {
     color: COLORS.textDark,
     fontWeight: '900',
-    fontSize: 22,
-    letterSpacing: 1,
+    fontSize: 16,
+    letterSpacing: 0.5,
+    flexShrink: 1,
+    textAlign: 'center',
   },
   scoreBubble: {
     alignItems: 'center',
