@@ -422,6 +422,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Math.round(14 * sh),
+    overflow: 'visible',
   },
   glowRing: {
     position: 'absolute',
@@ -437,10 +438,13 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
     ...SHADOWS.button,
   },
   badgeEmoji: {
     fontSize: Math.round(42 * sw),
+    lineHeight: Math.round(50 * sw),
+    textAlign: 'center',
   },
   tierPill: {
     paddingHorizontal: Math.round(16 * sw),

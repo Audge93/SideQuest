@@ -493,14 +493,17 @@ const styles = StyleSheet.create({
 
   // Sections
   section: {
-    marginBottom: 20,
+    marginBottom: 10,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    borderRadius: 14,
+    padding: 12,
   },
   sectionTitle: {
-    color: COLORS.textMuted,
-    fontSize: 11,
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 10,
     fontWeight: '700',
     letterSpacing: 2,
-    marginBottom: 10,
+    marginBottom: 6,
   },
 
   // Dropdown
@@ -509,12 +512,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: 'rgba(255,255,255,0.90)',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderWidth: 1.5,
-    borderColor: COLORS.borderMedium,
-    ...SHADOWS.chip,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   dropdownSelected: {
     flexDirection: 'row',
@@ -544,18 +546,18 @@ const styles = StyleSheet.create({
   },
   dropdownList: {
     backgroundColor: 'rgba(255,255,255,0.94)',
-    borderRadius: 14,
-    marginTop: 6,
+    borderRadius: 10,
+    marginTop: 4,
     borderWidth: 1,
-    borderColor: COLORS.borderPanel,
+    borderColor: 'rgba(255,255,255,0.3)',
     overflow: 'hidden',
     ...SHADOWS.card,
   },
   dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
   },
   dropdownItemSelected: {
     backgroundColor: 'rgba(120,212,160,0.12)',
