@@ -36,16 +36,16 @@ function catBadges(
 
 const DEFAULT_BADGES: Badge[] = [
   // Category badges (10 categories x 4 tiers = 40)
-  ...catBadges('sharp-eye', 'Sharp Eye', '🔍', 'observation', 'Find', [5, 15, 30, 50]),
-  ...catBadges('shutterbug', 'Shutterbug', '📸', 'photo', 'Photo', [5, 12, 25, 40]),
-  ...catBadges('brain-box', 'Brain Box', '🧠', 'trivia', 'Trivia', [5, 15, 30, 50]),
-  ...catBadges('scene-stealer', 'Scene Stealer', '🎬', 'action', 'Act', [5, 12, 25, 40]),
-  ...catBadges('thrill-seeker', 'Thrill Seeker', '🎢', 'ride', 'Ride', [5, 15, 30, 50]),
-  ...catBadges('foodie', 'Foodie', '🍦', 'food', 'Treat', [3, 8, 15, 25]),
-  ...catBadges('pin-pro', 'Pin Pro', '📌', 'pin', 'Pins', [3, 8, 15, 25]),
-  ...catBadges('star-struck', 'Star Struck', '🎭', 'character', 'Meet', [3, 8, 15, 25]),
-  ...catBadges('trailblazer', 'Trailblazer', '🗺️', 'exploration', 'Explore', [5, 12, 25, 40]),
-  ...catBadges('treasure-hunter', 'Treasure Hunter', '🎯', 'scavenger', 'Seek', [5, 12, 25, 40]),
+  ...catBadges('sharp-eye', 'Sharp Eye', '🔍', 'observation', 'Find', [10, 25, 50, 100]),
+  ...catBadges('shutterbug', 'Shutterbug', '📸', 'photo', 'Photo', [10, 25, 50, 100]),
+  ...catBadges('brain-box', 'Brain Box', '🧠', 'trivia', 'Trivia', [10, 25, 50, 100]),
+  ...catBadges('scene-stealer', 'Scene Stealer', '🎬', 'action', 'Act', [10, 25, 50, 100]),
+  ...catBadges('thrill-seeker', 'Thrill Seeker', '🎢', 'ride', 'Ride', [10, 25, 50, 100]),
+  ...catBadges('foodie', 'Foodie', '🍦', 'food', 'Treat', [10, 25, 50, 100]),
+  ...catBadges('pin-pro', 'Pin Pro', '📌', 'pin', 'Pins', [10, 25, 50, 100]),
+  ...catBadges('star-struck', 'Star Struck', '🎭', 'character', 'Meet', [10, 25, 50, 100]),
+  ...catBadges('trailblazer', 'Trailblazer', '🗺️', 'exploration', 'Explore', [10, 25, 50, 100]),
+  ...catBadges('treasure-hunter', 'Treasure Hunter', '🎯', 'scavenger', 'Seek', [10, 25, 50, 100]),
   // Milestone badges (tiered)
   { id: 'first-steps', name: 'First Steps', description: 'Complete your first task', icon: '🎉', tier: 'bronze', earned: false },
   // Streak tiers
@@ -98,6 +98,7 @@ const DEFAULT_PLAYER: Player = {
   lifetimeScore: 0,
   badges: DEFAULT_BADGES,
   visitedParks: [],
+  categoryCompletions: {},
 };
 
 // ─── Store Types ──────────────────────────────────────────────────────────────
@@ -176,16 +177,16 @@ function pickReplacement(pool: Task[], exclude: Task[]): Task | undefined {
 
 // Category badge tier thresholds (must match catBadges calls above)
 const CAT_THRESHOLDS: Record<string, [number, number, number, number]> = {
-  'sharp-eye': [5, 15, 30, 50],
-  'shutterbug': [5, 12, 25, 40],
-  'brain-box': [5, 15, 30, 50],
-  'scene-stealer': [5, 12, 25, 40],
-  'thrill-seeker': [5, 15, 30, 50],
-  'foodie': [3, 8, 15, 25],
-  'pin-pro': [3, 8, 15, 25],
-  'star-struck': [3, 8, 15, 25],
-  'trailblazer': [5, 12, 25, 40],
-  'treasure-hunter': [5, 12, 25, 40],
+  'sharp-eye': [10, 25, 50, 100],
+  'shutterbug': [10, 25, 50, 100],
+  'brain-box': [10, 25, 50, 100],
+  'scene-stealer': [10, 25, 50, 100],
+  'thrill-seeker': [10, 25, 50, 100],
+  'foodie': [10, 25, 50, 100],
+  'pin-pro': [10, 25, 50, 100],
+  'star-struck': [10, 25, 50, 100],
+  'trailblazer': [10, 25, 50, 100],
+  'treasure-hunter': [10, 25, 50, 100],
 };
 
 const CAT_TO_CATEGORY: Record<string, string> = {
@@ -205,14 +206,27 @@ const TIER_INDEX: Record<BadgeTier, number> = { bronze: 0, silver: 1, gold: 2, p
 
 const CAT_BASE_IDS = Object.keys(CAT_THRESHOLDS);
 
+// Build combined category counts: lifetime + current session
+function buildCategoryCounts(
+  lifetimeCounts: Record<string, number>,
+  sessionTasks: Task[],
+): Record<string, number> {
+  const counts: Record<string, number> = { ...lifetimeCounts };
+  for (const t of sessionTasks) {
+    counts[t.category] = (counts[t.category] || 0) + 1;
+  }
+  return counts;
+}
+
 function checkBadges(
-  session: Session,
   badges: Badge[],
+  categoryCounts: Record<string, number>,
+  totalCompletions: number,
+  currentStreak: number,
   lifetimeScore: number,
   visitedParks: string[],
 ): Badge[] {
-  const completed = session.completedTasks;
-  const countByCategory = (cat: string) => completed.filter(t => t.category === cat).length;
+  const countByCategory = (cat: string) => categoryCounts[cat] || 0;
 
   return badges.map(b => {
     if (b.earned) return b;
@@ -232,11 +246,11 @@ function checkBadges(
 
     // Milestone badges
     switch (b.id) {
-      case 'first-steps': earned = completed.length >= 1; break;
-      case 'streak-bronze': earned = session.currentStreak >= 5; break;
-      case 'streak-silver': earned = session.currentStreak >= 10; break;
-      case 'streak-gold': earned = session.currentStreak >= 20; break;
-      case 'streak-platinum': earned = session.currentStreak >= 30; break;
+      case 'first-steps': earned = totalCompletions >= 1; break;
+      case 'streak-bronze': earned = currentStreak >= 5; break;
+      case 'streak-silver': earned = currentStreak >= 10; break;
+      case 'streak-gold': earned = currentStreak >= 20; break;
+      case 'streak-platinum': earned = currentStreak >= 30; break;
       case 'score-bronze': earned = lifetimeScore >= 100; break;
       case 'score-silver': earned = lifetimeScore >= 500; break;
       case 'score-gold': earned = lifetimeScore >= 1000; break;
@@ -265,6 +279,12 @@ function checkBadges(
 
     return earned ? { ...b, earned: true, earnedAt: Date.now() } : b;
   });
+}
+
+// Detect which badges were newly earned by comparing old vs new by id
+function findNewlyEarned(oldBadges: Badge[], newBadges: Badge[]): Badge[] {
+  const oldEarnedIds = new Set(oldBadges.filter(b => b.earned).map(b => b.id));
+  return newBadges.filter(b => b.earned && !oldEarnedIds.has(b.id));
 }
 
 // ─── Zustand Store ────────────────────────────────────────────────────────────
@@ -330,15 +350,29 @@ export const useGameStore = create<GameState>((set, get) => ({
     // Deduplicate visited parks
     const allVisited = [...new Set([...player.visitedParks, ...session.parkIds])];
 
-    // Check badges (run twice so completionist can see freshly earned category badges)
-    let updatedBadges = checkBadges(session, player.badges, newLifetime, allVisited);
-    updatedBadges = checkBadges(session, updatedBadges, newLifetime, allVisited);
+    // Merge session category completions into lifetime counts
+    const updatedCatCompletions = { ...(player.categoryCompletions || {}) };
+    for (const t of session.completedTasks) {
+      updatedCatCompletions[t.category] = (updatedCatCompletions[t.category] || 0) + 1;
+    }
+
+    // Check badges using combined lifetime counts (no session tasks since they're now merged)
+    const totalCompletions = Object.values(updatedCatCompletions).reduce((a, b) => a + b, 0);
+    let updatedBadges = checkBadges(
+      player.badges, updatedCatCompletions, totalCompletions,
+      session.currentStreak, newLifetime, allVisited,
+    );
+    updatedBadges = checkBadges(
+      updatedBadges, updatedCatCompletions, totalCompletions,
+      session.currentStreak, newLifetime, allVisited,
+    );
 
     const updatedPlayer: Player = {
       ...player,
       lifetimeScore: newLifetime,
       badges: updatedBadges,
       visitedParks: allVisited,
+      categoryCompletions: updatedCatCompletions,
     };
 
     set({
@@ -395,16 +429,28 @@ export const useGameStore = create<GameState>((set, get) => ({
       completedTasks: [...session.completedTasks, task],
     };
 
-    // Check badges after completion and detect newly earned ones
+    // Check badges after completion — combine lifetime + session counts
     const { player } = get();
     const newLifetime = player.lifetimeScore + newScore;
     const allVisited = [...new Set([...player.visitedParks, ...updatedSession.parkIds])];
-    let updatedBadges = checkBadges(updatedSession, player.badges, newLifetime, allVisited);
-    updatedBadges = checkBadges(updatedSession, updatedBadges, newLifetime, allVisited);
-
-    const freshlyEarned = updatedBadges.filter(
-      (b, i) => b.earned && !player.badges[i].earned
+    const combinedCounts = buildCategoryCounts(
+      player.categoryCompletions || {},
+      updatedSession.completedTasks,
     );
+    const totalCompletions = Object.values(combinedCounts).reduce((a, b) => a + b, 0);
+
+    let updatedBadges = checkBadges(
+      player.badges, combinedCounts, totalCompletions,
+      newStreak, newLifetime, allVisited,
+    );
+    // Run twice so completionist badges can see freshly earned category badges
+    updatedBadges = checkBadges(
+      updatedBadges, combinedCounts, totalCompletions,
+      newStreak, newLifetime, allVisited,
+    );
+
+    // Detect newly earned badges by id (safe across storage loads)
+    const freshlyEarned = findNewlyEarned(player.badges, updatedBadges);
 
     set({
       session: updatedSession,

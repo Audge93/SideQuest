@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ImageBackground,
   Dimensions,
 } from 'react-native';
+import { Badge } from '../types';
 import Confetti from '../components/Confetti';
 import BadgeUnlockPopup from '../components/BadgeUnlockPopup';
 import { useGameStore } from '../store/gameStore';
@@ -40,23 +41,39 @@ export default function GameScreen() {
 
   const [showSmallConfetti, setShowSmallConfetti] = useState(false);
   const [showBigFirework, setShowBigFirework] = useState(false);
-  const [badgePopupIndex, setBadgePopupIndex] = useState(0);
-  const [showBadgePopup, setShowBadgePopup] = useState(false);
 
-  // When new badges are earned, start showing them one by one
+  // Badge popup queue — show badges one at a time with a delay after confetti
+  const [badgeQueue, setBadgeQueue] = useState<Badge[]>([]);
+  const [activeBadge, setActiveBadge] = useState<Badge | null>(null);
+  const prevBadgeCountRef = useRef(newlyEarnedBadges.length);
+
   useEffect(() => {
-    if (newlyEarnedBadges.length > 0 && !showBadgePopup) {
-      setBadgePopupIndex(0);
-      setShowBadgePopup(true);
+    // Only react when new badges are added (length increases)
+    if (newlyEarnedBadges.length > prevBadgeCountRef.current) {
+      const newOnes = newlyEarnedBadges.slice(prevBadgeCountRef.current);
+      // Delay popup so confetti plays first
+      const timer = setTimeout(() => {
+        setBadgeQueue(prev => [...prev, ...newOnes]);
+      }, 1200);
+      prevBadgeCountRef.current = newlyEarnedBadges.length;
+      return () => clearTimeout(timer);
     }
+    prevBadgeCountRef.current = newlyEarnedBadges.length;
   }, [newlyEarnedBadges.length]);
 
+  // Show next badge in queue
+  useEffect(() => {
+    if (badgeQueue.length > 0 && !activeBadge) {
+      setActiveBadge(badgeQueue[0]);
+      setBadgeQueue(prev => prev.slice(1));
+    }
+  }, [badgeQueue, activeBadge]);
+
   const handleBadgeDismiss = () => {
-    const nextIndex = badgePopupIndex + 1;
-    if (nextIndex < newlyEarnedBadges.length) {
-      setBadgePopupIndex(nextIndex);
-    } else {
-      setShowBadgePopup(false);
+    setActiveBadge(null);
+    // If queue is now empty, clear the store and reset ref
+    if (badgeQueue.length === 0) {
+      prevBadgeCountRef.current = 0;
       clearNewBadges();
     }
   };
@@ -149,15 +166,16 @@ export default function GameScreen() {
           <Confetti type="big" onDone={() => setShowBigFirework(false)} />
         )}
 
-        {/* Badge unlock popup */}
-        {showBadgePopup && newlyEarnedBadges[badgePopupIndex] && (
-          <BadgeUnlockPopup
-            key={newlyEarnedBadges[badgePopupIndex].id}
-            badge={newlyEarnedBadges[badgePopupIndex]}
-            onDismiss={handleBadgeDismiss}
-          />
-        )}
       </SafeAreaView>
+
+      {/* Badge unlock popup — rendered outside SafeAreaView for full-screen overlay */}
+      {activeBadge && (
+        <BadgeUnlockPopup
+          key={activeBadge.id}
+          badge={activeBadge}
+          onDismiss={handleBadgeDismiss}
+        />
+      )}
     </ImageBackground>
   );
 }

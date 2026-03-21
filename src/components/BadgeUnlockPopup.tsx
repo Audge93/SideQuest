@@ -361,6 +361,14 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
             {badge.description}
           </Animated.Text>
 
+          {/* Completed progress bar */}
+          <Animated.View style={[styles.completedBar, { opacity: descOpacity }]}>
+            <View style={styles.completedTrack}>
+              <View style={[styles.completedFill, { backgroundColor: tierColor }]} />
+            </View>
+            <Text style={[styles.completedText, { color: tierColor }]}>Complete!</Text>
+          </Animated.View>
+
           {/* Dismiss button */}
           <Animated.View
             style={{
@@ -458,7 +466,30 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     textAlign: 'center',
     lineHeight: Math.round(18 * sw),
-    marginBottom: Math.round(20 * sh),
+    marginBottom: Math.round(8 * sh),
+  },
+  completedBar: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: Math.round(16 * sh),
+  },
+  completedTrack: {
+    width: '80%',
+    height: Math.round(8 * sh),
+    backgroundColor: COLORS.borderLight,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: Math.round(6 * sh),
+  },
+  completedFill: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 4,
+  },
+  completedText: {
+    fontWeight: '900',
+    fontSize: Math.round(13 * sw),
+    letterSpacing: 0.5,
   },
   dismissBtn: {
     backgroundColor: COLORS.green,

@@ -60,6 +60,7 @@ export interface Player {
   lifetimeScore: number;
   badges: Badge[];
   visitedParks: string[];
+  categoryCompletions: Record<string, number>;
 }
 
 export interface Session {

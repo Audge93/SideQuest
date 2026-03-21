@@ -23,8 +23,36 @@ const TIER_COLORS: Record<BadgeTier, string> = {
 
 const TIER_LABELS: BadgeTier[] = ['bronze', 'silver', 'gold', 'platinum'];
 
+// Maps badge base id → task category for progress tracking
+const BADGE_TO_CATEGORY: Record<string, string> = {
+  'sharp-eye': 'observation',
+  'shutterbug': 'photo',
+  'brain-box': 'trivia',
+  'scene-stealer': 'action',
+  'thrill-seeker': 'ride',
+  'foodie': 'food',
+  'pin-pro': 'pin',
+  'star-struck': 'character',
+  'trailblazer': 'exploration',
+  'treasure-hunter': 'scavenger',
+};
+
+// Extracts threshold from badge description like "Complete 5 Find tasks"
+function getThreshold(badge: Badge): number | null {
+  const match = badge.description.match(/^Complete (\d+)/);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+// Gets the category for a badge id like "sharp-eye-bronze"
+function getCategoryForBadge(badgeId: string): string | null {
+  for (const [baseId, category] of Object.entries(BADGE_TO_CATEGORY)) {
+    if (badgeId.startsWith(baseId)) return category;
+  }
+  return null;
+}
+
 export default function ProfileScreen() {
-  const { player, updatePlayerName } = useGameStore();
+  const { player, session, updatePlayerName } = useGameStore();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(player.name);
 
@@ -39,6 +67,14 @@ export default function ProfileScreen() {
   };
 
   const earnedBadges = player.badges.filter(b => b.earned);
+
+  // Build combined category counts (lifetime + current session)
+  const combinedCounts: Record<string, number> = { ...(player.categoryCompletions || {}) };
+  if (session) {
+    for (const t of session.completedTasks) {
+      combinedCounts[t.category] = (combinedCounts[t.category] || 0) + 1;
+    }
+  }
 
   // Group badges by tier
   const badgesByTier: Record<BadgeTier, Badge[]> = {
@@ -120,7 +156,12 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.badgeGrid}>
                 {tierBadges.map(badge => (
-                  <BadgeTile key={badge.id} badge={badge} tierColor={TIER_COLORS[tier]} />
+                  <BadgeTile
+                    key={badge.id}
+                    badge={badge}
+                    tierColor={TIER_COLORS[tier]}
+                    categoryCounts={combinedCounts}
+                  />
                 ))}
               </View>
             </View>
@@ -131,13 +172,52 @@ export default function ProfileScreen() {
   );
 }
 
-function BadgeTile({ badge, tierColor }: { badge: Badge; tierColor: string }) {
+function BadgeTile({
+  badge,
+  tierColor,
+  categoryCounts,
+}: {
+  badge: Badge;
+  tierColor: string;
+  categoryCounts: Record<string, number>;
+}) {
   const earned = badge.earned;
+  const category = getCategoryForBadge(badge.id);
+  const threshold = getThreshold(badge);
+  const current = category ? (categoryCounts[category] || 0) : null;
+  const showProgress = category && threshold !== null && !earned;
+  const progressPct = showProgress ? Math.min((current! / threshold!) * 100, 100) : 0;
+
   return (
     <View style={[styles.badgeTile, earned ? { borderColor: tierColor } : styles.badgeTileLocked]}>
       <Text style={[styles.badgeIcon, !earned && styles.badgeIconLocked]}>{badge.icon}</Text>
       <Text style={[styles.badgeName, !earned && styles.badgeNameLocked]}>{badge.name}</Text>
       <Text style={styles.badgeDescription}>{badge.description}</Text>
+
+      {/* Progress counter for category badges */}
+      {showProgress && (
+        <View style={styles.progressContainer}>
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${progressPct}%`, backgroundColor: tierColor },
+              ]}
+            />
+          </View>
+          <Text style={styles.progressText}>
+            {current} / {threshold}
+          </Text>
+        </View>
+      )}
+
+      {/* Earned counter for completed category badges */}
+      {earned && category && threshold !== null && (
+        <Text style={[styles.progressTextEarned, { color: tierColor }]}>
+          ✓ {threshold} / {threshold}
+        </Text>
+      )}
+
       {earned && badge.earnedAt && (
         <Text style={styles.badgeDate}>
           {new Date(badge.earnedAt).toLocaleDateString()}
@@ -328,6 +408,33 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: 'center',
     lineHeight: 16,
+  },
+  progressContainer: {
+    width: '100%',
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  progressTrack: {
+    width: '100%',
+    height: 6,
+    backgroundColor: COLORS.borderLight,
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginBottom: 4,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  progressText: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  progressTextEarned: {
+    fontSize: 11,
+    fontWeight: '800',
+    marginTop: 6,
   },
   badgeDate: {
     color: COLORS.textLight,
