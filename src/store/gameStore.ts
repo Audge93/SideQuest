@@ -107,6 +107,7 @@ interface GameState {
   player: Player;
   session: Session | null;
   isLoading: boolean;
+  newlyEarnedBadges: Badge[];
 
   updateSettings: (patch: Partial<Settings>) => void;
   updateCategoryToggle: (category: keyof CategoryToggles, value: boolean) => void;
@@ -119,6 +120,7 @@ interface GameState {
   discardTask: (taskId: string) => void;
   swapChallengeTask: (taskId: string) => void;
   answerTrivia: (taskId: string, correct: boolean) => void;
+  clearNewBadges: () => void;
 
   loadFromStorage: () => Promise<void>;
   saveToStorage: () => Promise<void>;
@@ -272,6 +274,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   player: DEFAULT_PLAYER,
   session: null,
   isLoading: true,
+  newlyEarnedBadges: [],
 
   updateSettings: (patch) => {
     set(s => ({ settings: { ...s.settings, ...patch } }));
@@ -392,7 +395,22 @@ export const useGameStore = create<GameState>((set, get) => ({
       completedTasks: [...session.completedTasks, task],
     };
 
-    set({ session: updatedSession });
+    // Check badges after completion and detect newly earned ones
+    const { player } = get();
+    const newLifetime = player.lifetimeScore + newScore;
+    const allVisited = [...new Set([...player.visitedParks, ...updatedSession.parkIds])];
+    let updatedBadges = checkBadges(updatedSession, player.badges, newLifetime, allVisited);
+    updatedBadges = checkBadges(updatedSession, updatedBadges, newLifetime, allVisited);
+
+    const freshlyEarned = updatedBadges.filter(
+      (b, i) => b.earned && !player.badges[i].earned
+    );
+
+    set({
+      session: updatedSession,
+      player: { ...player, badges: updatedBadges },
+      newlyEarnedBadges: [...get().newlyEarnedBadges, ...freshlyEarned],
+    });
     get().saveToStorage();
   },
 
@@ -462,6 +480,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       set({ session: updatedSession });
       get().saveToStorage();
     }
+  },
+
+  clearNewBadges: () => {
+    set({ newlyEarnedBadges: [] });
   },
 
   loadFromStorage: async () => {

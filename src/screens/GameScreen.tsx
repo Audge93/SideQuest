@@ -9,6 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import Confetti from '../components/Confetti';
+import BadgeUnlockPopup from '../components/BadgeUnlockPopup';
 import { useGameStore } from '../store/gameStore';
 import CardCarousel from '../components/CardCarousel';
 import BigBoard from '../components/BigBoard';
@@ -30,6 +31,8 @@ export default function GameScreen() {
     swapChallengeTask,
     answerTrivia,
     startSession,
+    newlyEarnedBadges,
+    clearNewBadges,
   } = useGameStore();
 
   const parkId = settings.parkIds?.[0];
@@ -37,6 +40,26 @@ export default function GameScreen() {
 
   const [showSmallConfetti, setShowSmallConfetti] = useState(false);
   const [showBigFirework, setShowBigFirework] = useState(false);
+  const [badgePopupIndex, setBadgePopupIndex] = useState(0);
+  const [showBadgePopup, setShowBadgePopup] = useState(false);
+
+  // When new badges are earned, start showing them one by one
+  useEffect(() => {
+    if (newlyEarnedBadges.length > 0 && !showBadgePopup) {
+      setBadgePopupIndex(0);
+      setShowBadgePopup(true);
+    }
+  }, [newlyEarnedBadges.length]);
+
+  const handleBadgeDismiss = () => {
+    const nextIndex = badgePopupIndex + 1;
+    if (nextIndex < newlyEarnedBadges.length) {
+      setBadgePopupIndex(nextIndex);
+    } else {
+      setShowBadgePopup(false);
+      clearNewBadges();
+    }
+  };
 
   useEffect(() => {
     if (!session?.active) {
@@ -124,6 +147,15 @@ export default function GameScreen() {
         {/* Big firework for challenge task completion */}
         {showBigFirework && (
           <Confetti type="big" onDone={() => setShowBigFirework(false)} />
+        )}
+
+        {/* Badge unlock popup */}
+        {showBadgePopup && newlyEarnedBadges[badgePopupIndex] && (
+          <BadgeUnlockPopup
+            key={newlyEarnedBadges[badgePopupIndex].id}
+            badge={newlyEarnedBadges[badgePopupIndex]}
+            onDismiss={handleBadgeDismiss}
+          />
         )}
       </SafeAreaView>
     </ImageBackground>
