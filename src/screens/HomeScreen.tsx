@@ -154,7 +154,7 @@ export default function HomeScreen() {
               <Text style={styles.logoSide}>SIDE</Text>
               <View style={styles.logoDivider}>
                 <View style={styles.logoDividerLine} />
-                <Text style={styles.logoDividerIcon}>🃏</Text>
+                <Text style={styles.logoDividerIcon}>✦</Text>
                 <View style={styles.logoDividerLine} />
               </View>
               <Text style={styles.logoQuest}>QUEST</Text>
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   logoSide: {
     fontSize: 38,
     fontWeight: '900',
-    color: COLORS.textDark,
+    color: '#B8A9D4',
     letterSpacing: 12,
     textAlign: 'center',
   },
@@ -417,17 +417,18 @@ const styles = StyleSheet.create({
   logoDividerLine: {
     flex: 1,
     height: 2,
-    backgroundColor: COLORS.green,
+    backgroundColor: '#D4C4EE',
     borderRadius: 1,
   },
   logoDividerIcon: {
-    fontSize: 28,
+    fontSize: 20,
     marginHorizontal: 10,
+    color: '#C8A4F0',
   },
   logoQuest: {
     fontSize: 44,
     fontWeight: '900',
-    color: COLORS.green,
+    color: '#9B7FD4',
     letterSpacing: 6,
     textAlign: 'center',
   },
