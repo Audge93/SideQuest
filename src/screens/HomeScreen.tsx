@@ -26,7 +26,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
 // CategoryToggles type used indirectly via updateCategoryToggle
 import { PARKS } from '../data/parks';
-import { COLORS, SHADOWS, RADII } from '../theme/balatro';
+import { COLORS, SHADOWS, RADII } from '../theme/theme';
 
 // ─── Resort → Park mapping ──────────────────────────────────────────────────
 

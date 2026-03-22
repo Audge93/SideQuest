@@ -19,7 +19,7 @@ import BigBoard from '../components/BigBoard';
 import StreakFlame from '../components/StreakFlame';
 import DiscardPips from '../components/DiscardPips';
 import { PARKS } from '../data/parks';
-import { COLORS, SHADOWS, RADII } from '../theme/balatro';
+import { COLORS, SHADOWS, RADII } from '../theme/theme';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const sw = SCREEN_W / 390;

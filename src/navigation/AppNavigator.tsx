@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { COLORS } from '../theme/balatro';
+import { COLORS } from '../theme/theme';
 
 import HomeScreen from '../screens/HomeScreen';
 import GameScreen from '../screens/GameScreen';

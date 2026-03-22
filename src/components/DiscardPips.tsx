@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { COLORS, SHADOWS } from '../theme/balatro';
+import { COLORS, SHADOWS } from '../theme/theme';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const sw = SCREEN_W / 390;

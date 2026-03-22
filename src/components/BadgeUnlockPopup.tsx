@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Badge, BadgeTier } from '../types';
-import { COLORS, SHADOWS, RADII } from '../theme/balatro';
+import { COLORS, SHADOWS, RADII } from '../theme/theme';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const sw = SCREEN_W / 390;

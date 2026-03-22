@@ -13,7 +13,7 @@ import Slider from '@react-native-community/slider';
 import { useGameStore } from '../store/gameStore';
 import { CategoryToggles } from '../types';
 import { RIDES } from '../data/parks';
-import { COLORS, RADII } from '../theme/balatro';
+import { COLORS, RADII } from '../theme/theme';
 
 const CATEGORY_INFO: { key: keyof CategoryToggles; label: string; icon: string }[] = [
   { key: 'observation', label: 'Observation', icon: '👁️' },

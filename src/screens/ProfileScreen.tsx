@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useGameStore } from '../store/gameStore';
 import { Badge, BadgeTier } from '../types';
-import { COLORS, SHADOWS, RADII } from '../theme/balatro';
+import { COLORS, SHADOWS, RADII } from '../theme/theme';
 
 const TIER_COLORS: Record<BadgeTier, string> = {
   bronze: '#CD7F32',
