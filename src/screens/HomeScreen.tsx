@@ -311,6 +311,14 @@ export default function HomeScreen() {
               {selectedPark?.name ?? 'Selected Park'}
             </Text>
 
+            {/* Welcome tooltip */}
+            <View style={styles.tooltip}>
+              <Text style={styles.tooltipIcon}>💡</Text>
+              <Text style={styles.tooltipText}>
+                Welcome to Side Quest. This game can be played solo or co-op. To customize your gameplay to your theme park day, please indicate the height of your smallest player. The game will make sure not to give you tasks that are too tall.
+              </Text>
+            </View>
+
             {/* Player / Team Name */}
             <View style={styles.modalDivider} />
             <Text style={styles.modalFieldLabel}>PLAYER / TEAM NAME</Text>
@@ -382,14 +390,6 @@ export default function HomeScreen() {
                 </View>
               </View>
             )}
-
-            {/* Tooltip */}
-            <View style={styles.tooltip}>
-              <Text style={styles.tooltipIcon}>💡</Text>
-              <Text style={styles.tooltipText}>
-                Welcome to Side Quest. This game can be played solo or co-op. To customize your gameplay to your theme park day, please indicate the height of your smallest player. The game will make sure not to give you tasks that are too tall.
-              </Text>
-            </View>
 
             {/* Action Buttons */}
             <View style={styles.modalActions}>
