@@ -177,7 +177,7 @@ export default function HomeScreen() {
           {/* Player Welcome */}
           <View style={styles.welcomeCard}>
             <Text style={styles.welcomeText}>
-              {player.name && player.name !== 'Player 1'
+              {player.name && player.name !== 'Player Name'
                 ? `Welcome back, ${player.name}!`
                 : 'Welcome!'}
             </Text>
@@ -220,7 +220,7 @@ export default function HomeScreen() {
                       onPress={() => handleSelectResort(resort.id)}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.dropdownItemIcon}>{resort.icon}</Text>
+                      <Text style={styles.dropdownItemIcon}</Text>
                       <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
                         {resort.label}
                       </Text>
@@ -313,9 +313,9 @@ export default function HomeScreen() {
 
             {/* Welcome tooltip */}
             <View style={styles.tooltip}>
-              <Text style={styles.tooltipIcon}>💡</Text>
               <Text style={styles.tooltipText}>
-                Welcome to Side Quest. This game can be played solo or co-op. To customize your gameplay to your theme park day, please indicate the height of your smallest player. The game will make sure not to give you tasks that are too tall.
+                Welcome to Side Quest, the theme park scavanger hunt. 
+                You can play solo or co-op. To customize your gameplay to your theme park day, please indicate the height of your smallest player. 
               </Text>
             </View>
 
