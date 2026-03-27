@@ -1,3 +1,11 @@
+/**
+ * DiscardPips.tsx — Visual discard counter (pip dots)
+ *
+ * Shows up to 2 small dots representing available discards.
+ * Blue = available, gray = used. Displayed next to "YOUR HAND" label.
+ * Players earn discards back every 5 completed tasks (up to max 2).
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { COLORS, SHADOWS } from '../theme/theme';

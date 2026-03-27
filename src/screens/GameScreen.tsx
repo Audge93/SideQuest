@@ -1,3 +1,13 @@
+/**
+ * GameScreen.tsx — Active gameplay screen
+ *
+ * Shows the top bar (streak flame, park name, score), challenge task board,
+ * card carousel (the player's "hand"), and stats bar. Also manages:
+ *  - Tips modal for first-time players (resets each new session)
+ *  - Badge unlock popup queue (fires after task completion confetti)
+ *  - Confetti/firework effects on task completion
+ */
+
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
@@ -300,6 +310,7 @@ export default function GameScreen() {
   );
 }
 
+/** Simple stat display used in the bottom stats bar (Completed, Streak, Session) */
 function StatItem({ label, value }: { label: string; value: string | number }) {
   return (
     <View style={styles.statItem}>

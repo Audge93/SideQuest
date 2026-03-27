@@ -1,3 +1,11 @@
+/**
+ * gameStore.ts — Central Zustand store for all game state
+ *
+ * Manages settings, player profile, active session, badge tracking, and
+ * persistence via AsyncStorage. All game actions (start, complete, discard,
+ * swap, trivia, reset) flow through this store.
+ */
+
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Task, Session, Settings, Player, Badge, BadgeTier, CategoryToggles, ParkThemeTag } from '../types';
@@ -7,6 +15,7 @@ import { RIDES, PARKS } from '../data/parks';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+/** Fisher-Yates shuffle — returns a new shuffled copy of the array */
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -18,7 +27,7 @@ function shuffle<T>(arr: T[]): T[] {
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
-// Helper to generate tiered badges for a category
+/** Generates 4 tiered badges (bronze → platinum) for a task category */
 function catBadges(
   baseId: string, name: string, icon: string, category: string, displayCat: string,
   tiers: [number, number, number, number],
@@ -130,6 +139,11 @@ interface GameState {
 
 // ─── Task Pool Builder ────────────────────────────────────────────────────────
 
+/**
+ * Builds shuffled pools of small (hand) and big (challenge) tasks based on
+ * the player's settings — filters by enabled categories, park theme tags,
+ * and optionally by rider height requirements.
+ */
 function buildTaskPools(settings: Settings): { small: Task[]; big: Task[] } {
   const { categoryToggles, parkIds, heightFilterEnabled, minHeightInches } = settings;
 
@@ -173,17 +187,20 @@ function buildTaskPools(settings: Settings): { small: Task[]; big: Task[] } {
   return { small: shuffle(small), big: shuffle(big) };
 }
 
+/** Draws up to `count` tasks from a pool, excluding already-used tasks */
 function drawFromPool(pool: Task[], exclude: Task[], count: number): Task[] {
   const excludeIds = new Set(exclude.map(t => t.id));
   const available = pool.filter(t => !excludeIds.has(t.id));
   return available.slice(0, count);
 }
 
+/** Swaps a task by ID with a replacement, or removes it if no replacement available */
 function replaceInArray(arr: Task[], taskId: string, replacement: Task | undefined): Task[] {
   if (!replacement) return arr.filter(t => t.id !== taskId);
   return arr.map(t => (t.id === taskId ? replacement : t));
 }
 
+/** Picks a random replacement task from the pool that isn't in any exclusion list */
 function pickReplacement(pool: Task[], exclude: Task[], alsoExclude?: Task[]): Task | undefined {
   const excludeIds = new Set(exclude.map(t => t.id));
   if (alsoExclude) {
@@ -195,8 +212,11 @@ function pickReplacement(pool: Task[], exclude: Task[], alsoExclude?: Task[]): T
 }
 
 // ─── Badge / Unlock Helpers ───────────────────────────────────────────────────
+// These functions evaluate all badge unlock conditions after each task completion.
+// Badges are checked in two passes so "completionist" badges can see freshly-earned
+// category badges from the first pass.
 
-// Category badge tier thresholds (must match catBadges calls above)
+/** Category badge tier thresholds — must match catBadges() calls above */
 const CAT_THRESHOLDS: Record<string, [number, number, number, number]> = {
   'sharp-eye': [10, 25, 50, 100],
   'shutterbug': [10, 25, 50, 100],
@@ -227,7 +247,7 @@ const TIER_INDEX: Record<BadgeTier, number> = { bronze: 0, silver: 1, gold: 2, p
 
 const CAT_BASE_IDS = Object.keys(CAT_THRESHOLDS);
 
-// Build combined category counts: lifetime + current session
+/** Merges lifetime category counts with current session completions */
 function buildCategoryCounts(
   lifetimeCounts: Record<string, number>,
   sessionTasks: Task[],
@@ -239,6 +259,11 @@ function buildCategoryCounts(
   return counts;
 }
 
+/**
+ * Evaluates all badge unlock conditions and returns updated badge array.
+ * Checks category thresholds, milestones (first task, streaks), lifetime
+ * score tiers, park hopper counts, and completionist meta-badges.
+ */
 function checkBadges(
   badges: Badge[],
   categoryCounts: Record<string, number>,
@@ -302,7 +327,7 @@ function checkBadges(
   });
 }
 
-// Detect which badges were newly earned by comparing old vs new by id
+/** Detects which badges were newly earned by comparing old vs new arrays by ID */
 function findNewlyEarned(oldBadges: Badge[], newBadges: Badge[]): Badge[] {
   const oldEarnedIds = new Set(oldBadges.filter(b => b.earned).map(b => b.id));
   return newBadges.filter(b => b.earned && !oldEarnedIds.has(b.id));
@@ -317,6 +342,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   isLoading: true,
   newlyEarnedBadges: [],
 
+  // ─── Settings actions ─────────────────────────────────────────────────────
+
+  /** Partially update settings and persist */
   updateSettings: (patch) => {
     set(s => ({ settings: { ...s.settings, ...patch } }));
     get().saveToStorage();
@@ -337,6 +365,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     get().saveToStorage();
   },
 
+  // ─── Session lifecycle ────────────────────────────────────────────────────
+
+  /** Creates a new game session — builds task pools, draws initial hand + challenges */
   startSession: () => {
     const { settings } = get();
     const { small, big } = buildTaskPools(settings);
@@ -362,6 +393,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     get().saveToStorage();
   },
 
+  /** Ends the active session — merges score + completions into lifetime profile, checks badges */
   endSession: () => {
     const { session, player } = get();
     if (!session) return;
@@ -403,6 +435,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     get().saveToStorage();
   },
 
+  // ─── Task actions ─────────────────────────────────────────────────────────
+
+  /** Marks a task complete — awards points, updates streak, draws replacement, checks badges */
   completeTask: (taskId, isChallenge) => {
     const { session, settings } = get();
     if (!session) return;
@@ -481,6 +516,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     get().saveToStorage();
   },
 
+  /** Discards a hand card — resets streak, draws replacement, costs 1 discard pip */
   discardTask: (taskId) => {
     const { session, settings } = get();
     if (!session) return;
@@ -504,6 +540,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     get().saveToStorage();
   },
 
+  /** Swaps a challenge task for a new one — costs 25 points from session score */
   swapChallengeTask: (taskId) => {
     const { session, settings } = get();
     if (!session) return;
@@ -523,6 +560,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     get().saveToStorage();
   },
 
+  /** Handles trivia answer — correct = complete task, wrong = replace card + reset streak */
   answerTrivia: (taskId, correct) => {
     if (correct) {
       get().completeTask(taskId, false);
@@ -553,6 +591,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ newlyEarnedBadges: [] });
   },
 
+  // ─── Data management ──────────────────────────────────────────────────────
+
+  /** Wipes all progress — deep-clones badges, clears AsyncStorage, resets to defaults */
   resetAllData: async () => {
     // Deep-clone badges so earned state is fully reset
     const freshBadges = DEFAULT_BADGES.map(b => ({ ...b, earned: false, earnedAt: undefined }));
@@ -574,6 +615,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     await get().saveToStorage();
   },
 
+  /** Hydrates state from AsyncStorage on app launch */
   loadFromStorage: async () => {
     try {
       const raw = await AsyncStorage.getItem('parkquest_state');
@@ -593,6 +635,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
+  /** Persists current state to AsyncStorage */
   saveToStorage: async () => {
     const { settings, player, session } = get();
     await AsyncStorage.setItem('parkquest_state', JSON.stringify({ settings, player, session }));

@@ -1,3 +1,12 @@
+/**
+ * CardCarousel.tsx — Horizontal swipeable card hand
+ *
+ * Renders the player's 5 hand cards as a snap-scrolling horizontal carousel.
+ * The centered card scales up (active), while off-screen cards scale down.
+ * Each card shows task info with Complete/Discard buttons. Trivia cards
+ * open a separate answer modal. Dot indicators show current position.
+ */
+
 import React, { useRef, useState, useCallback } from 'react';
 import {
   View,

@@ -1,3 +1,14 @@
+/**
+ * Confetti.tsx — Particle celebration effects
+ *
+ * Two modes:
+ *  - "small": Gentle confetti burst from mid-screen (for hand card completions)
+ *  - "big": Full-screen firework shower from the top (for challenge completions)
+ *
+ * Particles animate with random spread, rotation, and fade. Auto-cleans up
+ * after the animation duration by calling onDone.
+ */
+
 import React, { useEffect, useRef, useMemo } from 'react';
 import { View, StyleSheet, Animated, Dimensions } from 'react-native';
 

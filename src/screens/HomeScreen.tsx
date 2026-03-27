@@ -1,3 +1,12 @@
+/**
+ * HomeScreen.tsx — Main landing screen
+ *
+ * Displays the Side Quest logo, player welcome card, resort/park selection
+ * dropdowns, and Start/Continue game buttons. When "New Game" is tapped,
+ * a modal opens for player name input, pin trading toggle, and height filter.
+ * A tooltip explains the game before the player starts.
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,

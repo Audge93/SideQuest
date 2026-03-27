@@ -1,3 +1,13 @@
+/**
+ * BadgeUnlockPopup.tsx — Animated badge earned celebration overlay
+ *
+ * When a badge is unlocked, this full-screen overlay plays a 10-step
+ * choreographed animation: overlay fade → card pop → title slide →
+ * badge icon pop with wiggle → glow ring pulse → sparkle particle burst →
+ * badge name + description fade → dismiss button appears.
+ * Tapping anywhere or the "Awesome!" button dismisses with a shrink-fade.
+ */
+
 import React, { useEffect, useRef, useMemo } from 'react';
 import {
   View,

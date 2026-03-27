@@ -1,3 +1,11 @@
+/**
+ * StreakFlame.tsx — Streak counter with color-coded fire emoji
+ *
+ * Displays the current task completion streak with escalating visual feedback:
+ *  0 = gray dash, 1-4 = orange 🔥, 5-9 = red-orange 🔥, 10-14 = double 🔥🔥,
+ *  15-19 = triple 🔥🔥🔥, 20+ = cyan 💙🔥 (legendary streak)
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { COLORS, SHADOWS } from '../theme/theme';

@@ -1,7 +1,18 @@
+/**
+ * SplashAnimation.tsx — Startup card-flip animation
+ *
+ * Displays a playing card that flips from its purple diamond-patterned back
+ * to the white S ✦ Q logo front. The animation has 4 phases:
+ *   1. Float in (fade + translate up)
+ *   2. Flip the card 180° on its Y axis
+ *   3. Brief hold so the player sees the logo
+ *   4. Pop off (scale up + fade out), then call onFinish to unmount
+ */
+
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions, StatusBar } from 'react-native';
 
-// Card dimensions
+// Card dimensions (points, not responsive — centered on screen)
 const CARD_W = 180;
 const CARD_H = 240;
 
@@ -10,15 +21,13 @@ interface SplashAnimationProps {
 }
 
 export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
-  // Single master opacity that drives both float-in and pop-out
-  const masterOpacity = useRef(new Animated.Value(0)).current;
-  // Flip animation: 0 = back face showing, 1 = front face showing
-  const flipAnim = useRef(new Animated.Value(0)).current;
-  // Scale for the pop-off effect
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  // Float translate
-  const translateY = useRef(new Animated.Value(30)).current;
+  // ─── Animation values ──────────────────────────────────────────────────────
+  const masterOpacity = useRef(new Animated.Value(0)).current;   // Drives fade in/out
+  const flipAnim = useRef(new Animated.Value(0)).current;        // 0 = back face, 1 = front face
+  const scaleAnim = useRef(new Animated.Value(1)).current;       // Pop-off scale effect
+  const translateY = useRef(new Animated.Value(30)).current;     // Float-up entrance
 
+  // ─── Animation sequence ────────────────────────────────────────────────────
   useEffect(() => {
     Animated.sequence([
       // Phase 1: Fade in + float up (0.4s)
@@ -60,7 +69,9 @@ export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
     });
   }, []);
 
-  // Flip interpolation — full 180-degree Y rotation
+  // ─── Flip interpolation ─────────────────────────────────────────────────
+  // Map flipAnim (0→1) to rotation degrees for front and back faces.
+  // At the midpoint (0.5) both faces are edge-on; opacity swaps visibility.
   const frontRotation = flipAnim.interpolate({
     inputRange: [0, 0.5, 1],
     outputRange: ['180deg', '90deg', '0deg'],

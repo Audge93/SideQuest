@@ -1,3 +1,11 @@
+/**
+ * BigBoard.tsx — Challenge task board (top of game screen)
+ *
+ * Displays 3 "big" challenge tasks as square badges with category icon + points.
+ * Tapping a badge opens an expanded modal showing full task details with
+ * Complete and Swap (-25 pts) action buttons. Badges pulse on tap.
+ */
+
 import React, { useState, useRef } from 'react';
 import {
   View,

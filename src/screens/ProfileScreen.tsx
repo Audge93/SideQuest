@@ -1,3 +1,11 @@
+/**
+ * ProfileScreen.tsx — Player profile and badge collection
+ *
+ * Displays the player avatar, editable name, lifetime stats (points, badges,
+ * parks visited), and a tiered badge grid with progress bars for unearned
+ * badges. Includes a "Reset All Data" button with confirmation modal.
+ */
+
 import React, { useState } from 'react';
 import {
   View,
@@ -24,7 +32,7 @@ const TIER_COLORS: Record<BadgeTier, string> = {
 
 const TIER_LABELS: BadgeTier[] = ['bronze', 'silver', 'gold', 'platinum'];
 
-// Maps badge base id → task category for progress tracking
+/** Maps badge base id → task category for looking up completion progress */
 const BADGE_TO_CATEGORY: Record<string, string> = {
   'sharp-eye': 'observation',
   'shutterbug': 'photo',
@@ -38,13 +46,13 @@ const BADGE_TO_CATEGORY: Record<string, string> = {
   'treasure-hunter': 'scavenger',
 };
 
-// Extracts threshold from badge description like "Complete 5 Find tasks"
+/** Extracts the numeric threshold from badge description, e.g. "Complete 10 Find tasks" → 10 */
 function getThreshold(badge: Badge): number | null {
   const match = badge.description.match(/^Complete (\d+)/);
   return match ? parseInt(match[1], 10) : null;
 }
 
-// Gets the category for a badge id like "sharp-eye-bronze"
+/** Gets the task category for a badge id like "sharp-eye-bronze" → "observation" */
 function getCategoryForBadge(badgeId: string): string | null {
   for (const [baseId, category] of Object.entries(BADGE_TO_CATEGORY)) {
     if (badgeId.startsWith(baseId)) return category;
@@ -219,6 +227,7 @@ export default function ProfileScreen() {
   );
 }
 
+/** Individual badge tile — shows icon, name, progress bar (if unearned), or earned date */
 function BadgeTile({
   badge,
   tierColor,

@@ -1,3 +1,12 @@
+/**
+ * AppNavigator.tsx — Navigation structure
+ *
+ * Sets up bottom tab navigation with 4 tabs: Home (🏰), Game (SQ mini card),
+ * Settings (⚙️), and Profile (👤). Wrapped in a native stack navigator for
+ * potential future screen pushes. The tab bar is semi-transparent and absolute-
+ * positioned at the bottom of the screen.
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -13,6 +22,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+/** Standard emoji-based tab icon with focus highlight */
 function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
   return (
     <View style={[styles.tabIconContainer, focused && styles.tabIconFocused]}>
@@ -21,6 +31,7 @@ function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
   );
 }
 
+/** Custom SQ card icon for the Game tab — shows a mini playing card with S/Q logo */
 function MiniCardIcon({ focused }: { focused: boolean }) {
   return (
     <View style={[styles.tabIconContainer, focused && styles.tabIconFocused]}>
