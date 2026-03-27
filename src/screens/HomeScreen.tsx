@@ -374,6 +374,14 @@ export default function HomeScreen() {
               </View>
             )}
 
+            {/* Tooltip */}
+            <View style={styles.tooltip}>
+              <Text style={styles.tooltipIcon}>💡</Text>
+              <Text style={styles.tooltipText}>
+                Welcome to Side Quest. This game can be played solo or co-op. To customize your gameplay to your theme park day, please indicate the height of your smallest player. The game will make sure not to give you tasks that are too tall.
+              </Text>
+            </View>
+
             {/* Action Buttons */}
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalStartBtn} onPress={handleConfirmStart}>
@@ -731,6 +739,30 @@ const styles = StyleSheet.create({
   sliderLabel: {
     color: COLORS.textMuted,
     fontSize: 11,
+  },
+
+  // Tooltip
+  tooltip: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(155,127,212,0.10)',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(155,127,212,0.25)',
+    alignItems: 'flex-start',
+  },
+  tooltipIcon: {
+    fontSize: 16,
+    marginRight: 10,
+    marginTop: 1,
+  },
+  tooltipText: {
+    flex: 1,
+    color: COLORS.textBody,
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '500',
   },
 
   // Actions
