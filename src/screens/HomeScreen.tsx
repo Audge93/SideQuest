@@ -220,7 +220,7 @@ export default function HomeScreen() {
                       onPress={() => handleSelectResort(resort.id)}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.dropdownItemIcon}</Text>
+                      <Text style={styles.dropdownItemIcon}></Text>
                       <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
                         {resort.label}
                       </Text>
