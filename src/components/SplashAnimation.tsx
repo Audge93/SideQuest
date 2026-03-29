@@ -22,7 +22,8 @@ interface SplashAnimationProps {
 
 export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
   // ─── Animation values ──────────────────────────────────────────────────────
-  const masterOpacity = useRef(new Animated.Value(0)).current;   // Drives fade in/out
+  const cardOpacity = useRef(new Animated.Value(0)).current;     // Card fade in
+  const containerOpacity = useRef(new Animated.Value(1)).current; // Background starts fully opaque
   const flipAnim = useRef(new Animated.Value(0)).current;        // 0 = back face, 1 = front face
   const scaleAnim = useRef(new Animated.Value(1)).current;       // Pop-off scale effect
   const translateY = useRef(new Animated.Value(30)).current;     // Float-up entrance
@@ -30,9 +31,9 @@ export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
   // ─── Animation sequence ────────────────────────────────────────────────────
   useEffect(() => {
     Animated.sequence([
-      // Phase 1: Fade in + float up (0.4s)
+      // Phase 1: Fade card in + float up (0.4s) — background stays solid
       Animated.parallel([
-        Animated.timing(masterOpacity, {
+        Animated.timing(cardOpacity, {
           toValue: 1,
           duration: 400,
           useNativeDriver: true,
@@ -51,14 +52,14 @@ export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
       }),
       // Phase 3: Brief pause to show the logo (0.5s)
       Animated.delay(500),
-      // Phase 4: Pop off — scale up + fade out (0.45s)
+      // Phase 4: Pop off — scale up + fade everything out (0.45s)
       Animated.parallel([
         Animated.timing(scaleAnim, {
           toValue: 1.8,
           duration: 450,
           useNativeDriver: true,
         }),
-        Animated.timing(masterOpacity, {
+        Animated.timing(containerOpacity, {
           toValue: 0,
           duration: 450,
           useNativeDriver: true,
@@ -92,12 +93,13 @@ export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
   });
 
   return (
-    <Animated.View style={[styles.container, { opacity: masterOpacity }]}>
+    <Animated.View style={[styles.container, { opacity: containerOpacity }]}>
       <StatusBar barStyle="light-content" />
       <Animated.View
         style={[
           styles.cardWrapper,
           {
+            opacity: cardOpacity,
             transform: [
               { translateY },
               { scale: scaleAnim },
