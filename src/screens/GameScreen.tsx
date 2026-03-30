@@ -280,19 +280,12 @@ export default function GameScreen() {
         >
           <View style={styles.headerCard}>
             <View style={styles.headerTopRow}>
-              <View style={styles.headerTitleGroup}>
-                <Text style={styles.headerEyebrow}>Current Park</Text>
-                <Text style={styles.parkTitle}>{park?.name ?? '?'}</Text>
+              <Text style={styles.parkTitle}>{park?.name ?? '?'}</Text>
+              <View style={styles.statsRow}>
+                <HeaderStatPill value={`${session.currentStreak}`} label="Streak" />
+                <HeaderStatPill value={`${session.sessionScore} pts`} label="Points" />
+                <HeaderStatPill value={`${session.completedTasks.length}`} label="Completed" />
               </View>
-              <View style={styles.streakBadge}>
-                <Text style={styles.streakIcon}>{session.currentStreak > 0 ? '🔥' : '✦'}</Text>
-                <Text style={styles.streakValue}>{session.currentStreak}</Text>
-              </View>
-            </View>
-
-            <View style={styles.statsRow}>
-              <HeaderStatPill icon="⭐" value={`${session.sessionScore} pts`} label="Points" />
-              <HeaderStatPill icon="✓" value={`${session.completedTasks.length}`} label="Completed" />
             </View>
           </View>
 
@@ -336,33 +329,35 @@ export default function GameScreen() {
                 </View>
               </View>
 
-              <View
-                style={[
-                  styles.featuredIconBadge,
-                  { backgroundColor: CATEGORY_COLORS[featuredTask.category] ?? COLORS.gold },
-                ]}
-              >
-                <View style={styles.featuredIconInner}>
-                  <Text style={styles.featuredIconEmoji}>
-                    {CATEGORY_ICONS[featuredTask.category] ?? '✨'}
-                  </Text>
+              <View style={styles.featuredIconPointsRow}>
+                <View
+                  style={[
+                    styles.featuredIconBadge,
+                    { backgroundColor: CATEGORY_COLORS[featuredTask.category] ?? COLORS.gold },
+                  ]}
+                >
+                  <View style={styles.featuredIconInner}>
+                    <Text style={styles.featuredIconEmoji}>
+                      {CATEGORY_ICONS[featuredTask.category] ?? '✨'}
+                    </Text>
+                  </View>
                 </View>
-              </View>
 
-              <Text
-                style={[
-                  styles.featuredPoints,
-                  { color: CATEGORY_COLORS[featuredTask.category] ?? COLORS.goldDark },
-                ]}
-              >
-                {featuredTask.points} pts
-              </Text>
+                <Text
+                  style={[
+                    styles.featuredPoints,
+                    { color: CATEGORY_COLORS[featuredTask.category] ?? COLORS.goldDark },
+                  ]}
+                >
+                  {featuredTask.points} pts
+                </Text>
+              </View>
 
               <Text style={styles.featuredTaskDescription}>{featuredTask.description}</Text>
               <Text style={styles.featuredTaskHelper}>
                 {featuredTask.flavorText ??
                   (featuredTask.category === 'trivia'
-                    ? 'Answer correctly to claim the points.'
+                    ? ''
                     : 'Complete this task to keep your streak alive.')}
               </Text>
 
@@ -646,17 +641,14 @@ export default function GameScreen() {
 }
 
 function HeaderStatPill({
-  icon,
   value,
   label,
 }: {
-  icon: string;
   value: string;
   label: string;
 }) {
   return (
     <View style={styles.statPill}>
-      <Text style={styles.statPillIcon}>{icon}</Text>
       <View>
         <Text style={styles.statPillValue}>{value}</Text>
         <Text style={styles.statPillLabel}>{label}</Text>
@@ -894,9 +886,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Math.round(18 * sw),
-    paddingTop: Math.round(10 * sh),
-    paddingBottom: Math.round(132 * sh),
-    gap: Math.round(22 * sh),
+    paddingTop: Math.round(8 * sh),
+    paddingBottom: Math.round(118 * sh),
+    gap: Math.round(14 * sh),
   },
   loadingContainer: {
     flex: 1,
@@ -927,7 +919,8 @@ const styles = StyleSheet.create({
   headerCard: {
     backgroundColor: 'rgba(34, 29, 63, 0.52)',
     borderRadius: 24,
-    padding: Math.round(18 * sw),
+    paddingHorizontal: Math.round(16 * sw),
+    paddingVertical: Math.round(14 * sh),
     shadowColor: '#050816',
     shadowOffset: { width: 0, height: 14 },
     shadowOpacity: 0.26,
@@ -937,75 +930,44 @@ const styles = StyleSheet.create({
   headerTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Math.round(14 * sh),
-  },
-  headerTitleGroup: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  headerEyebrow: {
-    color: 'rgba(238,235,255,0.72)',
-    fontSize: Math.round(11 * sw),
-    fontWeight: '700',
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
-    marginBottom: 6,
+    alignItems: 'center',
   },
   parkTitle: {
     color: COLORS.white,
-    fontSize: Math.round(28 * sw),
-    lineHeight: Math.round(32 * sw),
+    fontSize: Math.round(24 * sw),
+    lineHeight: Math.round(28 * sw),
     fontWeight: '900',
-  },
-  streakBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-  },
-  streakIcon: {
-    fontSize: Math.round(16 * sw),
-    marginRight: 6,
-  },
-  streakValue: {
-    color: COLORS.white,
-    fontSize: Math.round(15 * sw),
-    fontWeight: '800',
+    flexShrink: 1,
+    marginRight: 10,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: Math.round(10 * sw),
+    gap: Math.round(8 * sw),
   },
   statPill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.90)',
     borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  statPillIcon: {
-    fontSize: Math.round(17 * sw),
-    marginRight: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    minWidth: Math.round(68 * sw),
+    alignItems: 'center',
   },
   statPillValue: {
     color: COLORS.textDark,
-    fontSize: Math.round(15 * sw),
+    fontSize: Math.round(14 * sw),
     fontWeight: '900',
+    textAlign: 'center',
   },
   statPillLabel: {
     color: COLORS.textMuted,
-    fontSize: Math.round(11 * sw),
+    fontSize: Math.round(10 * sw),
     fontWeight: '600',
     marginTop: 2,
+    textAlign: 'center',
   },
 
   sectionBlock: {
-    gap: Math.round(12 * sh),
+    gap: Math.round(8 * sh),
   },
   sectionHeadingRow: {
     flexDirection: 'row',
@@ -1030,11 +992,11 @@ const styles = StyleSheet.create({
   },
   challengeCard: {
     width: Math.round(108 * sw),
-    height: Math.round(128 * sw),
+    height: Math.round(106 * sw),
     borderRadius: 22,
     backgroundColor: 'rgba(255,251,247,0.96)',
     paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'space-between',
     shadowColor: '#111324',
@@ -1048,26 +1010,27 @@ const styles = StyleSheet.create({
     fontSize: Math.round(9 * sw),
     fontWeight: '800',
     letterSpacing: 1.1,
+    marginBottom: 2,
   },
   challengeIconShell: {
-    width: Math.round(56 * sw),
-    height: Math.round(56 * sw),
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  challengeIconCore: {
-    width: Math.round(40 * sw),
-    height: Math.round(40 * sw),
+    width: Math.round(46 * sw),
+    height: Math.round(46 * sw),
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  challengeIconCore: {
+    width: Math.round(34 * sw),
+    height: Math.round(34 * sw),
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   challengeIcon: {
-    fontSize: Math.round(20 * sw),
+    fontSize: Math.round(17 * sw),
   },
   challengePoints: {
-    fontSize: Math.round(14 * sw),
+    fontSize: Math.round(13 * sw),
     fontWeight: '900',
   },
 
@@ -1075,7 +1038,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,249,244,0.96)',
     borderRadius: 28,
     paddingHorizontal: Math.round(22 * sw),
-    paddingVertical: Math.round(22 * sh),
+    paddingVertical: Math.round(18 * sh),
     alignItems: 'center',
     shadowColor: '#0f1020',
     shadowOffset: { width: 0, height: 18 },
@@ -1086,7 +1049,7 @@ const styles = StyleSheet.create({
   featuredTaskTop: {
     width: '100%',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   featuredTaskTypeBadge: {
     borderRadius: 999,
@@ -1094,50 +1057,56 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   featuredTaskTypeText: {
-    fontSize: Math.round(10 * sw),
+    fontSize: Math.round(14 * sw),
     fontWeight: '900',
     letterSpacing: 1.2,
   },
   featuredIconBadge: {
-    width: Math.round(84 * sw),
-    height: Math.round(84 * sw),
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-  featuredIconInner: {
     width: Math.round(58 * sw),
     height: Math.round(58 * sw),
     borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 0,
+  },
+  featuredIconInner: {
+    width: Math.round(40 * sw),
+    height: Math.round(40 * sw),
+    borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   featuredIconEmoji: {
-    fontSize: Math.round(28 * sw),
+    fontSize: Math.round(21 * sw),
+  },
+  featuredIconPointsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Math.round(10 * sw),
+    marginBottom: 10,
   },
   featuredPoints: {
-    fontSize: Math.round(18 * sw),
+    fontSize: Math.round(23 * sw),
     fontWeight: '900',
-    marginBottom: 14,
   },
   featuredTaskDescription: {
     color: COLORS.textDark,
-    fontSize: Math.round(26 * sw),
-    lineHeight: Math.round(32 * sw),
+    fontSize: Math.round(22 * sw),
+    lineHeight: Math.round(28 * sw),
     fontWeight: '800',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   featuredTaskHelper: {
     color: COLORS.textMuted,
-    fontSize: Math.round(14 * sw),
-    lineHeight: Math.round(20 * sw),
+    fontSize: Math.round(12 * sw),
+    lineHeight: Math.round(17 * sw),
     fontWeight: '500',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 14,
     paddingHorizontal: 10,
+    minHeight: Math.round(18 * sh),
   },
   featuredActions: {
     flexDirection: 'row',
@@ -1212,11 +1181,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingLeft: 4,
-    paddingTop: 4,
+    paddingTop: 2,
   },
   handPreviewCard: {
     width: Math.round(92 * sw),
-    height: Math.round(128 * sw),
+    height: Math.round(114 * sw),
     borderRadius: 20,
     backgroundColor: 'rgba(255,248,243,0.92)',
     paddingHorizontal: 12,
