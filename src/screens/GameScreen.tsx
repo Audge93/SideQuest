@@ -325,7 +325,15 @@ export default function GameScreen() {
         {/* Bottom Nav Bar */}
         <View style={styles.navBar}>
           <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
-            <Text style={styles.navIcon}>🎮</Text>
+            <View style={styles.navCardIcon}>
+              <Text style={styles.navCardS}>S</Text>
+              <View style={styles.navCardDivider}>
+                <View style={styles.navCardDividerLine} />
+                <Text style={styles.navCardStar}>✦</Text>
+                <View style={styles.navCardDividerLine} />
+              </View>
+              <Text style={styles.navCardQ}>Q</Text>
+            </View>
             <Text style={[styles.navLabel, styles.navLabelActive]}>Game</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.navItem} onPress={openParkModal} activeOpacity={0.7}>
@@ -624,6 +632,49 @@ const styles = StyleSheet.create({
   navLabelActive: {
     color: COLORS.green,
     fontWeight: '800',
+  },
+  navCardIcon: {
+    width: 22,
+    height: 28,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#D4C4EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 2,
+    marginBottom: 2,
+  },
+  navCardS: {
+    fontSize: 8,
+    fontWeight: '900',
+    color: '#B8A9D4',
+    letterSpacing: 0.5,
+    lineHeight: 9,
+  },
+  navCardDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 14,
+    marginVertical: 0.5,
+  },
+  navCardDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#D4C4EE',
+    borderRadius: 0.5,
+  },
+  navCardStar: {
+    fontSize: 5,
+    marginHorizontal: 1,
+    color: '#C8A4F0',
+  },
+  navCardQ: {
+    fontSize: 8,
+    fontWeight: '900',
+    color: '#9B7FD4',
+    letterSpacing: 0.5,
+    lineHeight: 9,
   },
 
   // Tips modal
