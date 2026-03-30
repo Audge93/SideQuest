@@ -100,9 +100,6 @@ export default function GameScreen() {
     switchPark,
   } = useGameStore();
 
-  const parkId = settings.parkIds?.[0];
-  const park = PARKS.find(p => p.id === parkId);
-
   const [showSmallConfetti, setShowSmallConfetti] = useState(false);
   const [showBigFirework, setShowBigFirework] = useState(false);
   const [expandedChallenge, setExpandedChallenge] = useState<Task | null>(null);
@@ -246,27 +243,22 @@ export default function GameScreen() {
       resizeMode="cover"
     >
       <View style={styles.backgroundTopOverlay} pointerEvents="none" />
-      <View style={styles.backgroundBottomOverlay} pointerEvents="none" />
 
       <SafeAreaView style={styles.safe}>
         <StatusBar barStyle="light-content" />
 
         <View style={styles.screenContent}>
           <View style={styles.headerCard}>
-            <View style={styles.headerTopRow}>
-              <Text style={styles.parkTitle}>{park?.name ?? '?'}</Text>
-              <View style={styles.statsRow}>
-                <HeaderStatPill value={`${session.currentStreak}`} label="Streak" />
-                <HeaderStatPill value={`${session.sessionScore} pts`} label="Points" />
-                <HeaderStatPill value={`${session.completedTasks.length}`} label="Completed" />
-              </View>
+            <View style={styles.statsRow}>
+              <HeaderStatPill value={`${session.currentStreak}`} label="Streak" />
+              <HeaderStatPill value={`${session.sessionScore} pts`} label="Points" />
+              <HeaderStatPill value={`${session.completedTasks.length}`} label="Completed" />
             </View>
           </View>
 
           <View style={styles.sectionBlock}>
             <View style={styles.sectionHeadingRow}>
               <Text style={styles.sectionTitle}>Challenges</Text>
-              <Text style={styles.sectionHint}>{session.challengeTasks.length} live</Text>
             </View>
             <ScrollView
               horizontal
@@ -642,15 +634,7 @@ const styles = StyleSheet.create({
   },
   backgroundTopOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(32, 24, 56, 0.24)',
-  },
-  backgroundBottomOverlay: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: '62%',
-    backgroundColor: 'rgba(16, 18, 34, 0.40)',
+    backgroundColor: 'rgba(18, 20, 38, 0.46)',
   },
   safe: {
     flex: 1,
@@ -689,31 +673,19 @@ const styles = StyleSheet.create({
   },
 
   headerCard: {
-    backgroundColor: 'rgba(34, 29, 63, 0.52)',
+    backgroundColor: 'rgba(34, 29, 63, 0.34)',
     borderRadius: 24,
     paddingHorizontal: Math.round(14 * sw),
-    paddingVertical: Math.round(12 * sh),
+    paddingVertical: Math.round(10 * sh),
     shadowColor: '#050816',
     shadowOffset: { width: 0, height: 14 },
     shadowOpacity: 0.26,
     shadowRadius: 26,
     elevation: 8,
   },
-  headerTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  parkTitle: {
-    color: COLORS.white,
-    fontSize: Math.round(22 * sw),
-    lineHeight: Math.round(26 * sw),
-    fontWeight: '900',
-    flexShrink: 1,
-    marginRight: 8,
-  },
   statsRow: {
     flexDirection: 'row',
+    justifyContent: 'center',
     gap: Math.round(6 * sw),
   },
   statPill: {
@@ -755,12 +727,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.2,
   },
-  sectionHint: {
-    color: 'rgba(239,237,255,0.72)',
-    fontSize: Math.round(11 * sw),
-    fontWeight: '600',
-  },
-
   challengeRow: {
     paddingRight: 8,
     gap: Math.round(8 * sw),
