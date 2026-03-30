@@ -840,6 +840,7 @@ const styles = StyleSheet.create({
   carouselShell: {
     flex: 1,
     minHeight: 0,
+    marginTop: Math.round(8 * sh),
     marginHorizontal: -Math.round(18 * sw),
   },
 

@@ -389,7 +389,8 @@ export default function CardCarousel({
         snapToInterval={SNAP_INTERVAL}
         decelerationRate="fast"
         bounces={false}
-        contentContainerStyle={{ paddingHorizontal: H_PADDING }}
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
           {
@@ -466,6 +467,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
+    paddingTop: Math.round(16 * sh),
+    paddingBottom: Math.round(4 * sh),
+    overflow: 'visible',
+  },
+  list: {
+    overflow: 'visible',
+  },
+  listContent: {
+    paddingHorizontal: H_PADDING,
+    paddingTop: Math.round(10 * sh),
+    paddingBottom: Math.round(6 * sh),
   },
 
   // ── Inline Card ────────────────────────────────────────────
