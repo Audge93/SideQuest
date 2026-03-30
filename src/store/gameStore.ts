@@ -25,6 +25,14 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+/** Gives each challenge-card instance a unique id so repeated content can still render in 3 slots. */
+function createChallengeInstance(task: Task): Task {
+  return {
+    ...task,
+    id: `${task.id}::challenge::${Date.now()}::${Math.random().toString(36).slice(2, 8)}`,
+  };
+}
+
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
 /** Generates 4 tiered badges (bronze → platinum) for a task category */
@@ -216,17 +224,17 @@ function drawChallengeBoard(pool: Task[], count: number, exclude: Task[] = []): 
   const excludeIds = new Set(exclude.map(t => t.id));
   const available = shuffle(pool.filter(t => !excludeIds.has(t.id)));
   if (available.length >= count) {
-    return available.slice(0, count);
+    return available.slice(0, count).map(createChallengeInstance);
   }
   if (available.length === 0) {
-    return shuffle(pool).slice(0, count);
+    return shuffle(pool).slice(0, count).map(createChallengeInstance);
   }
 
   const filled = [...available];
   while (filled.length < count) {
     filled.push(available[filled.length % available.length]);
   }
-  return filled;
+  return filled.map(createChallengeInstance);
 }
 
 /** Swaps a task by ID with a replacement, or removes it if no replacement available */
@@ -265,12 +273,16 @@ function pickChallengeReplacement(
     t => !otherVisibleIds.has(t.id) && t.id !== replacedTaskId,
   );
   if (preferred.length > 0) {
-    return preferred[Math.floor(Math.random() * preferred.length)];
+    return createChallengeInstance(
+      preferred[Math.floor(Math.random() * preferred.length)],
+    );
   }
 
   const fallback = pool.filter(t => !otherVisibleIds.has(t.id));
   if (fallback.length === 0) return undefined;
-  return fallback[Math.floor(Math.random() * fallback.length)];
+  return createChallengeInstance(
+    fallback[Math.floor(Math.random() * fallback.length)],
+  );
 }
 
 // ─── Badge / Unlock Helpers ───────────────────────────────────────────────────
