@@ -401,7 +401,7 @@ export default function GameScreen() {
                   <Text style={styles.tipBackBtnText}>Back</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity style={[styles.tipNextBtn, currentTipIndex === 0 && { flex: 0, paddingHorizontal: 48 }]} onPress={handleNextTip}>
+              <TouchableOpacity style={styles.tipNextBtn} onPress={handleNextTip}>
                 <Text style={styles.tipNextBtnText}>
                   {currentTipIndex < GAME_TIPS.length - 1 ? 'Next' : 'Let\'s Play!'}
                 </Text>
