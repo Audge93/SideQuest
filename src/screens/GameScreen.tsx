@@ -1,13 +1,14 @@
 /**
- * GameScreen.tsx — Active gameplay screen
+ * GameScreen.tsx
  *
- * Shows the top bar (streak flame, park name, score), challenge task board,
- * card carousel (the player's "hand"), and stats bar. Also manages:
- *  - Tips modal for first-time players (resets each new session)
- *  - Badge unlock popup queue (fires after task completion confetti)
- *  - Confetti/firework effects on task completion
- *  - Bottom nav bar (Game, Park, Settings, Profile)
- *  - Auto-save every 30 seconds
+ * Premium-layout gameplay screen for the active Side Quest session.
+ * The screen keeps the same gameplay structure as before, but reorganizes the
+ * content into a cleaner card-game hierarchy:
+ *   1. Header with park title, streak, and stats
+ *   2. Challenge mini-cards near the top
+ *   3. One featured active task card in the center
+ *   4. A smaller "Your Hand" preview deck near the bottom
+ *   5. Bottom navigation
  */
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -22,23 +23,19 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Badge } from '../types';
+import { Badge, Task } from '../types';
 import Confetti from '../components/Confetti';
 import BadgeUnlockPopup from '../components/BadgeUnlockPopup';
 import { useGameStore } from '../store/gameStore';
-import CardCarousel from '../components/CardCarousel';
-import BigBoard from '../components/BigBoard';
-import DiscardPips from '../components/DiscardPips';
 import { PARKS } from '../data/parks';
-import { COLORS, SHADOWS, RADII } from '../theme/theme';
+import { CATEGORY_COLORS, CATEGORY_ICONS, COLORS, SHADOWS, RADII } from '../theme/theme';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const sw = SCREEN_W / 390;
 const sh = SCREEN_H / 844;
-
-// ─── Resorts for Switch Parks ──────────────────────────────────────────────
 
 const RESORTS = [
   { id: 'wdw', label: 'Walt Disney World', icon: '🏰', parkIds: ['wdw-mk', 'wdw-hs', 'wdw-ep', 'wdw-ak'] },
@@ -48,50 +45,49 @@ const RESORTS = [
   { id: 'custom', label: 'Any Park', icon: '🎪', parkIds: ['custom'] },
 ];
 
-// ─── Tips for first-time players ────────────────────────────────────────────
-
 const GAME_TIPS = [
   {
     id: 'tip-hand',
     title: 'Your Hand',
-    message: 'Swipe through the cards in your hand. Tap a card to expand it, then mark it complete when you finish the task!',
+    message: 'Your hand holds quick tasks. Tap a preview card to bring it into focus, then complete or discard it from the featured card.',
     icon: 'card',
   },
   {
     id: 'tip-tasks',
     title: 'Task Types',
-    message: 'Your hand has quick tasks — observations, photos, trivia, and action dares. The challenge board has bigger quests like riding rides, finding food, meeting characters, exploring the park, and scavenger hunts!',
+    message: 'Quick tasks live in your hand while bigger goals live in Challenges. Both count toward points, streaks, and badges.',
     icon: '🎯',
   },
   {
     id: 'tip-challenge',
-    title: 'Challenge Board',
-    message: 'The top board shows bonus challenges worth more points. These are bigger tasks like riding rides or meeting characters.',
+    title: 'Challenges',
+    message: 'Challenge cards are your higher-value tasks. Tap any challenge to expand it, complete it, or swap it when you have enough points.',
     icon: '🏆',
   },
   {
     id: 'tip-discard',
     title: 'Discards',
-    message: 'Don\'t like a card? Discard it for a new one — but be careful, discards are limited and reset your streak!',
+    message: 'If a hand card is not a fit, discard it for something new. Discards are limited, so use them strategically.',
     icon: '🔄',
   },
   {
     id: 'tip-streak',
     title: 'Streaks',
-    message: 'Complete tasks in a row to build your streak! Every 5 tasks earns a bonus 10 points. Discarding resets your streak.',
+    message: 'Completing tasks in a row builds your streak. Every 5 in a row earns a bonus and helps refill discards.',
     icon: '🔥',
   },
   {
     id: 'tip-badges',
     title: 'Badges',
-    message: 'Earn badges by completing lots of tasks in each category. Check your profile to see your progress!',
+    message: 'Consistent play unlocks badges over time. Your progress is tracked in your profile.',
     icon: '🏅',
   },
 ];
 
+const CHOICE_LETTERS = ['A', 'B', 'C', 'D'];
+
 export default function GameScreen() {
   const navigation = useNavigation<any>();
-
   const {
     session,
     settings,
@@ -99,7 +95,6 @@ export default function GameScreen() {
     discardTask,
     swapChallengeTask,
     answerTrivia,
-    startSession,
     newlyEarnedBadges,
     clearNewBadges,
     autoSave,
@@ -111,11 +106,18 @@ export default function GameScreen() {
 
   const [showSmallConfetti, setShowSmallConfetti] = useState(false);
   const [showBigFirework, setShowBigFirework] = useState(false);
-
-  // ─── Park modal state ─────────────────────────────────────────────────────
+  const [featuredHandIndex, setFeaturedHandIndex] = useState(0);
+  const [expandedChallenge, setExpandedChallenge] = useState<Task | null>(null);
+  const [triviaTask, setTriviaTask] = useState<Task | null>(null);
   const [showParkModal, setShowParkModal] = useState(false);
   const [selectedResortId, setSelectedResortId] = useState<string>(RESORTS[0].id);
   const [selectedParkId, setSelectedParkId] = useState<string>(RESORTS[0].parkIds[0]);
+  const [currentTipIndex, setCurrentTipIndex] = useState(0);
+  const [showTips, setShowTips] = useState(true);
+  const [badgeQueue, setBadgeQueue] = useState<Badge[]>([]);
+  const [activeBadge, setActiveBadge] = useState<Badge | null>(null);
+  const processedBadgeIdsRef = useRef(new Set<string>());
+  const sessionIdRef = useRef(session?.id);
 
   const openParkModal = useCallback(() => {
     const currentParkIds = settings.parkIds;
@@ -138,16 +140,10 @@ export default function GameScreen() {
   const handleConfirmSwitchPark = useCallback(() => {
     const resort = RESORTS.find(r => r.id === selectedResortId);
     if (!resort) return;
-    const newParkIds = resort.parkIds.length === 1
-      ? resort.parkIds
-      : [selectedParkId];
+    const newParkIds = resort.parkIds.length === 1 ? resort.parkIds : [selectedParkId];
     switchPark(newParkIds);
     closeParkModal();
-  }, [selectedResortId, selectedParkId, switchPark, closeParkModal]);
-
-  // ─── Tips system ────────────────────────────────────────────────────────
-  const [currentTipIndex, setCurrentTipIndex] = useState(0);
-  const [showTips, setShowTips] = useState(true);
+  }, [closeParkModal, selectedParkId, selectedResortId, switchPark]);
 
   const handleNextTip = useCallback(() => {
     if (currentTipIndex < GAME_TIPS.length - 1) {
@@ -167,36 +163,25 @@ export default function GameScreen() {
     setShowTips(false);
   }, []);
 
-  // Reset tips when session changes (new game started)
-  const sessionIdRef = useRef(session?.id);
   useEffect(() => {
     if (session?.id && session.id !== sessionIdRef.current) {
       sessionIdRef.current = session.id;
       setCurrentTipIndex(0);
       setShowTips(true);
+      setFeaturedHandIndex(0);
     }
   }, [session?.id]);
 
-  // ─── Badge popup system (simplified) ──────────────────────────────────
-  const [badgeQueue, setBadgeQueue] = useState<Badge[]>([]);
-  const [activeBadge, setActiveBadge] = useState<Badge | null>(null);
-  const processedBadgeIdsRef = useRef(new Set<string>());
-
-  // Watch for new badges — add unprocessed ones to queue
   useEffect(() => {
     if (newlyEarnedBadges.length === 0) return;
 
-    const unprocessed = newlyEarnedBadges.filter(
-      b => !processedBadgeIdsRef.current.has(b.id)
-    );
+    const unprocessed = newlyEarnedBadges.filter(b => !processedBadgeIdsRef.current.has(b.id));
     if (unprocessed.length === 0) return;
 
-    // Mark as processed immediately
     for (const b of unprocessed) {
       processedBadgeIdsRef.current.add(b.id);
     }
 
-    // Delay popup so confetti plays first
     const timer = setTimeout(() => {
       setBadgeQueue(prev => [...prev, ...unprocessed]);
     }, 1200);
@@ -204,24 +189,21 @@ export default function GameScreen() {
     return () => clearTimeout(timer);
   }, [newlyEarnedBadges]);
 
-  // Show next badge in queue when no active badge
   useEffect(() => {
     if (badgeQueue.length > 0 && !activeBadge) {
       setActiveBadge(badgeQueue[0]);
       setBadgeQueue(prev => prev.slice(1));
     }
-  }, [badgeQueue, activeBadge]);
+  }, [activeBadge, badgeQueue]);
 
   const handleBadgeDismiss = useCallback(() => {
     setActiveBadge(null);
-    // If this was the last badge and queue is empty, clean up
     if (badgeQueue.length === 0) {
       processedBadgeIdsRef.current.clear();
       clearNewBadges();
     }
   }, [badgeQueue.length, clearNewBadges]);
 
-  // ─── Auto-save every 30 seconds ──────────────────────────────────────
   useEffect(() => {
     const interval = setInterval(() => {
       autoSave();
@@ -229,7 +211,14 @@ export default function GameScreen() {
     return () => clearInterval(interval);
   }, [autoSave]);
 
-  // ─── No active session — show return home ────────────────────────────
+  useEffect(() => {
+    const handLength = session?.hand.length ?? 0;
+    if (handLength === 0) return;
+    if (featuredHandIndex > handLength - 1) {
+      setFeaturedHandIndex(Math.max(0, handLength - 1));
+    }
+  }, [featuredHandIndex, session?.hand.length]);
+
   if (!session) {
     return (
       <View style={styles.loadingContainer}>
@@ -244,6 +233,10 @@ export default function GameScreen() {
     );
   }
 
+  const featuredTask = session.hand[featuredHandIndex] ?? session.hand[0];
+  const featuredTaskIndex = featuredTask ? session.hand.findIndex(t => t.id === featuredTask.id) : 0;
+  const previewCards = session.hand.slice(0, 3);
+
   const handleCompleteSmall = (id: string) => {
     completeTask(id, false);
     setShowSmallConfetti(true);
@@ -254,7 +247,13 @@ export default function GameScreen() {
     setShowBigFirework(true);
   };
 
-  // Derive park options for the selected resort
+  const handleDiscardSmall = (id: string) => {
+    discardTask(id);
+    if (featuredHandIndex > 0) {
+      setFeaturedHandIndex(prev => Math.max(0, prev - 1));
+    }
+  };
+
   const selectedResort = RESORTS.find(r => r.id === selectedResortId);
   const resortParkOptions = selectedResort
     ? selectedResort.parkIds.map(pid => {
@@ -267,92 +266,216 @@ export default function GameScreen() {
     <ImageBackground
       source={require('../../assets/HomeScreenBackgroundImage.png')}
       style={styles.backgroundImage}
-      resizeMode="stretch"
+      resizeMode="cover"
     >
+      <View style={styles.backgroundTopOverlay} pointerEvents="none" />
+      <View style={styles.backgroundBottomOverlay} pointerEvents="none" />
+
       <SafeAreaView style={styles.safe}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle="light-content" />
 
-        {/* Stats Bar (top) */}
-        <View style={styles.statsBar}>
-          <StatItem label="Completed" value={session.completedTasks.length} />
-          <StatItem label="Points" value={session.sessionScore} />
-          <StatItem label="Streak" value={session.currentStreak} />
-        </View>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.headerCard}>
+            <View style={styles.headerTopRow}>
+              <View style={styles.headerTitleGroup}>
+                <Text style={styles.headerEyebrow}>Current Park</Text>
+                <Text style={styles.parkTitle}>{park?.name ?? '?'}</Text>
+              </View>
+              <View style={styles.streakBadge}>
+                <Text style={styles.streakIcon}>{session.currentStreak > 0 ? '🔥' : '✦'}</Text>
+                <Text style={styles.streakValue}>{session.currentStreak}</Text>
+              </View>
+            </View>
 
-        {/* Park Name */}
-        <View style={styles.parkNameBar}>
-          <Text style={styles.parkName}>{park?.name ?? '?'}</Text>
-        </View>
+            <View style={styles.statsRow}>
+              <HeaderStatPill icon="⭐" value={`${session.sessionScore} pts`} label="Points" />
+              <HeaderStatPill icon="✓" value={`${session.completedTasks.length}`} label="Completed" />
+            </View>
+          </View>
 
-        {/* Challenge Tasks */}
-        <View style={styles.bigBoardWrapper}>
-          <BigBoard
-            tasks={session.challengeTasks}
-            sessionScore={session.sessionScore}
-            onComplete={handleCompleteBig}
-            onSwap={id => swapChallengeTask(id)}
-          />
-        </View>
+          <View style={styles.sectionBlock}>
+            <View style={styles.sectionHeadingRow}>
+              <Text style={styles.sectionTitle}>Challenges</Text>
+              <Text style={styles.sectionHint}>{session.challengeTasks.length} live</Text>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.challengeRow}
+            >
+              {session.challengeTasks.map(task => (
+                <ChallengeMiniCard
+                  key={task.id}
+                  task={task}
+                  onPress={() => setExpandedChallenge(task)}
+                />
+              ))}
+            </ScrollView>
+          </View>
 
-        {/* Divider + Hand label */}
-        <View style={styles.divider} />
-        <View style={styles.handHeader}>
-          <Text style={styles.handLabel}>YOUR HAND</Text>
-          <DiscardPips remaining={session.discardsRemaining} />
-        </View>
+          {featuredTask ? (
+            <View style={styles.featuredTaskCard}>
+              <View style={styles.featuredTaskTop}>
+                <View
+                  style={[
+                    styles.featuredTaskTypeBadge,
+                    { backgroundColor: `${CATEGORY_COLORS[featuredTask.category] ?? COLORS.gold}22` },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.featuredTaskTypeText,
+                      { color: CATEGORY_COLORS[featuredTask.category] ?? COLORS.goldDark },
+                    ]}
+                  >
+                    {featuredTask.displayCategory.toUpperCase()}
+                  </Text>
+                </View>
+              </View>
 
-        {/* Card Carousel */}
-        <View style={styles.carouselWrapper}>
-          <CardCarousel
-            cards={session.hand}
-            onComplete={handleCompleteSmall}
-            onDiscard={id => discardTask(id)}
-            onTriviaAnswer={(id, correct) => answerTrivia(id, correct)}
-            discardsRemaining={session.discardsRemaining}
-          />
-        </View>
+              <View
+                style={[
+                  styles.featuredIconBadge,
+                  { backgroundColor: CATEGORY_COLORS[featuredTask.category] ?? COLORS.gold },
+                ]}
+              >
+                <View style={styles.featuredIconInner}>
+                  <Text style={styles.featuredIconEmoji}>
+                    {CATEGORY_ICONS[featuredTask.category] ?? '✨'}
+                  </Text>
+                </View>
+              </View>
 
-        {/* Small confetti for hand card completion */}
+              <Text
+                style={[
+                  styles.featuredPoints,
+                  { color: CATEGORY_COLORS[featuredTask.category] ?? COLORS.goldDark },
+                ]}
+              >
+                {featuredTask.points} pts
+              </Text>
+
+              <Text style={styles.featuredTaskDescription}>{featuredTask.description}</Text>
+              <Text style={styles.featuredTaskHelper}>
+                {featuredTask.flavorText ??
+                  (featuredTask.category === 'trivia'
+                    ? 'Answer correctly to claim the points.'
+                    : 'Complete this task to keep your streak alive.')}
+              </Text>
+
+              <View style={styles.featuredActions}>
+                <TouchableOpacity
+                  style={styles.completeButton}
+                  onPress={() =>
+                    featuredTask.category === 'trivia'
+                      ? setTriviaTask(featuredTask)
+                      : handleCompleteSmall(featuredTask.id)
+                  }
+                  activeOpacity={0.9}
+                >
+                  <Text style={styles.completeButtonText}>
+                    {featuredTask.category === 'trivia' ? 'Answer' : 'Complete'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.discardButton,
+                    session.discardsRemaining <= 0 && styles.discardButtonDisabled,
+                  ]}
+                  onPress={() => {
+                    if (session.discardsRemaining <= 0) return;
+                    handleDiscardSmall(featuredTask.id);
+                  }}
+                  activeOpacity={session.discardsRemaining <= 0 ? 1 : 0.85}
+                >
+                  <Text
+                    style={[
+                      styles.discardButtonText,
+                      session.discardsRemaining <= 0 && styles.discardButtonTextDisabled,
+                    ]}
+                  >
+                    Discard
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
+
+          <View style={styles.sectionBlock}>
+            <View style={styles.sectionHeadingRow}>
+              <Text style={styles.sectionTitle}>Your Hand ({session.hand.length})</Text>
+              <DiscardBadge remaining={session.discardsRemaining} />
+            </View>
+
+            <View style={styles.handPreviewRow}>
+              {previewCards.map((task, index) => (
+                <HandPreviewCard
+                  key={task.id}
+                  task={task}
+                  index={index}
+                  active={index === featuredTaskIndex}
+                  onPress={() => setFeaturedHandIndex(index)}
+                />
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+
         {showSmallConfetti && (
           <Confetti type="small" onDone={() => setShowSmallConfetti(false)} />
         )}
 
-        {/* Big firework for challenge task completion */}
         {showBigFirework && (
           <Confetti type="big" onDone={() => setShowBigFirework(false)} />
         )}
 
-        {/* Bottom Nav Bar */}
-        <View style={styles.navBar}>
-          <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
-            <View style={styles.navCardIcon}>
-              <Text style={styles.navCardS}>S</Text>
-              <View style={styles.navCardDivider}>
-                <View style={styles.navCardDividerLine} />
-                <Text style={styles.navCardStar}>✦</Text>
-                <View style={styles.navCardDividerLine} />
+        <View style={styles.navShell}>
+          <View style={styles.navBar}>
+            <TouchableOpacity style={[styles.navItem, styles.navItemActive]} activeOpacity={0.8}>
+              <View style={styles.navActivePill}>
+                <View style={styles.navCardIcon}>
+                  <Text style={styles.navCardS}>S</Text>
+                  <View style={styles.navCardDivider}>
+                    <View style={styles.navCardDividerLine} />
+                    <Text style={styles.navCardStar}>✦</Text>
+                    <View style={styles.navCardDividerLine} />
+                  </View>
+                  <Text style={styles.navCardQ}>Q</Text>
+                </View>
               </View>
-              <Text style={styles.navCardQ}>Q</Text>
-            </View>
-            <Text style={[styles.navLabel, styles.navLabelActive]}>Game</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem} onPress={openParkModal} activeOpacity={0.7}>
-            <Text style={styles.navIcon}>🏰</Text>
-            <Text style={styles.navLabel}>Park</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Settings')} activeOpacity={0.7}>
-            <Text style={styles.navIcon}>⚙️</Text>
-            <Text style={styles.navLabel}>Settings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Profile')} activeOpacity={0.7}>
-            <Text style={styles.navIcon}>👤</Text>
-            <Text style={styles.navLabel}>Profile</Text>
-          </TouchableOpacity>
+              <Text style={[styles.navLabel, styles.navLabelActive]}>Game</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.navItem} onPress={openParkModal} activeOpacity={0.8}>
+              <Text style={styles.navIcon}>🏰</Text>
+              <Text style={styles.navLabel}>Park</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={() => navigation.navigate('Settings')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.navIcon}>⚙️</Text>
+              <Text style={styles.navLabel}>Settings</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={() => navigation.navigate('Profile')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.navIcon}>👤</Text>
+              <Text style={styles.navLabel}>Profile</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-
       </SafeAreaView>
-
-      {/* Badge unlock popup — rendered outside SafeAreaView for full-screen overlay */}
+      
       {activeBadge && (
         <BadgeUnlockPopup
           key={activeBadge.id}
@@ -361,7 +484,34 @@ export default function GameScreen() {
         />
       )}
 
-      {/* Tips modal for new players */}
+      {expandedChallenge && (
+        <ChallengeDetailModal
+          task={expandedChallenge}
+          sessionScore={session.sessionScore}
+          onComplete={() => {
+            handleCompleteBig(expandedChallenge.id);
+            setExpandedChallenge(null);
+          }}
+          onSwap={() => {
+            swapChallengeTask(expandedChallenge.id);
+            setExpandedChallenge(null);
+          }}
+          onClose={() => setExpandedChallenge(null)}
+        />
+      )}
+
+      {triviaTask && (
+        <TriviaModal
+          task={triviaTask}
+          onTriviaAnswer={correct => {
+            answerTrivia(triviaTask.id, correct);
+            if (correct) setShowSmallConfetti(true);
+            setTriviaTask(null);
+          }}
+          onClose={() => setTriviaTask(null)}
+        />
+      )}
+
       <Modal
         visible={showTips}
         transparent
@@ -375,7 +525,7 @@ export default function GameScreen() {
                 <Text style={styles.tipLogoS}>S</Text>
                 <View style={styles.tipLogoDivider}>
                   <View style={styles.tipLogoDividerLine} />
-                  <Text style={styles.tipLogoDividerStar}>{'\u2726'}</Text>
+                  <Text style={styles.tipLogoDividerStar}>✦</Text>
                   <View style={styles.tipLogoDividerLine} />
                 </View>
                 <Text style={styles.tipLogoQ}>Q</Text>
@@ -383,6 +533,7 @@ export default function GameScreen() {
             ) : (
               <Text style={styles.tipIcon}>{GAME_TIPS[currentTipIndex].icon}</Text>
             )}
+
             <Text style={styles.tipTitle}>{GAME_TIPS[currentTipIndex].title}</Text>
             <Text style={styles.tipMessage}>{GAME_TIPS[currentTipIndex].message}</Text>
 
@@ -403,7 +554,7 @@ export default function GameScreen() {
               )}
               <TouchableOpacity style={styles.tipNextBtn} onPress={handleNextTip}>
                 <Text style={styles.tipNextBtnText}>
-                  {currentTipIndex < GAME_TIPS.length - 1 ? 'Next' : 'Let\'s Play!'}
+                  {currentTipIndex < GAME_TIPS.length - 1 ? 'Next' : 'Let’s Play!'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -417,7 +568,6 @@ export default function GameScreen() {
         </View>
       </Modal>
 
-      {/* Park modal — switch parks */}
       <Modal
         visible={showParkModal}
         transparent
@@ -495,13 +645,229 @@ export default function GameScreen() {
   );
 }
 
-/** Simple stat display used in the top stats bar (Completed, Points, Streak) */
-function StatItem({ label, value }: { label: string; value: string | number }) {
+function HeaderStatPill({
+  icon,
+  value,
+  label,
+}: {
+  icon: string;
+  value: string;
+  label: string;
+}) {
   return (
-    <View style={styles.statItem}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View style={styles.statPill}>
+      <Text style={styles.statPillIcon}>{icon}</Text>
+      <View>
+        <Text style={styles.statPillValue}>{value}</Text>
+        <Text style={styles.statPillLabel}>{label}</Text>
+      </View>
     </View>
+  );
+}
+
+function DiscardBadge({ remaining }: { remaining: number }) {
+  return (
+    <View style={styles.discardBadge}>
+      <Text style={styles.discardBadgeLabel}>Discards</Text>
+      <View style={styles.discardDots}>
+        {Array.from({ length: 2 }).map((_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.discardDot,
+              index < remaining ? styles.discardDotActive : styles.discardDotInactive,
+            ]}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function ChallengeMiniCard({
+  task,
+  onPress,
+}: {
+  task: Task;
+  onPress: () => void;
+}) {
+  const accent = CATEGORY_COLORS[task.category] ?? COLORS.gold;
+  return (
+    <TouchableOpacity style={styles.challengeCard} onPress={onPress} activeOpacity={0.88}>
+      <Text style={styles.challengeCategory}>{task.displayCategory.toUpperCase()}</Text>
+      <View style={[styles.challengeIconShell, { backgroundColor: `${accent}20` }]}>
+        <View style={[styles.challengeIconCore, { backgroundColor: accent }]}>
+          <Text style={styles.challengeIcon}>{CATEGORY_ICONS[task.category] ?? '✨'}</Text>
+        </View>
+      </View>
+      <Text style={[styles.challengePoints, { color: accent }]}>{task.points} pts</Text>
+    </TouchableOpacity>
+  );
+}
+
+function HandPreviewCard({
+  task,
+  index,
+  active,
+  onPress,
+}: {
+  task: Task;
+  index: number;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const accent = CATEGORY_COLORS[task.category] ?? COLORS.gold;
+  return (
+    <TouchableOpacity
+      style={[
+        styles.handPreviewCard,
+        { marginLeft: index === 0 ? 0 : -Math.round(20 * sw) },
+        active && styles.handPreviewCardActive,
+      ]}
+      onPress={onPress}
+      activeOpacity={0.9}
+    >
+      <View style={[styles.handPreviewGlow, { backgroundColor: `${accent}22` }]} />
+      <Text style={styles.handPreviewLabel}>{task.displayCategory.toUpperCase()}</Text>
+      <Text style={styles.handPreviewIcon}>{CATEGORY_ICONS[task.category] ?? '✨'}</Text>
+      <Text style={[styles.handPreviewPoints, { color: accent }]}>{task.points}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function ChallengeDetailModal({
+  task,
+  sessionScore,
+  onComplete,
+  onSwap,
+  onClose,
+}: {
+  task: Task;
+  sessionScore: number;
+  onComplete: () => void;
+  onSwap: () => void;
+  onClose: () => void;
+}) {
+  const accent = CATEGORY_COLORS[task.category] ?? COLORS.gold;
+  const canSwap = sessionScore >= 25;
+
+  return (
+    <Modal transparent animationType="fade" visible onRequestClose={onClose}>
+      <Pressable style={styles.detailOverlay} onPress={onClose}>
+        <Pressable style={styles.detailCard} onPress={e => e.stopPropagation()}>
+          <View style={[styles.detailIconShell, { backgroundColor: `${accent}18` }]}>
+            <View style={[styles.detailIconCore, { backgroundColor: accent }]}>
+              <Text style={styles.detailIcon}>{CATEGORY_ICONS[task.category] ?? '✨'}</Text>
+            </View>
+          </View>
+
+          <Text style={styles.detailLabel}>{task.displayCategory.toUpperCase()}</Text>
+          <Text style={[styles.detailPoints, { color: accent }]}>{task.points} pts</Text>
+          <Text style={styles.detailDescription}>{task.description}</Text>
+
+          {task.heightRequirement ? (
+            <View style={styles.detailMetaChip}>
+              <Text style={styles.detailMetaText}>Min height {task.heightRequirement}"</Text>
+            </View>
+          ) : null}
+
+          <View style={styles.detailActions}>
+            <TouchableOpacity
+              style={[
+                styles.detailSecondaryButton,
+                !canSwap && styles.detailSecondaryButtonDisabled,
+              ]}
+              onPress={canSwap ? onSwap : undefined}
+              activeOpacity={canSwap ? 0.85 : 1}
+            >
+              <Text
+                style={[
+                  styles.detailSecondaryButtonText,
+                  !canSwap && styles.detailSecondaryButtonTextDisabled,
+                ]}
+              >
+                Swap (-25 pts)
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.detailPrimaryButton}
+              onPress={onComplete}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.detailPrimaryButtonText}>Complete</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+function TriviaModal({
+  task,
+  onTriviaAnswer,
+  onClose,
+}: {
+  task: Task;
+  onTriviaAnswer: (correct: boolean) => void;
+  onClose: () => void;
+}) {
+  const accent = CATEGORY_COLORS[task.category] ?? COLORS.gold;
+  const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
+  const [answered, setAnswered] = useState(false);
+
+  const handleChoicePress = (index: number) => {
+    if (answered) return;
+    setSelectedChoice(index);
+    setAnswered(true);
+    const correct = index === task.triviaAnswer;
+    setTimeout(() => onTriviaAnswer(correct), 1200);
+  };
+
+  return (
+    <Modal transparent animationType="fade" visible onRequestClose={onClose}>
+      <Pressable style={styles.detailOverlay} onPress={answered ? undefined : onClose}>
+        <Pressable style={styles.triviaCard} onPress={e => e.stopPropagation()}>
+          <Text style={styles.detailLabel}>{task.displayCategory.toUpperCase()}</Text>
+          <Text style={[styles.detailPoints, { color: accent }]}>{task.points} pts</Text>
+          <Text style={styles.triviaQuestion}>{task.description}</Text>
+
+          <View style={styles.triviaChoiceList}>
+            {task.triviaChoices?.map((choice, index) => {
+              const isSelected = selectedChoice === index;
+              const isCorrect = index === task.triviaAnswer;
+
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.triviaChoice,
+                    answered && isCorrect && styles.triviaChoiceCorrect,
+                    answered && isSelected && !isCorrect && styles.triviaChoiceWrong,
+                  ]}
+                  onPress={() => handleChoicePress(index)}
+                  disabled={answered}
+                  activeOpacity={0.88}
+                >
+                  <View style={styles.triviaLetterBadge}>
+                    <Text style={styles.triviaLetterText}>{CHOICE_LETTERS[index]}</Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.triviaChoiceText,
+                      answered && (isCorrect || isSelected) && styles.triviaChoiceTextActive,
+                    ]}
+                  >
+                    {choice}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -511,8 +877,26 @@ const styles = StyleSheet.create({
     width: SCREEN_W,
     height: SCREEN_H,
   },
+  backgroundTopOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(32, 24, 56, 0.24)',
+  },
+  backgroundBottomOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '62%',
+    backgroundColor: 'rgba(16, 18, 34, 0.40)',
+  },
   safe: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: Math.round(18 * sw),
+    paddingTop: Math.round(10 * sh),
+    paddingBottom: Math.round(132 * sh),
+    gap: Math.round(22 * sh),
   },
   loadingContainer: {
     flex: 1,
@@ -539,145 +923,584 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontSize: 16,
   },
-  parkNameBar: {
-    alignItems: 'center',
-    paddingVertical: Math.round(4 * sh),
+
+  headerCard: {
+    backgroundColor: 'rgba(34, 29, 63, 0.52)',
+    borderRadius: 24,
+    padding: Math.round(18 * sw),
+    shadowColor: '#050816',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.26,
+    shadowRadius: 26,
+    elevation: 8,
   },
-  parkName: {
-    color: COLORS.textDark,
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: Math.round(14 * sh),
+  },
+  headerTitleGroup: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  headerEyebrow: {
+    color: 'rgba(238,235,255,0.72)',
+    fontSize: Math.round(11 * sw),
+    fontWeight: '700',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  parkTitle: {
+    color: COLORS.white,
+    fontSize: Math.round(28 * sw),
+    lineHeight: Math.round(32 * sw),
     fontWeight: '900',
-    fontSize: Math.round(13 * sw),
-    letterSpacing: 0.5,
-    textAlign: 'center',
   },
-  bigBoardWrapper: {
-    marginTop: Math.round(8 * sh),
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.14)',
   },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.borderLight,
-    marginHorizontal: Math.round(20 * sw),
-    marginTop: Math.round(10 * sh),
-    marginBottom: Math.round(6 * sh),
+  streakIcon: {
+    fontSize: Math.round(16 * sw),
+    marginRight: 6,
   },
-  handHeader: {
+  streakValue: {
+    color: COLORS.white,
+    fontSize: Math.round(15 * sw),
+    fontWeight: '800',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: Math.round(10 * sw),
+  },
+  statPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.90)',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  statPillIcon: {
+    fontSize: Math.round(17 * sw),
+    marginRight: 10,
+  },
+  statPillValue: {
+    color: COLORS.textDark,
+    fontSize: Math.round(15 * sw),
+    fontWeight: '900',
+  },
+  statPillLabel: {
+    color: COLORS.textMuted,
+    fontSize: Math.round(11 * sw),
+    fontWeight: '600',
+    marginTop: 2,
+  },
+
+  sectionBlock: {
+    gap: Math.round(12 * sh),
+  },
+  sectionHeadingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Math.round(20 * sw),
-    marginBottom: Math.round(8 * sh),
   },
-  handLabel: {
-    color: COLORS.textMuted,
-    fontSize: Math.round(10 * sw),
-    fontWeight: '700',
-    letterSpacing: 2,
-  },
-  carouselWrapper: {
-    flex: 1,
-  },
-  statsBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: 'rgba(255,255,255,0.82)',
-    marginHorizontal: Math.round(16 * sw),
-    borderRadius: RADII.panel,
-    paddingVertical: Math.round(8 * sh),
-    marginTop: Math.round(8 * sh),
-    marginBottom: Math.round(4 * sh),
-    borderWidth: 1,
-    borderColor: COLORS.borderPanel,
-    ...SHADOWS.card,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    color: COLORS.green,
+  sectionTitle: {
+    color: COLORS.white,
+    fontSize: Math.round(17 * sw),
     fontWeight: '800',
-    fontSize: Math.round(14 * sw),
+    letterSpacing: 0.2,
   },
-  statLabel: {
-    color: COLORS.textMuted,
-    fontSize: Math.round(9 * sw),
-    marginTop: 1,
+  sectionHint: {
+    color: 'rgba(239,237,255,0.72)',
+    fontSize: Math.round(12 * sw),
+    fontWeight: '600',
   },
 
-  // Bottom Nav Bar
+  challengeRow: {
+    paddingRight: 8,
+    gap: Math.round(10 * sw),
+  },
+  challengeCard: {
+    width: Math.round(108 * sw),
+    height: Math.round(128 * sw),
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,251,247,0.96)',
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#111324',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 22,
+    elevation: 5,
+  },
+  challengeCategory: {
+    color: COLORS.textMuted,
+    fontSize: Math.round(9 * sw),
+    fontWeight: '800',
+    letterSpacing: 1.1,
+  },
+  challengeIconShell: {
+    width: Math.round(56 * sw),
+    height: Math.round(56 * sw),
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  challengeIconCore: {
+    width: Math.round(40 * sw),
+    height: Math.round(40 * sw),
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  challengeIcon: {
+    fontSize: Math.round(20 * sw),
+  },
+  challengePoints: {
+    fontSize: Math.round(14 * sw),
+    fontWeight: '900',
+  },
+
+  featuredTaskCard: {
+    backgroundColor: 'rgba(255,249,244,0.96)',
+    borderRadius: 28,
+    paddingHorizontal: Math.round(22 * sw),
+    paddingVertical: Math.round(22 * sh),
+    alignItems: 'center',
+    shadowColor: '#0f1020',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    elevation: 10,
+  },
+  featuredTaskTop: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  featuredTaskTypeBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  featuredTaskTypeText: {
+    fontSize: Math.round(10 * sw),
+    fontWeight: '900',
+    letterSpacing: 1.2,
+  },
+  featuredIconBadge: {
+    width: Math.round(84 * sw),
+    height: Math.round(84 * sw),
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  featuredIconInner: {
+    width: Math.round(58 * sw),
+    height: Math.round(58 * sw),
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featuredIconEmoji: {
+    fontSize: Math.round(28 * sw),
+  },
+  featuredPoints: {
+    fontSize: Math.round(18 * sw),
+    fontWeight: '900',
+    marginBottom: 14,
+  },
+  featuredTaskDescription: {
+    color: COLORS.textDark,
+    fontSize: Math.round(26 * sw),
+    lineHeight: Math.round(32 * sw),
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  featuredTaskHelper: {
+    color: COLORS.textMuted,
+    fontSize: Math.round(14 * sw),
+    lineHeight: Math.round(20 * sw),
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+  featuredActions: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: Math.round(12 * sw),
+  },
+  completeButton: {
+    flex: 1.15,
+    backgroundColor: COLORS.green,
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderBottomWidth: 4,
+    borderBottomColor: COLORS.greenDark,
+    ...SHADOWS.button,
+  },
+  completeButtonText: {
+    color: COLORS.white,
+    fontSize: Math.round(16 * sw),
+    fontWeight: '900',
+  },
+  discardButton: {
+    flex: 1,
+    backgroundColor: '#F3F5FA',
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  discardButtonDisabled: {
+    opacity: 0.55,
+  },
+  discardButtonText: {
+    color: COLORS.textBody,
+    fontSize: Math.round(16 * sw),
+    fontWeight: '700',
+  },
+  discardButtonTextDisabled: {
+    color: COLORS.textMuted,
+  },
+
+  discardBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  discardBadgeLabel: {
+    color: COLORS.white,
+    fontSize: Math.round(11 * sw),
+    fontWeight: '700',
+    marginRight: 8,
+  },
+  discardDots: {
+    flexDirection: 'row',
+    gap: 5,
+  },
+  discardDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  discardDotActive: {
+    backgroundColor: '#4CC2FF',
+  },
+  discardDotInactive: {
+    backgroundColor: 'rgba(255,255,255,0.32)',
+  },
+
+  handPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingLeft: 4,
+    paddingTop: 4,
+  },
+  handPreviewCard: {
+    width: Math.round(92 * sw),
+    height: Math.round(128 * sw),
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,248,243,0.92)',
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    justifyContent: 'space-between',
+    overflow: 'hidden',
+    shadowColor: '#101321',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  handPreviewCardActive: {
+    transform: [{ translateY: -8 }],
+  },
+  handPreviewGlow: {
+    position: 'absolute',
+    top: -18,
+    right: -18,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+  },
+  handPreviewLabel: {
+    color: COLORS.textMuted,
+    fontSize: Math.round(9 * sw),
+    fontWeight: '800',
+    letterSpacing: 1.1,
+  },
+  handPreviewIcon: {
+    fontSize: Math.round(24 * sw),
+    alignSelf: 'center',
+  },
+  handPreviewPoints: {
+    fontSize: Math.round(18 * sw),
+    fontWeight: '900',
+    alignSelf: 'flex-start',
+  },
+
+  navShell: {
+    position: 'absolute',
+    left: Math.round(16 * sw),
+    right: Math.round(16 * sw),
+    bottom: Math.round(14 * sh),
+  },
   navBar: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderTopWidth: 1,
-    borderTopColor: COLORS.borderPanel,
-    paddingVertical: Math.round(8 * sh),
-    paddingBottom: Math.round(4 * sh),
-    ...SHADOWS.card,
+    backgroundColor: 'rgba(245, 241, 252, 0.96)',
+    borderRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    shadowColor: '#090c17',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.22,
+    shadowRadius: 24,
+    elevation: 8,
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
+    gap: 4,
+  },
+  navItemActive: {
+    transform: [{ translateY: -1 }],
+  },
+  navActivePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: 'rgba(155,127,212,0.14)',
   },
   navIcon: {
-    fontSize: Math.round(22 * sw),
-    marginBottom: 2,
+    fontSize: Math.round(21 * sw),
   },
   navLabel: {
+    color: '#7A7F93',
     fontSize: Math.round(10 * sw),
-    fontWeight: '600',
-    color: COLORS.textMuted,
-    letterSpacing: 0.3,
+    fontWeight: '700',
   },
   navLabelActive: {
-    color: COLORS.green,
-    fontWeight: '800',
+    color: '#63507B',
   },
   navCardIcon: {
-    width: 22,
-    height: 28,
-    borderRadius: 4,
+    width: 24,
+    height: 30,
+    borderRadius: 6,
     backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: '#D4C4EE',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 2,
-    marginBottom: 2,
   },
   navCardS: {
     fontSize: 8,
     fontWeight: '900',
     color: '#B8A9D4',
-    letterSpacing: 0.5,
     lineHeight: 9,
   },
   navCardDivider: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: 14,
-    marginVertical: 0.5,
+    width: 15,
   },
   navCardDividerLine: {
     flex: 1,
     height: 1,
     backgroundColor: '#D4C4EE',
-    borderRadius: 0.5,
   },
   navCardStar: {
     fontSize: 5,
-    marginHorizontal: 1,
     color: '#C8A4F0',
+    marginHorizontal: 1,
   },
   navCardQ: {
     fontSize: 8,
     fontWeight: '900',
     color: '#9B7FD4',
-    letterSpacing: 0.5,
     lineHeight: 9,
   },
 
-  // Tips modal
+  detailOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(8, 10, 18, 0.58)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  detailCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#FFF9F4',
+    borderRadius: 28,
+    padding: 24,
+    alignItems: 'center',
+    ...SHADOWS.cardActive,
+  },
+  detailIconShell: {
+    width: 88,
+    height: 88,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  detailIconCore: {
+    width: 58,
+    height: 58,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailIcon: {
+    fontSize: 28,
+  },
+  detailLabel: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.3,
+    marginBottom: 8,
+  },
+  detailPoints: {
+    fontSize: 18,
+    fontWeight: '900',
+    marginBottom: 12,
+  },
+  detailDescription: {
+    color: COLORS.textDark,
+    fontSize: 21,
+    lineHeight: 28,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  detailMetaChip: {
+    backgroundColor: '#F3F5FA',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginBottom: 20,
+  },
+  detailMetaText: {
+    color: COLORS.textBody,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  detailActions: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 12,
+  },
+  detailPrimaryButton: {
+    flex: 1,
+    backgroundColor: COLORS.green,
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderBottomWidth: 4,
+    borderBottomColor: COLORS.greenDark,
+    ...SHADOWS.button,
+  },
+  detailPrimaryButtonText: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  detailSecondaryButton: {
+    flex: 1,
+    backgroundColor: '#F3F5FA',
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  detailSecondaryButtonDisabled: {
+    opacity: 0.5,
+  },
+  detailSecondaryButtonText: {
+    color: COLORS.textBody,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  detailSecondaryButtonTextDisabled: {
+    color: COLORS.textMuted,
+  },
+
+  triviaCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#FFF9F4',
+    borderRadius: 28,
+    padding: 24,
+    ...SHADOWS.cardActive,
+  },
+  triviaQuestion: {
+    color: COLORS.textDark,
+    fontSize: 21,
+    lineHeight: 29,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 18,
+  },
+  triviaChoiceList: {
+    gap: 10,
+  },
+  triviaChoice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F5FA',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  triviaChoiceCorrect: {
+    backgroundColor: '#1DAA63',
+  },
+  triviaChoiceWrong: {
+    backgroundColor: '#E98B97',
+  },
+  triviaLetterBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  triviaLetterText: {
+    color: COLORS.textDark,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  triviaChoiceText: {
+    flex: 1,
+    color: COLORS.textDark,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  triviaChoiceTextActive: {
+    color: COLORS.white,
+  },
+
   tipOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -794,7 +1617,6 @@ const styles = StyleSheet.create({
     color: COLORS.textBody,
     fontWeight: '700',
     fontSize: 16,
-    letterSpacing: 0.5,
   },
   tipNextBtn: {
     flex: 1,
@@ -810,7 +1632,6 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: '900',
     fontSize: 16,
-    letterSpacing: 0.5,
   },
   tipSkipBtn: {
     marginTop: 12,
@@ -822,7 +1643,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Park modal
   parkModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',

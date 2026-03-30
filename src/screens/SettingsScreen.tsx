@@ -16,6 +16,8 @@ import { CategoryToggles } from '../types';
 import { RIDES } from '../data/parks';
 import { COLORS, RADII } from '../theme/theme';
 
+// Metadata used to render the category toggle list without duplicating label
+// and icon markup for every individual row in the settings UI.
 const CATEGORY_INFO: { key: keyof CategoryToggles; label: string; icon: string }[] = [
   { key: 'observation', label: 'Observation', icon: '👁️' },
   { key: 'photo', label: 'Photo Challenges', icon: '📸' },
@@ -34,6 +36,8 @@ export default function SettingsScreen() {
   const { settings, updateSettings, updateCategoryToggle, toggleRide } = useGameStore();
   const [showRideDrilldown, setShowRideDrilldown] = useState(false);
 
+  // The ride drilldown is scoped to the currently selected park so the player
+  // only sees attractions relevant to their active game context.
   const parkId = settings.parkIds?.[0];
   const parkRides = RIDES.filter(r => r.parkId === parkId);
 
@@ -60,7 +64,8 @@ export default function SettingsScreen() {
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Settings</Text>
 
-        {/* Height Filter */}
+        {/* Height filtering changes which ride tasks are allowed to appear when
+            the store builds the ride task pool for the session. */}
         <SectionCard title="HEIGHT FILTER">
           <SettingRow
             label="Enable Height Filtering"
@@ -102,7 +107,7 @@ export default function SettingsScreen() {
           )}
         </SectionCard>
 
-        {/* Categories */}
+        {/* Category toggles let the player opt entire task families in or out. */}
         <SectionCard title="TASK CATEGORIES">
           {CATEGORY_INFO.map(({ key, label, icon }) => (
             <View key={key}>
@@ -114,6 +119,9 @@ export default function SettingsScreen() {
                   thumbColor="#fff"
                 />
               </SettingRow>
+              {/* Ride tasks get a second level of control: once the ride
+                  category is enabled, the player can optionally disable
+                  individual attractions from the ride pool. */}
               {key === 'ride' && settings.categoryToggles.ride && (
                 <TouchableOpacity
                   style={styles.drilldownToggle}
@@ -154,7 +162,8 @@ export default function SettingsScreen() {
           ))}
         </SectionCard>
 
-        {/* Appearance */}
+        {/* Appearance preferences are stored here even if some theme options are
+            only lightly used in the current UI version. */}
         <SectionCard title="APPEARANCE">
           <View style={styles.themeRow}>
             {(['light', 'dark', 'system'] as const).map(mode => (
@@ -171,7 +180,8 @@ export default function SettingsScreen() {
           </View>
         </SectionCard>
 
-        {/* Sound & Haptics */}
+        {/* Preference toggles for feedback systems that can be respected across
+            future interactions, animations, and reward moments. */}
         <SectionCard title="SOUND & HAPTICS">
           <SettingRow label="🔊  Sound Effects">
             <Switch
@@ -198,6 +208,7 @@ export default function SettingsScreen() {
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.sectionCard}>
+      {/* Shared wrapper so each settings section uses the same visual structure. */}
       <Text style={styles.sectionTitle}>{title}</Text>
       {children}
     </View>
@@ -215,6 +226,8 @@ function SettingRow({
 }) {
   return (
     <View style={styles.settingRow}>
+      {/* Left side is descriptive copy; right side is the interactive control
+          passed in by the caller, such as a Switch. */}
       <View style={styles.settingLabelContainer}>
         <Text style={styles.settingLabel}>{label}</Text>
         {description && <Text style={styles.settingDescription}>{description}</Text>}

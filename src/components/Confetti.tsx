@@ -35,6 +35,8 @@ interface ConfettiPiece {
 }
 
 function createPieces(count: number, colors: string[], originY: number): ConfettiPiece[] {
+  // Give each particle its own animated values so the burst can spread with
+  // randomized motion instead of behaving like one rigid layer.
   return Array.from({ length: count }, () => ({
     x: new Animated.Value(SCREEN_W * (0.2 + Math.random() * 0.6)),
     y: new Animated.Value(originY),
@@ -52,6 +54,8 @@ interface Props {
 }
 
 export default function Confetti({ type, onDone }: Props) {
+  // One component supports both subtle and dramatic celebration modes by
+  // varying particle count, origin, palette, and duration.
   const isSmall = type === 'small';
   const count = isSmall ? 40 : 100;
   const colors = isSmall ? CONFETTI_COLORS : FIREWORK_COLORS;
@@ -62,6 +66,8 @@ export default function Confetti({ type, onDone }: Props) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // Build one compound animation per particle, then stagger their launches so
+    // the effect feels organic rather than perfectly synchronized.
     const animations = pieces.map((p) => {
       const spreadX = (Math.random() - 0.5) * SCREEN_W * (isSmall ? 0.8 : 1.2);
       const fallDistance = SCREEN_H * (isSmall ? 0.6 : 1.1);
@@ -96,6 +102,7 @@ export default function Confetti({ type, onDone }: Props) {
 
     Animated.stagger(isSmall ? 15 : 10, animations).start();
 
+    // Notify the parent after the visual effect has finished clearing.
     timerRef.current = setTimeout(() => {
       onDone?.();
     }, duration + 500);

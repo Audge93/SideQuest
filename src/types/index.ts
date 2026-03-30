@@ -1,34 +1,60 @@
-// Task types
+/**
+ * Shared domain model for the app. These definitions describe the shape of
+ * gameplay tasks, player data, sessions, rides, parks, badges, settings, and
+ * save slots so every screen and store action works with the same contract.
+ */
+
+// Distinguishes hand-card tasks from challenge-board tasks.
 export type TaskSize = 'small' | 'big';
+// Difficulty controls both task feel and the points assigned to it.
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
-// Categories - v3 uses internal names + display names
+// Small categories populate the player's hand, while big categories appear on
+// the challenge board and usually award more points.
 export type SmallCategory = 'observation' | 'photo' | 'trivia' | 'action';
 export type BigCategory = 'ride' | 'food' | 'pin' | 'character' | 'exploration' | 'scavenger';
 export type TaskCategory = SmallCategory | BigCategory;
 
+// Ride intensity is stored separately from point value so the app can reason
+// about attraction intensity in a human-friendly way.
 export type RideIntensity = 'gentle' | 'moderate' | 'thrill';
 
+// Theme tags let task content be filtered to Disney or Universal contexts.
 export type ParkThemeTag = 'disney' | 'universal';
 
 export interface Task {
+  // Stable identifier used by save data, completion logic, and replacement.
   id: string;
+  // Determines whether this task appears in the hand carousel or challenge board.
   size: TaskSize;
+  // Internal bucket used for filtering, badge progress, colors, and icons.
   category: TaskCategory;
-  displayCategory: string; // "Find", "Photo", "Trivia", "Act", "Ride", "Treat", "Pins", "Meet", "Explore", "Seek"
+  // Friendly label shown to the player in headers and badges.
+  displayCategory: string;
+  // Main instruction text shown on the task card or expanded modal.
   description: string;
+  // Optional helper line used to teach or flavor the task.
   flavorText?: string;
+  // Score awarded for completing the task.
   points: number;
+  // Relative challenge level used for balancing.
   difficulty: Difficulty;
+  // Optional park binding for park-specific tasks.
   parkId?: string;
+  // Optional ride binding for generated ride tasks.
   rideId?: string;
+  // Optional minimum rider height, mainly for ride tasks.
   heightRequirement?: number;
+  // Answer choices for trivia cards.
   triviaChoices?: string[];
+  // Zero-based index of the correct trivia choice.
   triviaAnswer?: number;
-  tag?: ParkThemeTag; // Filter trivia by park theme; undefined = show everywhere
+  // Theme filter; omitted means the task can appear in any park.
+  tag?: ParkThemeTag;
 }
 
 export interface Ride {
+  // Canonical ride metadata used to generate ride challenge tasks.
   id: string;
   name: string;
   heightRequirement: number;
@@ -38,15 +64,18 @@ export interface Ride {
 }
 
 export interface Park {
+  // Park reference data used by selectors, settings, and session display.
   id: string;
   name: string;
   shortName: string;
   theme: 'disney' | 'universal' | 'custom';
 }
 
+// Badge tiers create a progression ladder for each achievement line.
 export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum';
 
 export interface Badge {
+  // Badge records feed both unlock evaluation and profile rendering.
   id: string;
   name: string;
   description: string;
@@ -57,6 +86,7 @@ export interface Badge {
 }
 
 export interface Player {
+  // Persistent player profile that survives between individual play sessions.
   id: string;
   name: string;
   color: string;
@@ -67,6 +97,7 @@ export interface Player {
 }
 
 export interface Session {
+  // Live gameplay snapshot used by the active game screen.
   id: string;
   parkIds: string[];
   startedAt: number;
@@ -81,6 +112,7 @@ export interface Session {
 }
 
 export interface CategoryToggles {
+  // Individual switches that turn task categories on or off for generation.
   observation: boolean;
   photo: boolean;
   trivia: boolean;
@@ -94,6 +126,7 @@ export interface CategoryToggles {
 }
 
 export interface Settings {
+  // Player-configurable options that shape task generation and app behavior.
   parkIds: string[];
   heightFilterEnabled: boolean;
   minHeightInches: number;
@@ -104,6 +137,7 @@ export interface Settings {
 }
 
 export interface SaveSlot {
+  // Named save entry containing a frozen session plus the settings used for it.
   id: string;
   name: string;
   createdAt: number;
@@ -112,4 +146,5 @@ export interface SaveSlot {
   settings: Settings;
 }
 
+// Current cap for how many save entries the player can keep at once.
 export const MAX_SAVE_SLOTS = 3;

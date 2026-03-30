@@ -1,5 +1,13 @@
 import { Task } from '../types';
 
+/**
+ * Trivia content library.
+ *
+ * Trivia is split into Disney and Universal groups so the store can filter it
+ * based on the current park selection. Each trivia item is still shaped like a
+ * normal Task so the carousel and scoring systems can treat it consistently.
+ */
+
 // ─── Disney Trivia ──────────────────────────────────────────────────────────
 
 const DISNEY_TRIVIA: Task[] = [
@@ -157,5 +165,6 @@ const UNIVERSAL_TRIVIA: Task[] = [
 
 // ─── Combined Export ────────────────────────────────────────────────────────
 
+// Merged export consumed by the store before theme filtering is applied.
 export const TRIVIA_TASKS: Task[] = [...DISNEY_TRIVIA, ...UNIVERSAL_TRIVIA];
 export { DISNEY_TRIVIA, UNIVERSAL_TRIVIA };

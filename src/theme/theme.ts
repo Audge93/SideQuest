@@ -1,4 +1,9 @@
-// Whimsical & Bright design system for Side Quest v3
+/**
+ * theme.ts
+ *
+ * Centralized design tokens for the app. Keeping shared colors, shadows, and
+ * radii here makes the UI consistent across gameplay, menus, cards, and modals.
+ */
 
 export const COLORS = {
   // Backgrounds
@@ -46,6 +51,8 @@ export const COLORS = {
   catScavenger: '#B0D878',
 };
 
+// Maps internal category ids to the accent color used on task cards, icons,
+// challenge badges, and other category-driven UI treatments.
 export const CATEGORY_COLORS: Record<string, string> = {
   observation: COLORS.catObservation,
   photo: COLORS.catPhoto,
@@ -59,7 +66,8 @@ export const CATEGORY_COLORS: Record<string, string> = {
   scavenger: COLORS.catScavenger,
 };
 
-// Display names for categories
+// Short user-facing labels for each category. These are friendlier to display
+// in the UI than the internal ids stored in task data.
 export const CATEGORY_LABELS: Record<string, string> = {
   observation: 'Find',
   photo: 'Photo',
@@ -73,6 +81,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   scavenger: 'Seek',
 };
 
+// Lightweight emoji icons for each task type so the app can show distinct
+// category markers without depending on an external icon set.
 export const CATEGORY_ICONS: Record<string, string> = {
   observation: '🔍',
   photo: '📸',
@@ -86,6 +96,8 @@ export const CATEGORY_ICONS: Record<string, string> = {
   scavenger: '🎯',
 };
 
+// Reusable depth presets so buttons, cards, and chips all cast shadows in a
+// consistent way and preserve the same playful visual hierarchy.
 export const SHADOWS = {
   button: {
     shadowColor: '#000',
@@ -117,6 +129,7 @@ export const SHADOWS = {
   },
 };
 
+// Shared corner radii keep cards, panels, and buttons in the same shape family.
 export const RADII = {
   card: 20,
   button: 14,

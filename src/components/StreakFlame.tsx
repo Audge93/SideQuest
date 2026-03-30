@@ -18,6 +18,8 @@ interface Props {
 }
 
 function getFlameEmoji(streak: number): string {
+  // Emoji intensity increases with the streak tier so the counter feels more
+  // exciting even without a dedicated animation.
   if (streak === 0) return '';
   if (streak < 5) return '\uD83D\uDD25';
   if (streak < 10) return '\uD83D\uDD25';
@@ -27,6 +29,7 @@ function getFlameEmoji(streak: number): string {
 }
 
 function getFlameColor(streak: number): string {
+  // Color changes mirror the same streak tiers as the emoji progression.
   if (streak === 0) return '#A0AEC0'; // Gray
   if (streak < 5) return '#FF6B35';   // Orange
   if (streak < 10) return '#FF4500';  // Red-Orange
@@ -44,6 +47,7 @@ export default function StreakFlame({ streak }: Props) {
     );
   }
 
+  // Non-zero streaks show both a flair icon and an exact numeric count.
   const flameColor = getFlameColor(streak);
   const emoji = getFlameEmoji(streak);
 

@@ -25,6 +25,7 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const sw = SCREEN_W / 390;
 const sh = SCREEN_H / 844;
 
+// Friendly copy for showing task difficulty inside the expanded modal.
 const DIFFICULTY_LABELS: Record<string, string> = {
   easy: 'Easy',
   medium: 'Medium',
@@ -41,6 +42,7 @@ function BigTaskBadge({ task, onPress }: BigTaskBadgeProps) {
   const icon = CATEGORY_ICONS[task.category] ?? '';
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // Small pulse gives tactile feedback before the details modal opens.
   const handlePress = () => {
     Animated.sequence([
       Animated.timing(pulseAnim, { toValue: 0.9, duration: 80, useNativeDriver: true }),
@@ -75,6 +77,8 @@ interface ExpandedBigTaskProps {
 function ExpandedBigTask({ task, sessionScore, onComplete, onSwap, onClose }: ExpandedBigTaskProps) {
   const color = CATEGORY_COLORS[task.category] ?? '#888';
   const icon = CATEGORY_ICONS[task.category] ?? '';
+  // Swapping costs points, so eligibility is calculated once for button state
+  // and for the fallback warning if the player tries without enough score.
   const canSwap = sessionScore >= 25;
   return (
     <Modal transparent animationType="slide" visible onRequestClose={onClose}>
@@ -143,8 +147,11 @@ interface Props {
 }
 
 export default function BigBoard({ tasks, sessionScore, onComplete, onSwap }: Props) {
+  // The selected challenge task being shown in expanded modal form.
   const [expanded, setExpanded] = useState<Task | null>(null);
 
+  // These handlers translate the currently expanded task back into the simple
+  // id-based callbacks expected by the parent game screen.
   const handleComplete = () => {
     if (!expanded) return;
     onComplete(expanded.id);

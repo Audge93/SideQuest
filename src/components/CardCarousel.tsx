@@ -36,6 +36,7 @@ const H_PADDING = Math.round((SCREEN_W - CARD_WIDTH) / 2);
 const ACTIVE_SCALE = 1.0;
 const INACTIVE_SCALE = 0.92;
 
+// Labels shown beside each multiple-choice answer in the trivia modal.
 const CHOICE_LETTERS = ['A', 'B', 'C', 'D'];
 
 // ── Animated task card with pop/complete effects ─────────────
@@ -70,6 +71,8 @@ function TaskCard({
       ? 'Spot it to earn points'
       : 'Complete this task to earn points');
 
+  // Pop the card away before notifying the parent so the replacement feels
+  // physically tied to the discard action.
   const handleDiscard = () => {
     // Pop animation: scale up then shrink to 0
     Animated.sequence([
@@ -89,6 +92,7 @@ function TaskCard({
     });
   };
 
+  // Quick celebratory pulse before the card disappears from the hand.
   const handleComplete = () => {
     // Celebrate: pulse up then settle
     Animated.sequence([
@@ -238,6 +242,8 @@ function TriviaModal({
   const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
   const [answered, setAnswered] = useState(false);
 
+  // Locks the question after one answer, reveals correctness state, then hands
+  // the result to the parent so scoring/replacement can happen centrally.
   const handleChoicePress = (index: number) => {
     if (answered) return;
     setSelectedChoice(index);

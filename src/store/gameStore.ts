@@ -113,6 +113,7 @@ const DEFAULT_PLAYER: Player = {
 // ─── Store Types ──────────────────────────────────────────────────────────────
 
 interface GameState {
+  // Persisted state slices read directly by screens and components.
   settings: Settings;
   player: Player;
   session: Session | null;
@@ -121,19 +122,23 @@ interface GameState {
   saveSlots: (SaveSlot | null)[];
   activeSlotId: string | null;
 
+  // Simple profile/settings mutations.
   updateSettings: (patch: Partial<Settings>) => void;
   updateCategoryToggle: (category: keyof CategoryToggles, value: boolean) => void;
   updatePlayerName: (name: string) => void;
 
+  // Session lifecycle.
   startSession: () => void;
   endSession: () => void;
 
+  // Save/load management.
   saveGame: (slotId: string, name?: string) => void;
   loadSlot: (slotId: string) => void;
   deleteSlot: (slotId: string) => void;
   autoSave: () => void;
   switchPark: (newParkIds: string[]) => void;
 
+  // Core gameplay actions.
   completeTask: (taskId: string, isChallenge: boolean) => void;
   discardTask: (taskId: string) => void;
   swapChallengeTask: (taskId: string) => void;
@@ -141,6 +146,7 @@ interface GameState {
   clearNewBadges: () => void;
   resetAllData: () => void;
 
+  // Persistence helpers.
   loadFromStorage: () => Promise<void>;
   saveToStorage: () => Promise<void>;
 }
@@ -344,6 +350,7 @@ function findNewlyEarned(oldBadges: Badge[], newBadges: Badge[]): Badge[] {
 // ─── Zustand Store ────────────────────────────────────────────────────────────
 
 export const useGameStore = create<GameState>((set, get) => ({
+  // Initial in-memory state before AsyncStorage hydration completes.
   settings: DEFAULT_SETTINGS,
   player: DEFAULT_PLAYER,
   session: null,
@@ -381,12 +388,16 @@ export const useGameStore = create<GameState>((set, get) => ({
   startSession: () => {
     const { settings, saveSlots } = get();
 
+    // New sessions automatically claim the first empty save slot so the player
+    // always has a resumable run even before manually saving.
     // Find the first empty slot
     const emptyIndex = saveSlots.findIndex(s => s === null);
     if (emptyIndex === -1) return; // All slots full — cannot start a new session
 
+    // Build the eligible content pools from the current park selection and filters.
     const { small, big } = buildTaskPools(settings);
 
+    // Deal the opening hand and opening challenge board from those fresh pools.
     const hand = drawFromPool(small, [], 5);
     const challengeTasks = drawFromPool(big, [], 3);
 
@@ -432,6 +443,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { session, player } = get();
     if (!session) return;
 
+    // Session score only becomes permanent lifetime score when the run ends.
     const newLifetime = player.lifetimeScore + session.sessionScore;
 
     // Deduplicate visited parks
@@ -484,6 +496,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const newSlots = saveSlots.map(s => {
       if (s && s.id === slotId) {
+        // Save slots capture both session state and settings so loading the
+        // run later restores the same task-generation rules.
         return {
           ...s,
           name: name ?? s.name,
@@ -505,6 +519,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const slot = saveSlots.find(s => s && s.id === slotId);
     if (!slot) return;
 
+    // Restore the saved session snapshot and the paired settings snapshot together.
     set({
       session: { ...slot.session },
       settings: { ...slot.settings },
@@ -532,6 +547,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   autoSave: () => {
     const { activeSlotId } = get();
     if (!activeSlotId) return;
+    // Auto-save stays intentionally simple by reusing the normal save path.
     get().saveGame(activeSlotId);
   },
 
@@ -577,6 +593,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     let newHand = [...session.hand];
     let newChallengeTasks = [...session.challengeTasks];
 
+    // Challenge tasks and hand cards draw replacements from different source pools.
     if (isChallenge) {
       task = session.challengeTasks.find(t => t.id === taskId);
       if (!task) return;
@@ -591,6 +608,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       newHand = replaceInArray(newHand, taskId, replacement);
     }
 
+    // Every completion extends the streak and may trigger streak-based rewards.
     const newStreak = session.currentStreak + 1;
     let streakBonus = 0;
     if (newStreak > 0 && newStreak % 5 === 0) {
@@ -600,6 +618,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newScore = session.sessionScore + task.points + streakBonus;
     const newTotalCompletions = session.totalCompletions + 1;
 
+    // Discards refill slowly as a progress reward, capped at the UI max of 2.
     let newDiscards = session.discardsRemaining;
     if (newTotalCompletions % 5 === 0 && newDiscards < 2) {
       newDiscards++;
@@ -694,6 +713,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   /** Handles trivia answer — correct = complete task, wrong = replace card + reset streak */
   answerTrivia: (taskId, correct) => {
     if (correct) {
+      // Correct trivia uses the same completion pipeline as any other hand task.
       get().completeTask(taskId, false);
     } else {
       // Wrong trivia: replace card and reset streak, but don't use a discard
@@ -719,6 +739,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   clearNewBadges: () => {
+    // Clears the transient unlock queue once the popup sequence is complete.
     set({ newlyEarnedBadges: [] });
   },
 
@@ -758,7 +779,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         let saveSlots: (SaveSlot | null)[] = saved.saveSlots ?? [null, null, null];
         let activeSlotId: string | null = saved.activeSlotId ?? null;
 
-        // Migration: if there's an existing session but no saveSlots, auto-migrate into slot 0
+        // Migration support for older saves that predate the dedicated save-slot
+        // system. Legacy active sessions are moved into slot 0 automatically.
         const session = saved.session ?? null;
         if (session && session.active && !saved.saveSlots) {
           const date = new Date(session.startedAt);
@@ -798,6 +820,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   /** Persists current state to AsyncStorage */
   saveToStorage: async () => {
     const { settings, player, session, saveSlots, activeSlotId } = get();
+    // Persist the full gameplay snapshot so the app can restore seamlessly on launch.
     await AsyncStorage.setItem('parkquest_state', JSON.stringify({ settings, player, session, saveSlots, activeSlotId }));
   },
 }));

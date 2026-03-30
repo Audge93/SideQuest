@@ -1,5 +1,7 @@
 import { Park, Ride } from '../types';
 
+// Canonical list of selectable parks. These ids are referenced by settings,
+// sessions, ride data, and saved games throughout the app.
 export const PARKS: Park[] = [
   { id: 'wdw-mk', name: 'Magic Kingdom', shortName: 'MK', theme: 'disney' },
   { id: 'wdw-hs', name: 'Hollywood Studios', shortName: 'HS', theme: 'disney' },
@@ -14,6 +16,8 @@ export const PARKS: Park[] = [
   { id: 'custom', name: 'Any Park', shortName: 'MY', theme: 'custom' },
 ];
 
+// Master attraction catalog. The store turns these into ride tasks at runtime
+// so ride metadata only has to be maintained in one place.
 export const RIDES: Ride[] = [
   // ── Magic Kingdom (23) ──────────────────────────────────────────────
   { id: 'wdw-mk-space-mountain', name: 'Space Mountain', heightRequirement: 44, intensity: 'thrill', points: 75, parkId: 'wdw-mk' },
@@ -171,10 +175,12 @@ export const RIDES: Ride[] = [
   { id: 'ush-us-flight-of-the-hippogriff', name: 'Flight of the Hippogriff', heightRequirement: 39, intensity: 'gentle', points: 25, parkId: 'ush-us' },
 ];
 
+// Convenience lookup for turning a stored park id into displayable park metadata.
 export function getParkById(id: string): Park | undefined {
   return PARKS.find(p => p.id === id);
 }
 
+// Convenience selector for retrieving all rides belonging to one park.
 export function getRidesByPark(parkId: string): Ride[] {
   return RIDES.filter(r => r.parkId === parkId);
 }

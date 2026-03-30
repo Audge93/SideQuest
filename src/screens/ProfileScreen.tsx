@@ -31,6 +31,7 @@ const TIER_COLORS: Record<BadgeTier, string> = {
   platinum: '#E5E4E2',
 };
 
+// Fixed ordering so tiers always render from easiest to hardest.
 const TIER_LABELS: BadgeTier[] = ['bronze', 'silver', 'gold', 'platinum'];
 
 /** Maps badge base id → task category for looking up completion progress */
@@ -68,6 +69,7 @@ export default function ProfileScreen() {
   const [nameInput, setNameInput] = useState(player.name);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
+  // Saves the edited profile name back into global state after basic validation.
   const handleSaveName = () => {
     const trimmed = nameInput.trim();
     if (!trimmed) {
@@ -78,6 +80,7 @@ export default function ProfileScreen() {
     setEditingName(false);
   };
 
+  // Reused summaries that power the top-level profile stats and badge sections.
   const earnedBadges = player.badges.filter(b => b.earned);
 
   // Build combined category counts (lifetime + current session)
@@ -122,7 +125,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Profile</Text>
 
-        {/* Player Card */}
+        {/* High-level identity and progression snapshot for the current player. */}
         <View style={styles.playerCard}>
           <View style={styles.avatarCircle}>
             <Text style={styles.avatarText}>{player.name.charAt(0).toUpperCase()}</Text>
@@ -166,7 +169,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Badges by tier */}
+        {/* Badge collection grouped by tier so progress is easy to scan. */}
         <SectionHeader title="BADGES" />
         {TIER_LABELS.map(tier => {
           const tierBadges = badgesByTier[tier];
@@ -196,7 +199,7 @@ export default function ProfileScreen() {
             </View>
           );
         })}
-        {/* Reset All Data */}
+        {/* Destructive account-wide reset is visually separated from normal profile controls. */}
         <TouchableOpacity
           style={styles.resetBtn}
           onPress={() => setShowResetConfirm(true)}
@@ -260,6 +263,8 @@ function BadgeTile({
   const category = getCategoryForBadge(badge.id);
   const threshold = getThreshold(badge);
   const current = category ? (categoryCounts[category] || 0) : null;
+  // Only unearned category badges show a progress bar. Earned badges instead
+  // switch to a completed state with their completion date/summary.
   const showProgress = category && threshold !== null && !earned;
   const progressPct = showProgress ? Math.min((current! / threshold!) * 100, 100) : 0;
 
@@ -303,6 +308,7 @@ function BadgeTile({
 }
 
 function SectionHeader({ title }: { title: string }) {
+  // Small reusable heading used between major profile sections.
   return <Text style={styles.sectionHeader}>{title}</Text>;
 }
 

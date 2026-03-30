@@ -23,6 +23,8 @@ export default function DiscardPips({ remaining }: Props) {
     <View style={styles.container}>
       <Text style={styles.label}>DISCARDS</Text>
       <View style={styles.pips}>
+        {/* Render the full capacity every time so the player can compare
+            remaining discards against the maximum of two. */}
         {Array.from({ length: max }).map((_, i) => (
           <View
             key={i}

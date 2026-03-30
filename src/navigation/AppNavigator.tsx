@@ -19,6 +19,9 @@ const Stack = createNativeStackNavigator();
 export default function AppNavigator() {
   return (
     <NavigationContainer>
+      {/* The app uses a simple stack flow instead of nested navigators.
+          Home is the entry point, while Game, Settings, and Profile are
+          pushed on top as full-screen destinations. */}
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Game" component={GameScreen} />

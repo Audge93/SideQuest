@@ -1,5 +1,14 @@
 import { Task, Ride } from '../types';
 
+/**
+ * Static scavenger-hunt content library.
+ *
+ * `SMALL_TASKS` feeds the player's hand carousel.
+ * `BIG_TASKS` feeds the top challenge board.
+ * `generateRideTasks()` converts ride metadata into challenge tasks so ride
+ * challenges stay synchronized with the central ride catalog.
+ */
+
 // ─── Small Tasks ───────────────────────────────────────────────────────────
 // tag: 'disney' = Disney parks only
 // tag: 'universal' = Universal parks only
@@ -227,6 +236,8 @@ export const BIG_TASKS: Task[] = [
 
 // ─── Ride Task Generator ────────────────────────────────────────────────────
 
+// Generates standardized ride challenge tasks while respecting any ride-level
+// disables chosen by the player in Settings.
 export function generateRideTasks(rides: Ride[], disabledRideIds: string[] = []): Task[] {
   return rides
     .filter(r => !disabledRideIds.includes(r.id))
