@@ -31,7 +31,6 @@ import BadgeUnlockPopup from '../components/BadgeUnlockPopup';
 import { useGameStore } from '../store/gameStore';
 import CardCarousel from '../components/CardCarousel';
 import BigBoard from '../components/BigBoard';
-import StreakFlame from '../components/StreakFlame';
 import DiscardPips from '../components/DiscardPips';
 import { PARKS } from '../data/parks';
 import { COLORS, SHADOWS, RADII } from '../theme/theme';
@@ -315,17 +314,16 @@ export default function GameScreen() {
       <SafeAreaView style={styles.safe}>
         <StatusBar barStyle="dark-content" />
 
-        {/* Top Bar */}
-        <View style={styles.topBar}>
-          <StreakFlame streak={session.currentStreak} />
-          <TouchableOpacity onPress={openMenu} style={styles.menuButton}>
-            <Text style={styles.menuButtonText}>{'\u2630'}</Text>
-          </TouchableOpacity>
+        {/* Stats Bar (top) */}
+        <View style={styles.statsBar}>
+          <StatItem label="Completed" value={session.completedTasks.length} />
+          <StatItem label="Points" value={session.sessionScore} />
+          <StatItem label="Streak" value={session.currentStreak} />
+        </View>
+
+        {/* Park Name */}
+        <View style={styles.parkNameBar}>
           <Text style={styles.parkName}>{park?.name ?? '?'}</Text>
-          <View style={styles.scoreBubble}>
-            <Text style={styles.scoreValue}>{session.sessionScore}</Text>
-            <Text style={styles.scorePts}>pts</Text>
-          </View>
         </View>
 
         {/* Challenge Tasks */}
@@ -356,12 +354,10 @@ export default function GameScreen() {
           />
         </View>
 
-        {/* Stats Bar */}
-        <View style={styles.statsBar}>
-          <StatItem label="Completed" value={session.completedTasks.length} />
-          <StatItem label="Streak" value={session.currentStreak} />
-          <StatItem label="Session" value={`${session.sessionScore} pts`} />
-        </View>
+        {/* Menu button (bottom-left) */}
+        <TouchableOpacity onPress={openMenu} style={styles.menuButton}>
+          <Text style={styles.menuButtonText}>{'\u2630'}</Text>
+        </TouchableOpacity>
 
         {/* Small confetti for hand card completion */}
         {showSmallConfetti && (
@@ -650,56 +646,36 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontSize: 16,
   },
-  topBar: {
-    flexDirection: 'row',
+  parkNameBar: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Math.round(12 * sw),
-    paddingVertical: Math.round(10 * sh),
-    marginTop: Math.round(8 * sh),
-    backgroundColor: 'rgba(255,255,255,0.82)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
-    ...SHADOWS.chip,
-  },
-  menuButton: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  menuButtonText: {
-    fontSize: Math.round(20 * sw),
-    color: COLORS.textDark,
-    fontWeight: '700',
+    paddingVertical: Math.round(4 * sh),
   },
   parkName: {
     color: COLORS.textDark,
     fontWeight: '900',
     fontSize: Math.round(13 * sw),
     letterSpacing: 0.5,
-    flexShrink: 1,
     textAlign: 'center',
   },
-  scoreBubble: {
+  menuButton: {
+    position: 'absolute',
+    bottom: Math.round(20 * sh),
+    left: Math.round(16 * sw),
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
-    backgroundColor: COLORS.green,
-    borderRadius: RADII.chip,
-    paddingHorizontal: Math.round(10 * sw),
-    paddingVertical: Math.round(3 * sh),
-    minWidth: Math.round(52 * sw),
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.greenDark,
-    ...SHADOWS.chip,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.borderPanel,
+    ...SHADOWS.card,
+    zIndex: 10,
   },
-  scoreValue: {
-    color: COLORS.white,
-    fontWeight: '900',
-    fontSize: Math.round(16 * sw),
-    lineHeight: Math.round(20 * sw),
-  },
-  scorePts: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: Math.round(8 * sw),
-    fontWeight: '600',
+  menuButtonText: {
+    fontSize: 22,
+    color: COLORS.textDark,
+    fontWeight: '700',
   },
   bigBoardWrapper: {
     marginTop: Math.round(8 * sh),
@@ -730,12 +706,12 @@ const styles = StyleSheet.create({
   statsBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: COLORS.surface,
+    backgroundColor: 'rgba(255,255,255,0.82)',
     marginHorizontal: Math.round(16 * sw),
     borderRadius: RADII.panel,
-    paddingVertical: Math.round(6 * sh),
-    marginTop: Math.round(6 * sh),
-    marginBottom: Math.round(16 * sh),
+    paddingVertical: Math.round(8 * sh),
+    marginTop: Math.round(8 * sh),
+    marginBottom: Math.round(4 * sh),
     borderWidth: 1,
     borderColor: COLORS.borderPanel,
     ...SHADOWS.card,
