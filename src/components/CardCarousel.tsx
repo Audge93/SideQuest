@@ -501,10 +501,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
   },
   cardBody: {
+    flex: 1,
     paddingHorizontal: Math.round(14 * sw),
     paddingTop: Math.round(8 * sh),
     paddingBottom: Math.round(4 * sh),
     alignItems: 'center',
+    justifyContent: 'center',
     gap: Math.round(5 * sh),
   },
   iconPtsRow: {
@@ -557,8 +559,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Math.round(8 * sw),
     paddingHorizontal: Math.round(12 * sw),
-    paddingTop: Math.round(4 * sh),
-    paddingBottom: Math.round(10 * sh),
+    paddingTop: Math.round(14 * sh),
+    paddingBottom: Math.round(12 * sh),
   },
   cardActionBtn: {
     flex: 1,

@@ -208,6 +208,27 @@ function drawFromPool(pool: Task[], exclude: Task[], count: number): Task[] {
   return available.slice(0, count);
 }
 
+/**
+ * Builds a fresh challenge row by sampling randomly from the full challenge
+ * pool, only avoiding duplicates that are currently visible.
+ */
+function drawChallengeBoard(pool: Task[], count: number, exclude: Task[] = []): Task[] {
+  const excludeIds = new Set(exclude.map(t => t.id));
+  const available = shuffle(pool.filter(t => !excludeIds.has(t.id)));
+  if (available.length >= count) {
+    return available.slice(0, count);
+  }
+  if (available.length === 0) {
+    return shuffle(pool).slice(0, count);
+  }
+
+  const filled = [...available];
+  while (filled.length < count) {
+    filled.push(available[filled.length % available.length]);
+  }
+  return filled;
+}
+
 /** Swaps a task by ID with a replacement, or removes it if no replacement available */
 function replaceInArray(arr: Task[], taskId: string, replacement: Task | undefined): Task[] {
   if (!replacement) return arr.filter(t => t.id !== taskId);
@@ -223,6 +244,33 @@ function pickReplacement(pool: Task[], exclude: Task[], alsoExclude?: Task[]): T
   const available = pool.filter(t => !excludeIds.has(t.id));
   if (available.length === 0) return undefined;
   return available[Math.floor(Math.random() * available.length)];
+}
+
+/**
+ * Chooses the next challenge card from the full challenge pool so the
+ * challenge row keeps cycling forever. It avoids duplicates with the other
+ * visible challenge cards and prefers not to immediately repeat the card that
+ * was just replaced, but falls back if the pool is very small.
+ */
+function pickChallengeReplacement(
+  pool: Task[],
+  currentChallenges: Task[],
+  replacedTaskId: string,
+): Task | undefined {
+  const otherVisibleIds = new Set(
+    currentChallenges.filter(t => t.id !== replacedTaskId).map(t => t.id),
+  );
+
+  const preferred = pool.filter(
+    t => !otherVisibleIds.has(t.id) && t.id !== replacedTaskId,
+  );
+  if (preferred.length > 0) {
+    return preferred[Math.floor(Math.random() * preferred.length)];
+  }
+
+  const fallback = pool.filter(t => !otherVisibleIds.has(t.id));
+  if (fallback.length === 0) return undefined;
+  return fallback[Math.floor(Math.random() * fallback.length)];
 }
 
 // ─── Badge / Unlock Helpers ───────────────────────────────────────────────────
@@ -399,7 +447,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     // Deal the opening hand and opening challenge board from those fresh pools.
     const hand = drawFromPool(small, [], 5);
-    const challengeTasks = drawFromPool(big, [], 3);
+    const challengeTasks = drawChallengeBoard(big, 3);
 
     const session: Session = {
       id: `session-${Date.now()}`,
@@ -564,7 +612,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     // Draw fresh hand and challenge tasks from new pools
     const hand = drawFromPool(small, session.completedTasks, 5);
-    const challengeTasks = drawFromPool(big, session.completedTasks, 3);
+    const challengeTasks = drawChallengeBoard(big, 3);
 
     // Deduplicate parkIds — keep existing + add new
     const allParkIds = [...new Set([...session.parkIds, ...newParkIds])];
@@ -598,7 +646,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       task = session.challengeTasks.find(t => t.id === taskId);
       if (!task) return;
       const { big } = buildTaskPools(settings);
-      const replacement = pickReplacement(big, newChallengeTasks, session.completedTasks);
+      const replacement = pickChallengeReplacement(big, newChallengeTasks, taskId);
       newChallengeTasks = replaceInArray(newChallengeTasks, taskId, replacement);
     } else {
       task = session.hand.find(t => t.id === taskId);
@@ -697,7 +745,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (session.sessionScore < 25) return;
 
     const { big } = buildTaskPools(settings);
-    const replacement = pickReplacement(big, session.challengeTasks, session.completedTasks);
+    const replacement = pickChallengeReplacement(big, session.challengeTasks, taskId);
     const newChallengeTasks = replaceInArray(session.challengeTasks, taskId, replacement);
 
     const updatedSession: Session = {
