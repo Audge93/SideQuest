@@ -6,7 +6,7 @@
  *  - Tips modal for first-time players (resets each new session)
  *  - Badge unlock popup queue (fires after task completion confetti)
  *  - Confetti/firework effects on task completion
- *  - Game menu (switch parks, save game, exit to home)
+ *  - Bottom nav bar (Game, Park, Settings, Profile)
  *  - Auto-save every 30 seconds
  */
 
@@ -21,11 +21,10 @@ import {
   Dimensions,
   TouchableOpacity,
   Modal,
-  TextInput,
   ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Badge, SaveSlot } from '../types';
+import { Badge } from '../types';
 import Confetti from '../components/Confetti';
 import BadgeUnlockPopup from '../components/BadgeUnlockPopup';
 import { useGameStore } from '../store/gameStore';
@@ -105,9 +104,6 @@ export default function GameScreen() {
     clearNewBadges,
     autoSave,
     switchPark,
-    saveGame,
-    activeSlotId,
-    saveSlots,
   } = useGameStore();
 
   const parkId = settings.parkIds?.[0];
@@ -116,31 +112,12 @@ export default function GameScreen() {
   const [showSmallConfetti, setShowSmallConfetti] = useState(false);
   const [showBigFirework, setShowBigFirework] = useState(false);
 
-  // ─── Game Menu state ─────────────────────────────────────────────────────
-  const [showMenu, setShowMenu] = useState(false);
-  const [menuView, setMenuView] = useState<'main' | 'switchPark' | 'saveGame'>('main');
-
-  // Switch Parks sub-view state
+  // ─── Park modal state ─────────────────────────────────────────────────────
+  const [showParkModal, setShowParkModal] = useState(false);
   const [selectedResortId, setSelectedResortId] = useState<string>(RESORTS[0].id);
   const [selectedParkId, setSelectedParkId] = useState<string>(RESORTS[0].parkIds[0]);
 
-  // Save Game sub-view state
-  const [saveName, setSaveName] = useState('');
-  const [showSavedFeedback, setShowSavedFeedback] = useState(false);
-
-  const openMenu = useCallback(() => {
-    setMenuView('main');
-    setShowMenu(true);
-  }, []);
-
-  const closeMenu = useCallback(() => {
-    setShowMenu(false);
-    setMenuView('main');
-    setShowSavedFeedback(false);
-  }, []);
-
-  const handleSwitchParkTap = useCallback(() => {
-    // Pre-select the current resort/park if possible
+  const openParkModal = useCallback(() => {
     const currentParkIds = settings.parkIds;
     const matchedResort = RESORTS.find(r => r.parkIds.some(pid => currentParkIds.includes(pid)));
     if (matchedResort) {
@@ -151,41 +128,22 @@ export default function GameScreen() {
       setSelectedResortId(RESORTS[0].id);
       setSelectedParkId(RESORTS[0].parkIds[0]);
     }
-    setMenuView('switchPark');
+    setShowParkModal(true);
   }, [settings.parkIds]);
 
-  const handleSaveGameTap = useCallback(() => {
-    const currentSlot = saveSlots.find((s): s is SaveSlot => s !== null && s.id === activeSlotId);
-    setSaveName(currentSlot?.name ?? 'My Game');
-    setShowSavedFeedback(false);
-    setMenuView('saveGame');
-  }, [saveSlots, activeSlotId]);
+  const closeParkModal = useCallback(() => {
+    setShowParkModal(false);
+  }, []);
 
   const handleConfirmSwitchPark = useCallback(() => {
     const resort = RESORTS.find(r => r.id === selectedResortId);
     if (!resort) return;
-    // If resort has multiple parks and user picked one, send just that; otherwise send all
     const newParkIds = resort.parkIds.length === 1
       ? resort.parkIds
       : [selectedParkId];
     switchPark(newParkIds);
-    closeMenu();
-  }, [selectedResortId, selectedParkId, switchPark, closeMenu]);
-
-  const handleConfirmSave = useCallback(() => {
-    if (!activeSlotId) return;
-    saveGame(activeSlotId, saveName.trim() || undefined);
-    setShowSavedFeedback(true);
-    setTimeout(() => {
-      closeMenu();
-    }, 800);
-  }, [activeSlotId, saveName, saveGame, closeMenu]);
-
-  const handleExitToHome = useCallback(() => {
-    autoSave();
-    closeMenu();
-    navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
-  }, [autoSave, closeMenu, navigation]);
+    closeParkModal();
+  }, [selectedResortId, selectedParkId, switchPark, closeParkModal]);
 
   // ─── Tips system ────────────────────────────────────────────────────────
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
@@ -354,11 +312,6 @@ export default function GameScreen() {
           />
         </View>
 
-        {/* Menu button (bottom-left) */}
-        <TouchableOpacity onPress={openMenu} style={styles.menuButton}>
-          <Text style={styles.menuButtonText}>{'\u2630'}</Text>
-        </TouchableOpacity>
-
         {/* Small confetti for hand card completion */}
         {showSmallConfetti && (
           <Confetti type="small" onDone={() => setShowSmallConfetti(false)} />
@@ -368,6 +321,26 @@ export default function GameScreen() {
         {showBigFirework && (
           <Confetti type="big" onDone={() => setShowBigFirework(false)} />
         )}
+
+        {/* Bottom Nav Bar */}
+        <View style={styles.navBar}>
+          <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
+            <Text style={styles.navIcon}>🎮</Text>
+            <Text style={[styles.navLabel, styles.navLabelActive]}>Game</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem} onPress={openParkModal} activeOpacity={0.7}>
+            <Text style={styles.navIcon}>🏰</Text>
+            <Text style={styles.navLabel}>Park</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Settings')} activeOpacity={0.7}>
+            <Text style={styles.navIcon}>⚙️</Text>
+            <Text style={styles.navLabel}>Settings</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Profile')} activeOpacity={0.7}>
+            <Text style={styles.navIcon}>👤</Text>
+            <Text style={styles.navLabel}>Profile</Text>
+          </TouchableOpacity>
+        </View>
 
       </SafeAreaView>
 
@@ -436,165 +409,77 @@ export default function GameScreen() {
         </View>
       </Modal>
 
-      {/* Game Menu modal */}
+      {/* Park modal — switch parks */}
       <Modal
-        visible={showMenu}
+        visible={showParkModal}
         transparent
-        animationType="fade"
-        onRequestClose={closeMenu}
+        animationType="slide"
+        onRequestClose={closeParkModal}
       >
-        <View style={styles.menuOverlay}>
-          <View style={styles.menuCard}>
+        <View style={styles.parkModalOverlay}>
+          <View style={styles.parkModalCard}>
+            <Text style={styles.parkModalTitle}>Switch Parks</Text>
 
-            {/* ── Main menu view ─────────────────────────────── */}
-            {menuView === 'main' && (
+            <Text style={styles.menuSubLabel}>Resort</Text>
+            <ScrollView style={styles.menuPickerScroll} nestedScrollEnabled>
+              {RESORTS.map(resort => (
+                <TouchableOpacity
+                  key={resort.id}
+                  style={[
+                    styles.menuPickerOption,
+                    selectedResortId === resort.id && styles.menuPickerOptionSelected,
+                  ]}
+                  onPress={() => {
+                    setSelectedResortId(resort.id);
+                    setSelectedParkId(resort.parkIds[0]);
+                  }}
+                >
+                  <Text style={styles.menuPickerIcon}>{resort.icon}</Text>
+                  <Text
+                    style={[
+                      styles.menuPickerLabel,
+                      selectedResortId === resort.id && styles.menuPickerLabelSelected,
+                    ]}
+                  >
+                    {resort.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {resortParkOptions.length > 1 && (
               <>
-                <Text style={styles.menuTitle}>Game Menu</Text>
-
-                <TouchableOpacity style={styles.menuRow} onPress={handleSwitchParkTap}>
-                  <View style={styles.menuRowLeft}>
-                    <Text style={styles.menuRowIcon}>{'\uD83C\uDFDE\uFE0F'}</Text>
-                    <Text style={styles.menuRowLabel}>Switch Parks</Text>
-                  </View>
-                  <Text style={styles.menuRowChevron}>{'\u203A'}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.menuRow} onPress={handleSaveGameTap}>
-                  <View style={styles.menuRowLeft}>
-                    <Text style={styles.menuRowIcon}>{'\uD83D\uDCBE'}</Text>
-                    <Text style={styles.menuRowLabel}>Save Game</Text>
-                  </View>
-                  <Text style={styles.menuRowChevron}>{'\u203A'}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.menuRow} onPress={() => { closeMenu(); navigation.navigate('Settings'); }}>
-                  <View style={styles.menuRowLeft}>
-                    <Text style={styles.menuRowIcon}>{'\u2699\uFE0F'}</Text>
-                    <Text style={styles.menuRowLabel}>Settings</Text>
-                  </View>
-                  <Text style={styles.menuRowChevron}>{'\u203A'}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.menuRow} onPress={() => { closeMenu(); navigation.navigate('Profile'); }}>
-                  <View style={styles.menuRowLeft}>
-                    <Text style={styles.menuRowIcon}>{'\uD83D\uDC64'}</Text>
-                    <Text style={styles.menuRowLabel}>Profile</Text>
-                  </View>
-                  <Text style={styles.menuRowChevron}>{'\u203A'}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={[styles.menuRow, styles.menuRowLast]} onPress={handleExitToHome}>
-                  <View style={styles.menuRowLeft}>
-                    <Text style={styles.menuRowIcon}>{'\uD83C\uDFE0'}</Text>
-                    <Text style={styles.menuRowLabel}>Exit to Home</Text>
-                  </View>
-                  <Text style={styles.menuRowChevron}>{'\u203A'}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.menuCloseBtn} onPress={closeMenu}>
-                  <Text style={styles.menuCloseBtnText}>Close</Text>
-                </TouchableOpacity>
-              </>
-            )}
-
-            {/* ── Switch Parks sub-view ──────────────────────── */}
-            {menuView === 'switchPark' && (
-              <>
-                <Text style={styles.menuTitle}>Switch Parks</Text>
-
-                <Text style={styles.menuSubLabel}>Resort</Text>
+                <Text style={[styles.menuSubLabel, { marginTop: 12 }]}>Park</Text>
                 <ScrollView style={styles.menuPickerScroll} nestedScrollEnabled>
-                  {RESORTS.map(resort => (
+                  {resortParkOptions.map(po => (
                     <TouchableOpacity
-                      key={resort.id}
+                      key={po.id}
                       style={[
                         styles.menuPickerOption,
-                        selectedResortId === resort.id && styles.menuPickerOptionSelected,
+                        selectedParkId === po.id && styles.menuPickerOptionSelected,
                       ]}
-                      onPress={() => {
-                        setSelectedResortId(resort.id);
-                        setSelectedParkId(resort.parkIds[0]);
-                      }}
+                      onPress={() => setSelectedParkId(po.id)}
                     >
-                      <Text style={styles.menuPickerIcon}>{resort.icon}</Text>
                       <Text
                         style={[
                           styles.menuPickerLabel,
-                          selectedResortId === resort.id && styles.menuPickerLabelSelected,
+                          selectedParkId === po.id && styles.menuPickerLabelSelected,
                         ]}
                       >
-                        {resort.label}
+                        {po.label}
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
-
-                {resortParkOptions.length > 1 && (
-                  <>
-                    <Text style={[styles.menuSubLabel, { marginTop: 12 }]}>Park</Text>
-                    <ScrollView style={styles.menuPickerScroll} nestedScrollEnabled>
-                      {resortParkOptions.map(po => (
-                        <TouchableOpacity
-                          key={po.id}
-                          style={[
-                            styles.menuPickerOption,
-                            selectedParkId === po.id && styles.menuPickerOptionSelected,
-                          ]}
-                          onPress={() => setSelectedParkId(po.id)}
-                        >
-                          <Text
-                            style={[
-                              styles.menuPickerLabel,
-                              selectedParkId === po.id && styles.menuPickerLabelSelected,
-                            ]}
-                          >
-                            {po.label}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </>
-                )}
-
-                <TouchableOpacity style={styles.menuConfirmBtn} onPress={handleConfirmSwitchPark}>
-                  <Text style={styles.menuConfirmBtnText}>Confirm</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.menuBackBtn} onPress={() => setMenuView('main')}>
-                  <Text style={styles.menuBackBtnText}>Back</Text>
-                </TouchableOpacity>
               </>
             )}
 
-            {/* ── Save Game sub-view ─────────────────────────── */}
-            {menuView === 'saveGame' && (
-              <>
-                <Text style={styles.menuTitle}>Save Game</Text>
-
-                {showSavedFeedback ? (
-                  <Text style={styles.savedFeedback}>Saved!</Text>
-                ) : (
-                  <>
-                    <Text style={styles.menuSubLabel}>Save Name</Text>
-                    <TextInput
-                      style={styles.menuTextInput}
-                      value={saveName}
-                      onChangeText={setSaveName}
-                      placeholder="Enter save name..."
-                      placeholderTextColor={COLORS.textMuted}
-                      maxLength={30}
-                    />
-
-                    <TouchableOpacity style={styles.menuConfirmBtn} onPress={handleConfirmSave}>
-                      <Text style={styles.menuConfirmBtnText}>Save</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.menuBackBtn} onPress={() => setMenuView('main')}>
-                      <Text style={styles.menuBackBtnText}>Back</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </>
-            )}
-
+            <TouchableOpacity style={styles.menuConfirmBtn} onPress={handleConfirmSwitchPark}>
+              <Text style={styles.menuConfirmBtnText}>Confirm</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuBackBtn} onPress={closeParkModal}>
+              <Text style={styles.menuBackBtnText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -602,7 +487,7 @@ export default function GameScreen() {
   );
 }
 
-/** Simple stat display used in the bottom stats bar (Completed, Streak, Session) */
+/** Simple stat display used in the top stats bar (Completed, Points, Streak) */
 function StatItem({ label, value }: { label: string; value: string | number }) {
   return (
     <View style={styles.statItem}>
@@ -657,26 +542,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textAlign: 'center',
   },
-  menuButton: {
-    position: 'absolute',
-    bottom: Math.round(20 * sh),
-    left: Math.round(16 * sw),
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.borderPanel,
-    ...SHADOWS.card,
-    zIndex: 10,
-  },
-  menuButtonText: {
-    fontSize: 22,
-    color: COLORS.textDark,
-    fontWeight: '700',
-  },
   bigBoardWrapper: {
     marginTop: Math.round(8 * sh),
   },
@@ -728,6 +593,37 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontSize: Math.round(9 * sw),
     marginTop: 1,
+  },
+
+  // Bottom Nav Bar
+  navBar: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderPanel,
+    paddingVertical: Math.round(8 * sh),
+    paddingBottom: Math.round(4 * sh),
+    ...SHADOWS.card,
+  },
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+  },
+  navIcon: {
+    fontSize: Math.round(22 * sw),
+    marginBottom: 2,
+  },
+  navLabel: {
+    fontSize: Math.round(10 * sw),
+    fontWeight: '600',
+    color: COLORS.textMuted,
+    letterSpacing: 0.3,
+  },
+  navLabelActive: {
+    color: COLORS.green,
+    fontWeight: '800',
   },
 
   // Tips modal
@@ -875,71 +771,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Game Menu modal
-  menuOverlay: {
+  // Park modal
+  parkModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 28,
+    justifyContent: 'flex-end',
   },
-  menuCard: {
-    width: '100%',
-    maxWidth: 340,
+  parkModalCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 22,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 24,
+    paddingBottom: 36,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 10,
   },
-  menuTitle: {
+  parkModalTitle: {
     fontSize: 20,
     fontWeight: '900',
     color: COLORS.textDark,
     textAlign: 'center',
     marginBottom: 20,
-  },
-  menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
-  },
-  menuRowLast: {
-    borderBottomWidth: 0,
-  },
-  menuRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  menuRowIcon: {
-    fontSize: 22,
-    marginRight: 12,
-  },
-  menuRowLabel: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.textDark,
-  },
-  menuRowChevron: {
-    fontSize: 22,
-    color: COLORS.textMuted,
-    fontWeight: '600',
-  },
-  menuCloseBtn: {
-    marginTop: 16,
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  menuCloseBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.textMuted,
   },
   menuSubLabel: {
     fontSize: 13,
@@ -999,22 +854,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.textMuted,
-  },
-  menuTextInput: {
-    borderWidth: 1,
-    borderColor: COLORS.borderMedium,
-    borderRadius: RADII.chip,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.textDark,
-    fontWeight: '600',
-  },
-  savedFeedback: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: COLORS.green,
-    textAlign: 'center',
-    paddingVertical: 32,
   },
 });
