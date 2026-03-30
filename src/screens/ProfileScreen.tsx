@@ -19,6 +19,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
 import { Badge, BadgeTier } from '../types';
 import { COLORS, SHADOWS, RADII } from '../theme/theme';
@@ -61,6 +62,7 @@ function getCategoryForBadge(badgeId: string): string | null {
 }
 
 export default function ProfileScreen() {
+  const navigation = useNavigation<any>();
   const { player, session, updatePlayerName, resetAllData } = useGameStore();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(player.name);
@@ -101,6 +103,15 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
       <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
+        {/* Back button */}
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <Text style={{ fontSize: 18, color: COLORS.textMuted, marginRight: 6 }}>‹</Text>
+          <Text style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: '600' }}>Back</Text>
+        </TouchableOpacity>
         <Text style={styles.pageTitle}>Profile</Text>
 
         {/* Player Card */}

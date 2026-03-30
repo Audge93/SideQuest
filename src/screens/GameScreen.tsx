@@ -471,6 +471,22 @@ export default function GameScreen() {
                   <Text style={styles.menuRowChevron}>{'\u203A'}</Text>
                 </TouchableOpacity>
 
+                <TouchableOpacity style={styles.menuRow} onPress={() => { closeMenu(); navigation.navigate('Settings'); }}>
+                  <View style={styles.menuRowLeft}>
+                    <Text style={styles.menuRowIcon}>{'\u2699\uFE0F'}</Text>
+                    <Text style={styles.menuRowLabel}>Settings</Text>
+                  </View>
+                  <Text style={styles.menuRowChevron}>{'\u203A'}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.menuRow} onPress={() => { closeMenu(); navigation.navigate('Profile'); }}>
+                  <View style={styles.menuRowLeft}>
+                    <Text style={styles.menuRowIcon}>{'\uD83D\uDC64'}</Text>
+                    <Text style={styles.menuRowLabel}>Profile</Text>
+                  </View>
+                  <Text style={styles.menuRowChevron}>{'\u203A'}</Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity style={[styles.menuRow, styles.menuRowLast]} onPress={handleExitToHome}>
                   <View style={styles.menuRowLeft}>
                     <Text style={styles.menuRowIcon}>{'\uD83C\uDFE0'}</Text>
