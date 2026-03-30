@@ -95,6 +95,7 @@ export default function HomeScreen() {
   // ─── Modal state ────────────────────────────────────────────────────────
   const [showNewGameModal, setShowNewGameModal] = useState(false);
   const [showContinueModal, setShowContinueModal] = useState(false);
+  const [confirmDeleteSlotId, setConfirmDeleteSlotId] = useState<string | null>(null);
   const [modalPage, setModalPage] = useState<1 | 2>(1);
   const [nameInput, setNameInput] = useState(player.name);
 
@@ -208,19 +209,14 @@ export default function HomeScreen() {
     navigation.navigate('Game');
   };
 
-  const handleDeleteSlot = (slot: SaveSlot) => {
-    Alert.alert(
-      'Delete Save',
-      `Are you sure you want to delete "${slot.name}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => deleteSlot(slot.id),
-        },
-      ],
-    );
+  const handleDeleteSlot = (slotId: string) => {
+    deleteSlot(slotId);
+    setConfirmDeleteSlotId(null);
+    // If no saves left, close the modal
+    const remainingSaves = saveSlots.filter((s, idx) => s !== null && s.id !== slotId);
+    if (remainingSaves.length === 0) {
+      setShowContinueModal(false);
+    }
   };
 
   // ─── Render ─────────────────────────────────────────────────────────────
@@ -314,14 +310,7 @@ export default function HomeScreen() {
 
             {activeSaves.map((slot, i) => (
               <View key={slot.id}>
-                <TouchableOpacity
-                  style={styles.continueSlotCard}
-                  onPress={() => {
-                    setShowContinueModal(false);
-                    handleLoadSlot(slot.id);
-                  }}
-                  activeOpacity={0.7}
-                >
+                <View style={styles.continueSlotCard}>
                   <Text style={styles.continueSlotName} numberOfLines={1}>{slot.name}</Text>
                   <View style={styles.continueSlotDetails}>
                     <Text style={styles.continueSlotMeta}>
@@ -329,14 +318,48 @@ export default function HomeScreen() {
                     </Text>
                     <Text style={styles.continueSlotTime}>Last saved: {timeAgo(slot.lastSavedAt)}</Text>
                   </View>
-                  <TouchableOpacity
-                    style={styles.deleteSlotBtn}
-                    onPress={() => handleDeleteSlot(slot)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.deleteSlotBtnText}>Delete Save File</Text>
-                  </TouchableOpacity>
-                </TouchableOpacity>
+
+                  {/* Confirm delete inline */}
+                  {confirmDeleteSlotId === slot.id ? (
+                    <View style={styles.deleteConfirmRow}>
+                      <Text style={styles.deleteConfirmText}>Delete this save?</Text>
+                      <TouchableOpacity
+                        style={styles.deleteConfirmYes}
+                        onPress={() => handleDeleteSlot(slot.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.deleteConfirmYesText}>Yes, Delete</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.deleteConfirmNo}
+                        onPress={() => setConfirmDeleteSlotId(null)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.deleteConfirmNoText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={styles.slotButtonRow}>
+                      <TouchableOpacity
+                        style={styles.selectSlotBtn}
+                        onPress={() => {
+                          setShowContinueModal(false);
+                          handleLoadSlot(slot.id);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.selectSlotBtnText}>Select</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.deleteSlotBtn}
+                        onPress={() => setConfirmDeleteSlotId(slot.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.deleteSlotBtnText}>Delete Save File</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
                 {i < activeSaves.length - 1 && <View style={styles.modalDivider} />}
               </View>
             ))}
@@ -1041,9 +1064,26 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
   },
+  slotButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  selectSlotBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: COLORS.green,
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.greenDark,
+  },
+  selectSlotBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
   deleteSlotBtn: {
-    alignSelf: 'flex-start',
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
     backgroundColor: 'rgba(240,144,144,0.12)',
@@ -1052,6 +1092,42 @@ const styles = StyleSheet.create({
   },
   deleteSlotBtnText: {
     color: COLORS.red,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  deleteConfirmRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  deleteConfirmText: {
+    color: COLORS.textBody,
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+  },
+  deleteConfirmYes: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: COLORS.red,
+  },
+  deleteConfirmYesText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  deleteConfirmNo: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: COLORS.bg,
+    borderWidth: 1,
+    borderColor: COLORS.borderMedium,
+  },
+  deleteConfirmNoText: {
+    color: COLORS.textBody,
     fontSize: 12,
     fontWeight: '700',
   },
