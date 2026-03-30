@@ -105,12 +105,20 @@ export default function ProfileScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
         {/* Back button */}
         <TouchableOpacity
-          style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}
+          style={{
+            alignSelf: 'flex-start',
+            backgroundColor: COLORS.blue,
+            borderRadius: RADII.button,
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            marginBottom: 12,
+            borderBottomWidth: 3,
+            borderBottomColor: COLORS.blueDark,
+          }}
           onPress={() => navigation.goBack()}
           activeOpacity={0.7}
         >
-          <Text style={{ fontSize: 18, color: COLORS.textMuted, marginRight: 6 }}>‹</Text>
-          <Text style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: '600' }}>Back</Text>
+          <Text style={{ fontSize: 15, color: '#fff', fontWeight: '800' }}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Profile</Text>
 
