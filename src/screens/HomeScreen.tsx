@@ -94,6 +94,7 @@ export default function HomeScreen() {
 
   // ─── Modal state ────────────────────────────────────────────────────────
   const [showNewGameModal, setShowNewGameModal] = useState(false);
+  const [showContinueModal, setShowContinueModal] = useState(false);
   const [modalPage, setModalPage] = useState<1 | 2>(1);
   const [nameInput, setNameInput] = useState(player.name);
 
@@ -278,39 +279,16 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* ── Saved Games ── */}
-          {activeSaves.length > 0 && (
-            <View style={styles.savedGamesSection}>
-              <Text style={styles.sectionTitle}>SAVED GAMES</Text>
-              {activeSaves.map(slot => (
-                <TouchableOpacity
-                  key={slot.id}
-                  style={styles.saveSlotCard}
-                  onPress={() => handleLoadSlot(slot.id)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.saveSlotRow1}>
-                    <Text style={styles.saveSlotName} numberOfLines={1}>{slot.name}</Text>
-                    <TouchableOpacity
-                      onPress={() => handleDeleteSlot(slot)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <Text style={styles.saveSlotDelete}>{'\u{1F5D1}\uFE0F'}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <View style={styles.saveSlotRow2}>
-                    <Text style={styles.saveSlotMeta}>
-                      Score: {slot.session.sessionScore} pts  {'\u2022'}  Tasks: {slot.session.totalCompletions}
-                    </Text>
-                    <Text style={styles.saveSlotTime}>Last saved: {timeAgo(slot.lastSavedAt)}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-
           {/* ── Action Buttons ── */}
           <View style={styles.actions}>
+            {activeSaves.length > 0 && (
+              <TouchableOpacity
+                style={styles.continueBtn}
+                onPress={() => setShowContinueModal(true)}
+              >
+                <Text style={styles.continueBtnText}>Continue Game</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={styles.startBtn}
               onPress={handleOpenNewGame}
@@ -320,6 +298,60 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* ── Continue Game Modal (save slot picker) ── */}
+      <Modal
+        visible={showContinueModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowContinueModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Continue Game</Text>
+            <Text style={styles.modalSubtitle}>Choose a saved game</Text>
+            <View style={styles.modalDivider} />
+
+            {activeSaves.map((slot, i) => (
+              <View key={slot.id}>
+                <TouchableOpacity
+                  style={styles.continueSlotCard}
+                  onPress={() => {
+                    setShowContinueModal(false);
+                    handleLoadSlot(slot.id);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.continueSlotName} numberOfLines={1}>{slot.name}</Text>
+                  <View style={styles.continueSlotDetails}>
+                    <Text style={styles.continueSlotMeta}>
+                      Score: {slot.session.sessionScore} pts  •  Tasks: {slot.session.totalCompletions}
+                    </Text>
+                    <Text style={styles.continueSlotTime}>Last saved: {timeAgo(slot.lastSavedAt)}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.deleteSlotBtn}
+                    onPress={() => handleDeleteSlot(slot)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.deleteSlotBtnText}>Delete Save File</Text>
+                  </TouchableOpacity>
+                </TouchableOpacity>
+                {i < activeSaves.length - 1 && <View style={styles.modalDivider} />}
+              </View>
+            ))}
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalBackBtn}
+                onPress={() => setShowContinueModal(false)}
+              >
+                <Text style={styles.modalBackBtnText}>Back</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* ── New Game Setup Modal (2 pages) ── */}
       <Modal
@@ -983,55 +1015,44 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
 
-  // Saved games section
-  savedGamesSection: {
-    marginBottom: 16,
+  // Continue Game modal — save slot picker
+  continueSlotCard: {
+    paddingVertical: 12,
   },
-  sectionTitle: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 2,
-    marginBottom: 10,
-  },
-  saveSlotCard: {
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderRadius: RADII.panel,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: COLORS.borderPanel,
-    ...SHADOWS.card,
-  },
-  saveSlotRow1: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  saveSlotName: {
+  continueSlotName: {
     color: COLORS.textDark,
-    fontSize: 15,
-    fontWeight: '700',
-    flex: 1,
-    marginRight: 8,
-  },
-  saveSlotDelete: {
     fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
   },
-  saveSlotRow2: {
+  continueSlotDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
-  saveSlotMeta: {
+  continueSlotMeta: {
     color: COLORS.textMuted,
     fontSize: 12,
     fontWeight: '500',
   },
-  saveSlotTime: {
+  continueSlotTime: {
     color: COLORS.textMuted,
     fontSize: 11,
     fontWeight: '500',
+  },
+  deleteSlotBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(240,144,144,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(240,144,144,0.3)',
+  },
+  deleteSlotBtnText: {
+    color: COLORS.red,
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
