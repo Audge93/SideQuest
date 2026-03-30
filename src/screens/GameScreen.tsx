@@ -12,6 +12,7 @@
  */
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   View,
   Text,
@@ -251,7 +252,11 @@ export default function GameScreen() {
           <View style={styles.headerCard}>
             <View style={styles.statsRow}>
               <HeaderStatPill value={`${session.currentStreak}`} label="Streak" />
-              <HeaderStatPill value={`${session.sessionScore} pts`} label="Points" />
+              <HeaderStatPill
+                value={`${session.sessionScore} pts`}
+                label="Points"
+                emphasized
+              />
               <HeaderStatPill value={`${session.completedTasks.length}`} label="Completed" />
             </View>
           </View>
@@ -277,7 +282,7 @@ export default function GameScreen() {
 
           <View style={[styles.sectionBlock, styles.handSection]}>
             <View style={styles.sectionHeadingRow}>
-              <Text style={styles.sectionTitle}>Your Hand ({session.hand.length})</Text>
+              <Text style={styles.sectionTitle}>Your Hand</Text>
               <DiscardBadge remaining={session.discardsRemaining} />
             </View>
             <View style={styles.carouselShell}>
@@ -299,26 +304,22 @@ export default function GameScreen() {
         {showBigFirework && (
           <Confetti type="big" onDone={() => setShowBigFirework(false)} />
         )}
-
         <View style={styles.navShell}>
+
           <View style={styles.navBar}>
             <TouchableOpacity style={[styles.navItem, styles.navItemActive]} activeOpacity={0.8}>
               <View style={styles.navActivePill}>
-                <View style={styles.navCardIcon}>
-                  <Text style={styles.navCardS}>S</Text>
-                  <View style={styles.navCardDivider}>
-                    <View style={styles.navCardDividerLine} />
-                    <Text style={styles.navCardStar}>✦</Text>
-                    <View style={styles.navCardDividerLine} />
-                  </View>
-                  <Text style={styles.navCardQ}>Q</Text>
-                </View>
+                <MaterialCommunityIcons
+                  name="cards-playing-outline"
+                  size={22}
+                  color="#63507B"
+                />
               </View>
               <Text style={[styles.navLabel, styles.navLabelActive]}>Game</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.navItem} onPress={openParkModal} activeOpacity={0.8}>
-              <Text style={styles.navIcon}>🏰</Text>
+              <MaterialCommunityIcons name="castle" size={22} color="#7A7F93" />
               <Text style={styles.navLabel}>Park</Text>
             </TouchableOpacity>
 
@@ -327,7 +328,7 @@ export default function GameScreen() {
               onPress={() => navigation.navigate('Settings')}
               activeOpacity={0.8}
             >
-              <Text style={styles.navIcon}>⚙️</Text>
+              <MaterialCommunityIcons name="cog-outline" size={22} color="#7A7F93" />
               <Text style={styles.navLabel}>Settings</Text>
             </TouchableOpacity>
 
@@ -336,7 +337,7 @@ export default function GameScreen() {
               onPress={() => navigation.navigate('Profile')}
               activeOpacity={0.8}
             >
-              <Text style={styles.navIcon}>👤</Text>
+              <MaterialCommunityIcons name="account-outline" size={22} color="#7A7F93" />
               <Text style={styles.navLabel}>Profile</Text>
             </TouchableOpacity>
           </View>
@@ -503,14 +504,18 @@ export default function GameScreen() {
 function HeaderStatPill({
   value,
   label,
+  emphasized = false,
 }: {
   value: string;
   label: string;
+  emphasized?: boolean;
 }) {
   return (
-    <View style={styles.statPill}>
+    <View style={[styles.statPill, emphasized && styles.statPillEmphasized]}>
       <View>
-        <Text style={styles.statPillValue}>{value}</Text>
+        <Text style={[styles.statPillValue, emphasized && styles.statPillValueEmphasized]}>
+          {value}
+        </Text>
         <Text style={styles.statPillLabel}>{label}</Text>
       </View>
     </View>
@@ -696,11 +701,19 @@ const styles = StyleSheet.create({
     minWidth: Math.round(62 * sw),
     alignItems: 'center',
   },
+  statPillEmphasized: {
+    paddingHorizontal: 10,
+    minWidth: Math.round(92 * sw),
+  },
   statPillValue: {
     color: COLORS.textDark,
     fontSize: Math.round(13 * sw),
     fontWeight: '900',
     textAlign: 'center',
+  },
+  statPillValueEmphasized: {
+    fontSize: Math.round(26 * sw),
+    lineHeight: Math.round(28 * sw),
   },
   statPillLabel: {
     color: COLORS.textMuted,
@@ -843,9 +856,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: 'rgba(155,127,212,0.14)',
   },
-  navIcon: {
-    fontSize: Math.round(21 * sw),
-  },
   navLabel: {
     color: '#7A7F93',
     fontSize: Math.round(10 * sw),
@@ -854,45 +864,6 @@ const styles = StyleSheet.create({
   navLabelActive: {
     color: '#63507B',
   },
-  navCardIcon: {
-    width: 24,
-    height: 30,
-    borderRadius: 6,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#D4C4EE',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 2,
-  },
-  navCardS: {
-    fontSize: 8,
-    fontWeight: '900',
-    color: '#B8A9D4',
-    lineHeight: 9,
-  },
-  navCardDivider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: 15,
-  },
-  navCardDividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#D4C4EE',
-  },
-  navCardStar: {
-    fontSize: 5,
-    color: '#C8A4F0',
-    marginHorizontal: 1,
-  },
-  navCardQ: {
-    fontSize: 8,
-    fontWeight: '900',
-    color: '#9B7FD4',
-    lineHeight: 9,
-  },
-
   detailOverlay: {
     flex: 1,
     backgroundColor: 'rgba(8, 10, 18, 0.58)',
@@ -1281,3 +1252,4 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
   },
 });
+

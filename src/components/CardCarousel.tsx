@@ -485,6 +485,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBg,
     borderRadius: Math.round(16 * sw),
     borderWidth: 1.5,
+    minHeight: Math.round(286 * sh),
     overflow: 'hidden',
     ...SHADOWS.card,
   },
