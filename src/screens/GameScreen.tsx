@@ -29,6 +29,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Badge, Task } from '../types';
 import Confetti from '../components/Confetti';
 import BadgeUnlockPopup from '../components/BadgeUnlockPopup';
+import CardCarousel from '../components/CardCarousel';
 import { useGameStore } from '../store/gameStore';
 import { PARKS } from '../data/parks';
 import { CATEGORY_COLORS, CATEGORY_ICONS, COLORS, SHADOWS, RADII } from '../theme/theme';
@@ -84,8 +85,6 @@ const GAME_TIPS = [
   },
 ];
 
-const CHOICE_LETTERS = ['A', 'B', 'C', 'D'];
-
 export default function GameScreen() {
   const navigation = useNavigation<any>();
   const {
@@ -106,9 +105,7 @@ export default function GameScreen() {
 
   const [showSmallConfetti, setShowSmallConfetti] = useState(false);
   const [showBigFirework, setShowBigFirework] = useState(false);
-  const [featuredHandIndex, setFeaturedHandIndex] = useState(0);
   const [expandedChallenge, setExpandedChallenge] = useState<Task | null>(null);
-  const [triviaTask, setTriviaTask] = useState<Task | null>(null);
   const [showParkModal, setShowParkModal] = useState(false);
   const [selectedResortId, setSelectedResortId] = useState<string>(RESORTS[0].id);
   const [selectedParkId, setSelectedParkId] = useState<string>(RESORTS[0].parkIds[0]);
@@ -168,7 +165,6 @@ export default function GameScreen() {
       sessionIdRef.current = session.id;
       setCurrentTipIndex(0);
       setShowTips(true);
-      setFeaturedHandIndex(0);
     }
   }, [session?.id]);
 
@@ -211,14 +207,6 @@ export default function GameScreen() {
     return () => clearInterval(interval);
   }, [autoSave]);
 
-  useEffect(() => {
-    const handLength = session?.hand.length ?? 0;
-    if (handLength === 0) return;
-    if (featuredHandIndex > handLength - 1) {
-      setFeaturedHandIndex(Math.max(0, handLength - 1));
-    }
-  }, [featuredHandIndex, session?.hand.length]);
-
   if (!session) {
     return (
       <View style={styles.loadingContainer}>
@@ -233,10 +221,6 @@ export default function GameScreen() {
     );
   }
 
-  const featuredTask = session.hand[featuredHandIndex] ?? session.hand[0];
-  const featuredTaskIndex = featuredTask ? session.hand.findIndex(t => t.id === featuredTask.id) : 0;
-  const previewCards = session.hand.slice(0, 3);
-
   const handleCompleteSmall = (id: string) => {
     completeTask(id, false);
     setShowSmallConfetti(true);
@@ -245,13 +229,6 @@ export default function GameScreen() {
   const handleCompleteBig = (id: string) => {
     completeTask(id, true);
     setShowBigFirework(true);
-  };
-
-  const handleDiscardSmall = (id: string) => {
-    discardTask(id);
-    if (featuredHandIndex > 0) {
-      setFeaturedHandIndex(prev => Math.max(0, prev - 1));
-    }
   };
 
   const selectedResort = RESORTS.find(r => r.id === selectedResortId);
@@ -274,10 +251,7 @@ export default function GameScreen() {
       <SafeAreaView style={styles.safe}>
         <StatusBar barStyle="light-content" />
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
+        <View style={styles.screenContent}>
           <View style={styles.headerCard}>
             <View style={styles.headerTopRow}>
               <Text style={styles.parkTitle}>{park?.name ?? '?'}</Text>
@@ -309,116 +283,22 @@ export default function GameScreen() {
             </ScrollView>
           </View>
 
-          {featuredTask ? (
-            <View style={styles.featuredTaskCard}>
-              <View style={styles.featuredTaskTop}>
-                <View
-                  style={[
-                    styles.featuredTaskTypeBadge,
-                    { backgroundColor: `${CATEGORY_COLORS[featuredTask.category] ?? COLORS.gold}22` },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.featuredTaskTypeText,
-                      { color: CATEGORY_COLORS[featuredTask.category] ?? COLORS.goldDark },
-                    ]}
-                  >
-                    {featuredTask.displayCategory.toUpperCase()}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.featuredIconPointsRow}>
-                <View
-                  style={[
-                    styles.featuredIconBadge,
-                    { backgroundColor: CATEGORY_COLORS[featuredTask.category] ?? COLORS.gold },
-                  ]}
-                >
-                  <View style={styles.featuredIconInner}>
-                    <Text style={styles.featuredIconEmoji}>
-                      {CATEGORY_ICONS[featuredTask.category] ?? '✨'}
-                    </Text>
-                  </View>
-                </View>
-
-                <Text
-                  style={[
-                    styles.featuredPoints,
-                    { color: CATEGORY_COLORS[featuredTask.category] ?? COLORS.goldDark },
-                  ]}
-                >
-                  {featuredTask.points} pts
-                </Text>
-              </View>
-
-              <Text style={styles.featuredTaskDescription}>{featuredTask.description}</Text>
-              <Text style={styles.featuredTaskHelper}>
-                {featuredTask.flavorText ??
-                  (featuredTask.category === 'trivia'
-                    ? ''
-                    : 'Complete this task to keep your streak alive.')}
-              </Text>
-
-              <View style={styles.featuredActions}>
-                <TouchableOpacity
-                  style={styles.completeButton}
-                  onPress={() =>
-                    featuredTask.category === 'trivia'
-                      ? setTriviaTask(featuredTask)
-                      : handleCompleteSmall(featuredTask.id)
-                  }
-                  activeOpacity={0.9}
-                >
-                  <Text style={styles.completeButtonText}>
-                    {featuredTask.category === 'trivia' ? 'Answer' : 'Complete'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.discardButton,
-                    session.discardsRemaining <= 0 && styles.discardButtonDisabled,
-                  ]}
-                  onPress={() => {
-                    if (session.discardsRemaining <= 0) return;
-                    handleDiscardSmall(featuredTask.id);
-                  }}
-                  activeOpacity={session.discardsRemaining <= 0 ? 1 : 0.85}
-                >
-                  <Text
-                    style={[
-                      styles.discardButtonText,
-                      session.discardsRemaining <= 0 && styles.discardButtonTextDisabled,
-                    ]}
-                  >
-                    Discard
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : null}
-
-          <View style={styles.sectionBlock}>
+          <View style={[styles.sectionBlock, styles.handSection]}>
             <View style={styles.sectionHeadingRow}>
               <Text style={styles.sectionTitle}>Your Hand ({session.hand.length})</Text>
               <DiscardBadge remaining={session.discardsRemaining} />
             </View>
-
-            <View style={styles.handPreviewRow}>
-              {previewCards.map((task, index) => (
-                <HandPreviewCard
-                  key={task.id}
-                  task={task}
-                  index={index}
-                  active={index === featuredTaskIndex}
-                  onPress={() => setFeaturedHandIndex(index)}
-                />
-              ))}
+            <View style={styles.carouselShell}>
+              <CardCarousel
+                cards={session.hand}
+                onComplete={handleCompleteSmall}
+                onDiscard={id => discardTask(id)}
+                onTriviaAnswer={(id, correct) => answerTrivia(id, correct)}
+                discardsRemaining={session.discardsRemaining}
+              />
             </View>
           </View>
-        </ScrollView>
+        </View>
 
         {showSmallConfetti && (
           <Confetti type="small" onDone={() => setShowSmallConfetti(false)} />
@@ -492,18 +372,6 @@ export default function GameScreen() {
             setExpandedChallenge(null);
           }}
           onClose={() => setExpandedChallenge(null)}
-        />
-      )}
-
-      {triviaTask && (
-        <TriviaModal
-          task={triviaTask}
-          onTriviaAnswer={correct => {
-            answerTrivia(triviaTask.id, correct);
-            if (correct) setShowSmallConfetti(true);
-            setTriviaTask(null);
-          }}
-          onClose={() => setTriviaTask(null)}
         />
       )}
 
@@ -697,36 +565,6 @@ function ChallengeMiniCard({
   );
 }
 
-function HandPreviewCard({
-  task,
-  index,
-  active,
-  onPress,
-}: {
-  task: Task;
-  index: number;
-  active: boolean;
-  onPress: () => void;
-}) {
-  const accent = CATEGORY_COLORS[task.category] ?? COLORS.gold;
-  return (
-    <TouchableOpacity
-      style={[
-        styles.handPreviewCard,
-        { marginLeft: index === 0 ? 0 : -Math.round(20 * sw) },
-        active && styles.handPreviewCardActive,
-      ]}
-      onPress={onPress}
-      activeOpacity={0.9}
-    >
-      <View style={[styles.handPreviewGlow, { backgroundColor: `${accent}22` }]} />
-      <Text style={styles.handPreviewLabel}>{task.displayCategory.toUpperCase()}</Text>
-      <Text style={styles.handPreviewIcon}>{CATEGORY_ICONS[task.category] ?? '✨'}</Text>
-      <Text style={[styles.handPreviewPoints, { color: accent }]}>{task.points}</Text>
-    </TouchableOpacity>
-  );
-}
-
 function ChallengeDetailModal({
   task,
   sessionScore,
@@ -796,73 +634,6 @@ function ChallengeDetailModal({
   );
 }
 
-function TriviaModal({
-  task,
-  onTriviaAnswer,
-  onClose,
-}: {
-  task: Task;
-  onTriviaAnswer: (correct: boolean) => void;
-  onClose: () => void;
-}) {
-  const accent = CATEGORY_COLORS[task.category] ?? COLORS.gold;
-  const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
-  const [answered, setAnswered] = useState(false);
-
-  const handleChoicePress = (index: number) => {
-    if (answered) return;
-    setSelectedChoice(index);
-    setAnswered(true);
-    const correct = index === task.triviaAnswer;
-    setTimeout(() => onTriviaAnswer(correct), 1200);
-  };
-
-  return (
-    <Modal transparent animationType="fade" visible onRequestClose={onClose}>
-      <Pressable style={styles.detailOverlay} onPress={answered ? undefined : onClose}>
-        <Pressable style={styles.triviaCard} onPress={e => e.stopPropagation()}>
-          <Text style={styles.detailLabel}>{task.displayCategory.toUpperCase()}</Text>
-          <Text style={[styles.detailPoints, { color: accent }]}>{task.points} pts</Text>
-          <Text style={styles.triviaQuestion}>{task.description}</Text>
-
-          <View style={styles.triviaChoiceList}>
-            {task.triviaChoices?.map((choice, index) => {
-              const isSelected = selectedChoice === index;
-              const isCorrect = index === task.triviaAnswer;
-
-              return (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.triviaChoice,
-                    answered && isCorrect && styles.triviaChoiceCorrect,
-                    answered && isSelected && !isCorrect && styles.triviaChoiceWrong,
-                  ]}
-                  onPress={() => handleChoicePress(index)}
-                  disabled={answered}
-                  activeOpacity={0.88}
-                >
-                  <View style={styles.triviaLetterBadge}>
-                    <Text style={styles.triviaLetterText}>{CHOICE_LETTERS[index]}</Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.triviaChoiceText,
-                      answered && (isCorrect || isSelected) && styles.triviaChoiceTextActive,
-                    ]}
-                  >
-                    {choice}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-}
-
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
@@ -884,11 +655,12 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
   },
-  scrollContent: {
+  screenContent: {
+    flex: 1,
     paddingHorizontal: Math.round(18 * sw),
     paddingTop: Math.round(8 * sh),
-    paddingBottom: Math.round(118 * sh),
-    gap: Math.round(14 * sh),
+    paddingBottom: Math.round(104 * sh),
+    gap: Math.round(10 * sh),
   },
   loadingContainer: {
     flex: 1,
@@ -919,8 +691,8 @@ const styles = StyleSheet.create({
   headerCard: {
     backgroundColor: 'rgba(34, 29, 63, 0.52)',
     borderRadius: 24,
-    paddingHorizontal: Math.round(16 * sw),
-    paddingVertical: Math.round(14 * sh),
+    paddingHorizontal: Math.round(14 * sw),
+    paddingVertical: Math.round(12 * sh),
     shadowColor: '#050816',
     shadowOffset: { width: 0, height: 14 },
     shadowOpacity: 0.26,
@@ -934,40 +706,43 @@ const styles = StyleSheet.create({
   },
   parkTitle: {
     color: COLORS.white,
-    fontSize: Math.round(24 * sw),
-    lineHeight: Math.round(28 * sw),
+    fontSize: Math.round(22 * sw),
+    lineHeight: Math.round(26 * sw),
     fontWeight: '900',
     flexShrink: 1,
-    marginRight: 10,
+    marginRight: 8,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: Math.round(8 * sw),
+    gap: Math.round(6 * sw),
   },
   statPill: {
     backgroundColor: 'rgba(255,255,255,0.90)',
-    borderRadius: 18,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    minWidth: Math.round(68 * sw),
+    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    minWidth: Math.round(62 * sw),
     alignItems: 'center',
   },
   statPillValue: {
     color: COLORS.textDark,
-    fontSize: Math.round(14 * sw),
+    fontSize: Math.round(13 * sw),
     fontWeight: '900',
     textAlign: 'center',
   },
   statPillLabel: {
     color: COLORS.textMuted,
-    fontSize: Math.round(10 * sw),
+    fontSize: Math.round(9 * sw),
     fontWeight: '600',
-    marginTop: 2,
+    marginTop: 1,
     textAlign: 'center',
   },
 
   sectionBlock: {
-    gap: Math.round(8 * sh),
+    gap: Math.round(6 * sh),
+  },
+  handSection: {
+    flex: 1,
   },
   sectionHeadingRow: {
     flexDirection: 'row',
@@ -976,27 +751,27 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: COLORS.white,
-    fontSize: Math.round(17 * sw),
+    fontSize: Math.round(16 * sw),
     fontWeight: '800',
     letterSpacing: 0.2,
   },
   sectionHint: {
     color: 'rgba(239,237,255,0.72)',
-    fontSize: Math.round(12 * sw),
+    fontSize: Math.round(11 * sw),
     fontWeight: '600',
   },
 
   challengeRow: {
     paddingRight: 8,
-    gap: Math.round(10 * sw),
+    gap: Math.round(8 * sw),
   },
   challengeCard: {
-    width: Math.round(108 * sw),
-    height: Math.round(106 * sw),
-    borderRadius: 22,
+    width: Math.round(100 * sw),
+    height: Math.round(88 * sw),
+    borderRadius: 20,
     backgroundColor: 'rgba(255,251,247,0.96)',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     alignItems: 'center',
     justifyContent: 'space-between',
     shadowColor: '#111324',
@@ -1010,141 +785,27 @@ const styles = StyleSheet.create({
     fontSize: Math.round(9 * sw),
     fontWeight: '800',
     letterSpacing: 1.1,
-    marginBottom: 2,
   },
   challengeIconShell: {
-    width: Math.round(46 * sw),
-    height: Math.round(46 * sw),
-    borderRadius: 14,
+    width: Math.round(40 * sw),
+    height: Math.round(40 * sw),
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   challengeIconCore: {
-    width: Math.round(34 * sw),
-    height: Math.round(34 * sw),
-    borderRadius: 11,
+    width: Math.round(30 * sw),
+    height: Math.round(30 * sw),
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   challengeIcon: {
-    fontSize: Math.round(17 * sw),
+    fontSize: Math.round(15 * sw),
   },
   challengePoints: {
-    fontSize: Math.round(13 * sw),
-    fontWeight: '900',
-  },
-
-  featuredTaskCard: {
-    backgroundColor: 'rgba(255,249,244,0.96)',
-    borderRadius: 28,
-    paddingHorizontal: Math.round(22 * sw),
-    paddingVertical: Math.round(18 * sh),
-    alignItems: 'center',
-    shadowColor: '#0f1020',
-    shadowOffset: { width: 0, height: 18 },
-    shadowOpacity: 0.22,
-    shadowRadius: 28,
-    elevation: 10,
-  },
-  featuredTaskTop: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  featuredTaskTypeBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  featuredTaskTypeText: {
-    fontSize: Math.round(14 * sw),
-    fontWeight: '900',
-    letterSpacing: 1.2,
-  },
-  featuredIconBadge: {
-    width: Math.round(58 * sw),
-    height: Math.round(58 * sw),
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 0,
-  },
-  featuredIconInner: {
-    width: Math.round(40 * sw),
-    height: Math.round(40 * sw),
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  featuredIconEmoji: {
-    fontSize: Math.round(21 * sw),
-  },
-  featuredIconPointsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Math.round(10 * sw),
-    marginBottom: 10,
-  },
-  featuredPoints: {
-    fontSize: Math.round(23 * sw),
-    fontWeight: '900',
-  },
-  featuredTaskDescription: {
-    color: COLORS.textDark,
-    fontSize: Math.round(22 * sw),
-    lineHeight: Math.round(28 * sw),
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  featuredTaskHelper: {
-    color: COLORS.textMuted,
     fontSize: Math.round(12 * sw),
-    lineHeight: Math.round(17 * sw),
-    fontWeight: '500',
-    textAlign: 'center',
-    marginBottom: 14,
-    paddingHorizontal: 10,
-    minHeight: Math.round(18 * sh),
-  },
-  featuredActions: {
-    flexDirection: 'row',
-    width: '100%',
-    gap: Math.round(12 * sw),
-  },
-  completeButton: {
-    flex: 1.15,
-    backgroundColor: COLORS.green,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderBottomWidth: 4,
-    borderBottomColor: COLORS.greenDark,
-    ...SHADOWS.button,
-  },
-  completeButtonText: {
-    color: COLORS.white,
-    fontSize: Math.round(16 * sw),
     fontWeight: '900',
-  },
-  discardButton: {
-    flex: 1,
-    backgroundColor: '#F3F5FA',
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  discardButtonDisabled: {
-    opacity: 0.55,
-  },
-  discardButtonText: {
-    color: COLORS.textBody,
-    fontSize: Math.round(16 * sw),
-    fontWeight: '700',
-  },
-  discardButtonTextDisabled: {
-    color: COLORS.textMuted,
   },
 
   discardBadge: {
@@ -1176,53 +837,10 @@ const styles = StyleSheet.create({
   discardDotInactive: {
     backgroundColor: 'rgba(255,255,255,0.32)',
   },
-
-  handPreviewRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingLeft: 4,
-    paddingTop: 2,
-  },
-  handPreviewCard: {
-    width: Math.round(92 * sw),
-    height: Math.round(114 * sw),
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,248,243,0.92)',
-    paddingHorizontal: 12,
-    paddingVertical: 14,
-    justifyContent: 'space-between',
-    overflow: 'hidden',
-    shadowColor: '#101321',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.14,
-    shadowRadius: 20,
-    elevation: 5,
-  },
-  handPreviewCardActive: {
-    transform: [{ translateY: -8 }],
-  },
-  handPreviewGlow: {
-    position: 'absolute',
-    top: -18,
-    right: -18,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-  },
-  handPreviewLabel: {
-    color: COLORS.textMuted,
-    fontSize: Math.round(9 * sw),
-    fontWeight: '800',
-    letterSpacing: 1.1,
-  },
-  handPreviewIcon: {
-    fontSize: Math.round(24 * sw),
-    alignSelf: 'center',
-  },
-  handPreviewPoints: {
-    fontSize: Math.round(18 * sw),
-    fontWeight: '900',
-    alignSelf: 'flex-start',
+  carouselShell: {
+    flex: 1,
+    minHeight: 0,
+    marginHorizontal: -Math.round(18 * sw),
   },
 
   navShell: {

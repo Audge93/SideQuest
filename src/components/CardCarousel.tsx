@@ -7,7 +7,7 @@
  * open a separate answer modal. Dot indicators show current position.
  */
 
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -23,18 +23,18 @@ import {
   NativeScrollEvent,
 } from 'react-native';
 import { Task } from '../types';
-import { COLORS, SHADOWS, RADII, CATEGORY_COLORS, CATEGORY_ICONS } from '../theme/theme';
+import { COLORS, SHADOWS, CATEGORY_COLORS, CATEGORY_ICONS } from '../theme/theme';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const sw = SCREEN_W / 390;
 const sh = SCREEN_H / 844;
 
-const CARD_WIDTH = Math.round(SCREEN_W * 0.805);
-const CARD_GAP = Math.round(12 * sw);
+const CARD_WIDTH = Math.round(Math.min(SCREEN_W * 0.76, 310));
+const CARD_GAP = Math.round(10 * sw);
 const SNAP_INTERVAL = CARD_WIDTH + CARD_GAP;
 const H_PADDING = Math.round((SCREEN_W - CARD_WIDTH) / 2);
 const ACTIVE_SCALE = 1.0;
-const INACTIVE_SCALE = 0.92;
+const INACTIVE_SCALE = 0.9;
 
 // Labels shown beside each multiple-choice answer in the trivia modal.
 const CHOICE_LETTERS = ['A', 'B', 'C', 'D'];
@@ -64,7 +64,7 @@ function TaskCard({
   const flavorText =
     task.flavorText ??
     (task.category === 'trivia'
-      ? 'Tap to answer the question'
+      ? ''
       : task.category === 'photo'
       ? 'Take the photo to complete'
       : task.category === 'observation'
@@ -145,8 +145,10 @@ function TaskCard({
           </View>
           <Text style={[styles.ptsText, { color }]}>{task.points} pts</Text>
         </View>
-        <Text style={styles.cardDescription}>{task.description}</Text>
-        <Text style={styles.cardFlavor}>{flavorText}</Text>
+        <Text style={styles.cardDescription} numberOfLines={4}>
+          {task.description}
+        </Text>
+        {flavorText ? <Text style={styles.cardFlavor}>{flavorText}</Text> : null}
       </View>
 
       {/* Action buttons */}
@@ -348,6 +350,23 @@ export default function CardCarousel({
   const flatListRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
 
+  useEffect(() => {
+    if (cards.length === 0) {
+      setActiveIndex(0);
+      return;
+    }
+    if (activeIndex > cards.length - 1) {
+      const nextIndex = cards.length - 1;
+      setActiveIndex(nextIndex);
+      requestAnimationFrame(() => {
+        flatListRef.current?.scrollToOffset({
+          offset: nextIndex * SNAP_INTERVAL,
+          animated: false,
+        });
+      });
+    }
+  }, [activeIndex, cards.length]);
+
   // Track active card on every scroll frame (auto-select centered card)
   const handleScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -369,6 +388,7 @@ export default function CardCarousel({
         showsHorizontalScrollIndicator={false}
         snapToInterval={SNAP_INTERVAL}
         decelerationRate="fast"
+        bounces={false}
         contentContainerStyle={{ paddingHorizontal: H_PADDING }}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
@@ -389,8 +409,19 @@ export default function CardCarousel({
             outputRange: [INACTIVE_SCALE, ACTIVE_SCALE, INACTIVE_SCALE],
             extrapolate: 'clamp',
           });
+          const translateY = scrollX.interpolate({
+            inputRange,
+            outputRange: [12, -8, 12],
+            extrapolate: 'clamp',
+          });
           return (
-            <Animated.View style={{ width: CARD_WIDTH, marginHorizontal: CARD_GAP / 2, transform: [{ scale }] }}>
+            <Animated.View
+              style={{
+                width: CARD_WIDTH,
+                marginHorizontal: CARD_GAP / 2,
+                transform: [{ translateY }, { scale }],
+              }}
+            >
               <TaskCard
                 task={item}
                 canDiscard={discardsRemaining > 0}
@@ -441,27 +472,27 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.cardBg,
     borderRadius: Math.round(16 * sw),
-    borderWidth: 2,
+    borderWidth: 1.5,
     overflow: 'hidden',
     ...SHADOWS.card,
   },
   cardHeader: {
-    paddingVertical: Math.round(7 * sh),
+    paddingVertical: Math.round(6 * sh),
     alignItems: 'center',
   },
   cardHeaderText: {
     color: COLORS.white,
     fontWeight: '900',
-    fontSize: Math.round(17 * sw),
+    fontSize: Math.round(20 * sw),
     textTransform: 'uppercase',
-    letterSpacing: 2,
+    letterSpacing: 1.4,
   },
   cardBody: {
     paddingHorizontal: Math.round(14 * sw),
-    paddingTop: Math.round(9 * sh),
-    paddingBottom: Math.round(5 * sh),
+    paddingTop: Math.round(8 * sh),
+    paddingBottom: Math.round(4 * sh),
     alignItems: 'center',
-    gap: Math.round(6 * sh),
+    gap: Math.round(5 * sh),
   },
   iconPtsRow: {
     flexDirection: 'row',
@@ -469,8 +500,8 @@ const styles = StyleSheet.create({
     gap: Math.round(8 * sw),
   },
   iconOuter: {
-    width: Math.round(41 * sw),
-    height: Math.round(41 * sw),
+    width: Math.round(38 * sw),
+    height: Math.round(38 * sw),
     borderRadius: Math.round(10 * sw),
     alignItems: 'center',
     justifyContent: 'center',
@@ -479,31 +510,31 @@ const styles = StyleSheet.create({
     ...SHADOWS.chip,
   },
   iconInner: {
-    width: Math.round(29 * sw),
-    height: Math.round(29 * sw),
+    width: Math.round(27 * sw),
+    height: Math.round(27 * sw),
     borderRadius: Math.round(7 * sw),
     backgroundColor: 'rgba(255,255,255,0.93)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconEmoji: {
-    fontSize: Math.round(16 * sw),
+    fontSize: Math.round(15 * sw),
   },
   ptsText: {
     fontWeight: '900',
-    fontSize: Math.round(15 * sw),
+    fontSize: Math.round(18 * sw),
   },
   cardDescription: {
     color: COLORS.textDark,
-    fontSize: Math.round(14 * sw),
-    lineHeight: Math.round(18 * sw),
+    fontSize: Math.round(15 * sw),
+    lineHeight: Math.round(19 * sw),
     textAlign: 'center',
-    fontWeight: '700',
+    fontWeight: '800',
   },
   cardFlavor: {
     color: COLORS.textMuted,
-    fontSize: Math.round(12 * sw),
-    lineHeight: Math.round(15 * sw),
+    fontSize: Math.round(11 * sw),
+    lineHeight: Math.round(14 * sw),
     textAlign: 'center',
     fontWeight: '400',
     fontStyle: 'italic',
@@ -513,12 +544,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Math.round(8 * sw),
     paddingHorizontal: Math.round(12 * sw),
-    paddingTop: Math.round(6 * sh),
-    paddingBottom: Math.round(12 * sh),
+    paddingTop: Math.round(4 * sh),
+    paddingBottom: Math.round(10 * sh),
   },
   cardActionBtn: {
     flex: 1,
-    paddingVertical: Math.round(9 * sh),
+    paddingVertical: Math.round(8 * sh),
     borderRadius: Math.round(10 * sw),
     alignItems: 'center',
     justifyContent: 'center',
@@ -532,7 +563,7 @@ const styles = StyleSheet.create({
   completeBtnText: {
     color: COLORS.white,
     fontWeight: '800',
-    fontSize: Math.round(14 * sw),
+    fontSize: Math.round(13 * sw),
   },
   discardBtn: {
     backgroundColor: COLORS.white,
@@ -543,7 +574,7 @@ const styles = StyleSheet.create({
   discardBtnText: {
     color: COLORS.textBody,
     fontWeight: '700',
-    fontSize: Math.round(14 * sw),
+    fontSize: Math.round(13 * sw),
   },
   disabledBtn: {
     backgroundColor: COLORS.surfaceSecondary,
@@ -692,16 +723,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: Math.round(6 * sw),
-    marginTop: Math.round(6 * sh),
+    marginTop: Math.round(4 * sh),
   },
   dot: {
-    width: Math.round(6 * sw),
-    height: Math.round(6 * sw),
+    width: Math.round(5 * sw),
+    height: Math.round(5 * sw),
     borderRadius: Math.round(3 * sw),
     backgroundColor: COLORS.borderMedium,
   },
   dotActive: {
     backgroundColor: COLORS.green,
-    width: Math.round(18 * sw),
+    width: Math.round(16 * sw),
   },
 });
