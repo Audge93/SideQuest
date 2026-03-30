@@ -102,3 +102,14 @@ export interface Settings {
   soundEnabled: boolean;
   hapticsEnabled: boolean;
 }
+
+export interface SaveSlot {
+  id: string;
+  name: string;
+  createdAt: number;
+  lastSavedAt: number;
+  session: Session;
+  settings: Settings;
+}
+
+export const MAX_SAVE_SLOTS = 3;

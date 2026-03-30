@@ -35,8 +35,22 @@ import Slider from '@react-native-community/slider';
 import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
 // CategoryToggles type used indirectly via updateCategoryToggle
+import { SaveSlot } from '../types';
 import { PARKS } from '../data/parks';
 import { COLORS, SHADOWS, RADII } from '../theme/theme';
+
+// ─── Relative time helper ──────────────────────────────────────────────────
+
+function timeAgo(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr${hours > 1 ? 's' : ''} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days > 1 ? 's' : ''} ago`;
+}
 
 // ─── Resort → Park mapping ──────────────────────────────────────────────────
 
@@ -70,7 +84,13 @@ export default function HomeScreen() {
     session,
     startSession,
     player,
+    saveSlots,
+    loadSlot,
+    deleteSlot,
   } = useGameStore();
+
+  const activeSaves = saveSlots.filter((s): s is SaveSlot => s !== null);
+  const allSlotsFull = activeSaves.length >= 3;
 
   // ─── Modal state ────────────────────────────────────────────────────────
   const [showNewGameModal, setShowNewGameModal] = useState(false);
@@ -136,6 +156,10 @@ export default function HomeScreen() {
   };
 
   const handleOpenNewGame = () => {
+    if (allSlotsFull) {
+      Alert.alert('Save Slots Full', 'Please delete a save to start a new game.');
+      return;
+    }
     setNameInput(player.name);
     setModalPage(1);
     setResortDropdownOpen(false);
@@ -178,8 +202,24 @@ export default function HomeScreen() {
     navigation.navigate('Game');
   };
 
-  const handleContinueGame = () => {
+  const handleLoadSlot = (slotId: string) => {
+    loadSlot(slotId);
     navigation.navigate('Game');
+  };
+
+  const handleDeleteSlot = (slot: SaveSlot) => {
+    Alert.alert(
+      'Delete Save',
+      `Are you sure you want to delete "${slot.name}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteSlot(slot.id),
+        },
+      ],
+    );
   };
 
   // ─── Render ─────────────────────────────────────────────────────────────
@@ -193,6 +233,24 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.safe}>
         <StatusBar barStyle="dark-content" />
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          {/* Top-right nav icons */}
+          <View style={styles.topNav}>
+            <TouchableOpacity
+              style={styles.topNavBtn}
+              onPress={() => navigation.navigate('Profile')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.topNavIcon}>{'\u{1F464}'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.topNavBtn}
+              onPress={() => navigation.navigate('Settings')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.topNavIcon}>{'\u2699\uFE0F'}</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Logo */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
@@ -204,7 +262,7 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.logoQuest}>QUEST</Text>
             </View>
-            <Text style={styles.subtitle}>Turn wait times into play time</Text>
+            <Text style={styles.subtitle}>Theme Park Scavenger Hunt</Text>
           </View>
 
           {/* Player Welcome */}
@@ -220,20 +278,44 @@ export default function HomeScreen() {
             </View>
           </View>
 
+          {/* ── Saved Games ── */}
+          {activeSaves.length > 0 && (
+            <View style={styles.savedGamesSection}>
+              <Text style={styles.sectionTitle}>SAVED GAMES</Text>
+              {activeSaves.map(slot => (
+                <TouchableOpacity
+                  key={slot.id}
+                  style={styles.saveSlotCard}
+                  onPress={() => handleLoadSlot(slot.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.saveSlotRow1}>
+                    <Text style={styles.saveSlotName} numberOfLines={1}>{slot.name}</Text>
+                    <TouchableOpacity
+                      onPress={() => handleDeleteSlot(slot)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={styles.saveSlotDelete}>{'\u{1F5D1}\uFE0F'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.saveSlotRow2}>
+                    <Text style={styles.saveSlotMeta}>
+                      Score: {slot.session.sessionScore} pts  {'\u2022'}  Tasks: {slot.session.totalCompletions}
+                    </Text>
+                    <Text style={styles.saveSlotTime}>Last saved: {timeAgo(slot.lastSavedAt)}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
           {/* ── Action Buttons ── */}
           <View style={styles.actions}>
-            {session?.active && (
-              <TouchableOpacity style={styles.continueBtn} onPress={handleContinueGame}>
-                <Text style={styles.continueBtnText}>Continue Game</Text>
-              </TouchableOpacity>
-            )}
             <TouchableOpacity
               style={styles.startBtn}
               onPress={handleOpenNewGame}
             >
-              <Text style={styles.startBtnText}>
-                {session?.active ? 'New Game' : 'Start Game'}
-              </Text>
+              <Text style={styles.startBtnText}>New Game</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -877,5 +959,79 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: '700',
     fontSize: 16,
+  },
+
+  // Top nav icons
+  topNav: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginBottom: 4,
+  },
+  topNavBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.75)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.borderPanel,
+    ...SHADOWS.card,
+  },
+  topNavIcon: {
+    fontSize: 18,
+  },
+
+  // Saved games section
+  savedGamesSection: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginBottom: 10,
+  },
+  saveSlotCard: {
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderRadius: RADII.panel,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.borderPanel,
+    ...SHADOWS.card,
+  },
+  saveSlotRow1: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  saveSlotName: {
+    color: COLORS.textDark,
+    fontSize: 15,
+    fontWeight: '700',
+    flex: 1,
+    marginRight: 8,
+  },
+  saveSlotDelete: {
+    fontSize: 16,
+  },
+  saveSlotRow2: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  saveSlotMeta: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  saveSlotTime: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    fontWeight: '500',
   },
 });

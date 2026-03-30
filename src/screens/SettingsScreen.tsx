@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import Slider from '@react-native-community/slider';
 import { useGameStore } from '../store/gameStore';
 import { CategoryToggles } from '../types';
@@ -29,6 +30,7 @@ const CATEGORY_INFO: { key: keyof CategoryToggles; label: string; icon: string }
 ];
 
 export default function SettingsScreen() {
+  const navigation = useNavigation<any>();
   const { settings, updateSettings, updateCategoryToggle, toggleRide } = useGameStore();
   const [showRideDrilldown, setShowRideDrilldown] = useState(false);
 
@@ -39,6 +41,15 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
       <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
+        {/* Back button */}
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <Text style={{ fontSize: 18, color: COLORS.textMuted, marginRight: 6 }}>‹</Text>
+          <Text style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: '600' }}>Back</Text>
+        </TouchableOpacity>
         <Text style={styles.pageTitle}>Settings</Text>
 
         {/* Height Filter */}

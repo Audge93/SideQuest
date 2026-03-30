@@ -8,7 +8,7 @@
 
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Task, Session, Settings, Player, Badge, BadgeTier, CategoryToggles, ParkThemeTag } from '../types';
+import { Task, Session, Settings, Player, Badge, BadgeTier, CategoryToggles, ParkThemeTag, SaveSlot, MAX_SAVE_SLOTS } from '../types';
 import { SMALL_TASKS, BIG_TASKS, generateRideTasks } from '../data/tasks';
 import { TRIVIA_TASKS } from '../data/trivia';
 import { RIDES, PARKS } from '../data/parks';
@@ -118,6 +118,8 @@ interface GameState {
   session: Session | null;
   isLoading: boolean;
   newlyEarnedBadges: Badge[];
+  saveSlots: (SaveSlot | null)[];
+  activeSlotId: string | null;
 
   updateSettings: (patch: Partial<Settings>) => void;
   updateCategoryToggle: (category: keyof CategoryToggles, value: boolean) => void;
@@ -125,6 +127,12 @@ interface GameState {
 
   startSession: () => void;
   endSession: () => void;
+
+  saveGame: (slotId: string, name?: string) => void;
+  loadSlot: (slotId: string) => void;
+  deleteSlot: (slotId: string) => void;
+  autoSave: () => void;
+  switchPark: (newParkIds: string[]) => void;
 
   completeTask: (taskId: string, isChallenge: boolean) => void;
   discardTask: (taskId: string) => void;
@@ -341,6 +349,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   session: null,
   isLoading: true,
   newlyEarnedBadges: [],
+  saveSlots: [null, null, null],
+  activeSlotId: null,
 
   // ─── Settings actions ─────────────────────────────────────────────────────
 
@@ -367,9 +377,14 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // ─── Session lifecycle ────────────────────────────────────────────────────
 
-  /** Creates a new game session — builds task pools, draws initial hand + challenges */
+  /** Creates a new game session — builds task pools, draws initial hand + challenges, assigns to save slot */
   startSession: () => {
-    const { settings } = get();
+    const { settings, saveSlots } = get();
+
+    // Find the first empty slot
+    const emptyIndex = saveSlots.findIndex(s => s === null);
+    if (emptyIndex === -1) return; // All slots full — cannot start a new session
+
     const { small, big } = buildTaskPools(settings);
 
     const hand = drawFromPool(small, [], 5);
@@ -389,7 +404,26 @@ export const useGameStore = create<GameState>((set, get) => ({
       completedTasks: [],
     };
 
-    set({ session });
+    // Build default slot name: "Mar 29 - Magic Kingdom"
+    const date = new Date();
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const formatted = `${monthNames[date.getMonth()]} ${date.getDate()}`;
+    const parkName = PARKS.find(p => p.id === settings.parkIds[0])?.name ?? 'Unknown Park';
+    const slotName = `${formatted} - ${parkName}`;
+
+    const slot: SaveSlot = {
+      id: `slot-${Date.now()}`,
+      name: slotName,
+      createdAt: Date.now(),
+      lastSavedAt: Date.now(),
+      session,
+      settings: { ...settings },
+    };
+
+    const newSlots = [...saveSlots];
+    newSlots[emptyIndex] = slot;
+
+    set({ session, saveSlots: newSlots, activeSlotId: slot.id });
     get().saveToStorage();
   },
 
@@ -428,10 +462,107 @@ export const useGameStore = create<GameState>((set, get) => ({
       categoryCompletions: updatedCatCompletions,
     };
 
+    // Remove the slot from saveSlots and clear activeSlotId
+    const { saveSlots, activeSlotId } = get();
+    const newSlots = saveSlots.map(s => (s && s.id === activeSlotId ? null : s));
+
     set({
       player: updatedPlayer,
       session: { ...session, active: false },
+      saveSlots: newSlots,
+      activeSlotId: null,
     });
+    get().saveToStorage();
+  },
+
+  // ─── Save slot actions ───────────────────────────────────────────────────
+
+  /** Save current session to a specific slot */
+  saveGame: (slotId, name?) => {
+    const { session, settings, saveSlots } = get();
+    if (!session) return;
+
+    const newSlots = saveSlots.map(s => {
+      if (s && s.id === slotId) {
+        return {
+          ...s,
+          name: name ?? s.name,
+          lastSavedAt: Date.now(),
+          session: { ...session },
+          settings: { ...settings },
+        };
+      }
+      return s;
+    });
+
+    set({ saveSlots: newSlots });
+    get().saveToStorage();
+  },
+
+  /** Load a save slot and set it as active */
+  loadSlot: (slotId) => {
+    const { saveSlots } = get();
+    const slot = saveSlots.find(s => s && s.id === slotId);
+    if (!slot) return;
+
+    set({
+      session: { ...slot.session },
+      settings: { ...slot.settings },
+      activeSlotId: slotId,
+    });
+    get().saveToStorage();
+  },
+
+  /** Delete a save slot */
+  deleteSlot: (slotId) => {
+    const { saveSlots, activeSlotId } = get();
+    const newSlots = saveSlots.map(s => (s && s.id === slotId ? null : s));
+
+    const updates: Partial<GameState> = { saveSlots: newSlots };
+    if (activeSlotId === slotId) {
+      updates.activeSlotId = null;
+      updates.session = null;
+    }
+
+    set(updates as any);
+    get().saveToStorage();
+  },
+
+  /** Auto-save to the active slot if one exists */
+  autoSave: () => {
+    const { activeSlotId } = get();
+    if (!activeSlotId) return;
+    get().saveGame(activeSlotId);
+  },
+
+  /** Switch parks mid-game — rebuild task pools, keep score/streak/completions, redraw hand and challenges */
+  switchPark: (newParkIds) => {
+    const { session, settings } = get();
+    if (!session) return;
+
+    // Update settings with new park IDs
+    const updatedSettings: Settings = { ...settings, parkIds: newParkIds };
+
+    // Rebuild task pools with new settings
+    const { small, big } = buildTaskPools(updatedSettings);
+
+    // Draw fresh hand and challenge tasks from new pools
+    const hand = drawFromPool(small, session.completedTasks, 5);
+    const challengeTasks = drawFromPool(big, session.completedTasks, 3);
+
+    // Deduplicate parkIds — keep existing + add new
+    const allParkIds = [...new Set([...session.parkIds, ...newParkIds])];
+
+    const updatedSession: Session = {
+      ...session,
+      parkIds: allParkIds,
+      hand,
+      challengeTasks,
+      // Keep: completedTasks, sessionScore, currentStreak, totalCompletions, discardsRemaining
+    };
+
+    set({ settings: updatedSettings, session: updatedSession });
+    get().autoSave();
     get().saveToStorage();
   },
 
@@ -610,6 +741,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       player: freshPlayer,
       session: null,
       newlyEarnedBadges: [],
+      saveSlots: [null, null, null],
+      activeSlotId: null,
     });
     // Save clean state
     await get().saveToStorage();
@@ -621,10 +754,37 @@ export const useGameStore = create<GameState>((set, get) => ({
       const raw = await AsyncStorage.getItem('parkquest_state');
       if (raw) {
         const saved = JSON.parse(raw);
+
+        let saveSlots: (SaveSlot | null)[] = saved.saveSlots ?? [null, null, null];
+        let activeSlotId: string | null = saved.activeSlotId ?? null;
+
+        // Migration: if there's an existing session but no saveSlots, auto-migrate into slot 0
+        const session = saved.session ?? null;
+        if (session && session.active && !saved.saveSlots) {
+          const date = new Date(session.startedAt);
+          const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          const formatted = `${monthNames[date.getMonth()]} ${date.getDate()}`;
+          const parkName = PARKS.find(p => p.id === session.parkIds?.[0])?.name ?? 'Unknown Park';
+          const slotName = `${formatted} - ${parkName}`;
+
+          const migratedSlot: SaveSlot = {
+            id: `slot-migrated-${Date.now()}`,
+            name: slotName,
+            createdAt: session.startedAt,
+            lastSavedAt: Date.now(),
+            session,
+            settings: saved.settings ? { ...DEFAULT_SETTINGS, ...saved.settings } : { ...DEFAULT_SETTINGS },
+          };
+          saveSlots = [migratedSlot, null, null];
+          activeSlotId = migratedSlot.id;
+        }
+
         set({
           settings: { ...DEFAULT_SETTINGS, ...saved.settings },
           player: { ...DEFAULT_PLAYER, ...saved.player },
-          session: saved.session ?? null,
+          session: session,
+          saveSlots,
+          activeSlotId,
           isLoading: false,
         });
       } else {
@@ -637,7 +797,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   /** Persists current state to AsyncStorage */
   saveToStorage: async () => {
-    const { settings, player, session } = get();
-    await AsyncStorage.setItem('parkquest_state', JSON.stringify({ settings, player, session }));
+    const { settings, player, session, saveSlots, activeSlotId } = get();
+    await AsyncStorage.setItem('parkquest_state', JSON.stringify({ settings, player, session, saveSlots, activeSlotId }));
   },
 }));
