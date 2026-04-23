@@ -97,6 +97,7 @@ export default function HomeScreen() {
   const [showContinueModal, setShowContinueModal] = useState(false);
   const [confirmDeleteSlotId, setConfirmDeleteSlotId] = useState<string | null>(null);
   const [modalPage, setModalPage] = useState<1 | 2>(1);
+  const [gameNameInput, setGameNameInput] = useState('');
   const [nameInput, setNameInput] = useState(player.name);
 
   // ─── Resort / park selection (now lives inside the modal) ───────────────
@@ -163,6 +164,7 @@ export default function HomeScreen() {
       return;
     }
     setNameInput(player.name);
+    setGameNameInput('');
     setModalPage(1);
     setResortDropdownOpen(false);
     setParkDropdownOpen(false);
@@ -200,7 +202,7 @@ export default function HomeScreen() {
     }
     updatePlayerName(trimmedName);
     setShowNewGameModal(false);
-    startSession();
+    startSession(gameNameInput.trim() || undefined);
     navigation.navigate('Game');
   };
 
@@ -411,6 +413,24 @@ export default function HomeScreen() {
                   placeholder="Enter your name..."
                   placeholderTextColor={COLORS.textLight}
                   maxLength={24}
+                  autoCapitalize="words"
+                  selectionColor={COLORS.green}
+                />
+
+                {/* Game Name */}
+                <View style={styles.modalDivider} />
+                <Text style={styles.modalFieldLabel}>GAME NAME</Text>
+                <TextInput
+                  style={styles.modalNameInput}
+                  value={gameNameInput}
+                  onChangeText={setGameNameInput}
+                  placeholder={
+                    selectedPark
+                      ? `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date().getMonth()]} ${new Date().getDate()} – ${selectedPark.name}`
+                      : 'e.g. Disney Trip, Universal Day…'
+                  }
+                  placeholderTextColor={COLORS.textLight}
+                  maxLength={30}
                   autoCapitalize="words"
                   selectionColor={COLORS.green}
                 />

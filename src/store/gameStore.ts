@@ -9,7 +9,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Task, Session, Settings, Player, Badge, BadgeTier, CategoryToggles, ParkThemeTag, SaveSlot, MAX_SAVE_SLOTS } from '../types';
-import { SMALL_TASKS, BIG_TASKS, generateRideTasks } from '../data/tasks';
+import { SMALL_TASKS, BIG_TASKS, RIDE_ACTIVITY_TASKS, generateRideTasks } from '../data/tasks';
 import { TRIVIA_TASKS } from '../data/trivia';
 import { RIDES, PARKS } from '../data/parks';
 
@@ -136,13 +136,14 @@ interface GameState {
   updatePlayerName: (name: string) => void;
 
   // Session lifecycle.
-  startSession: () => void;
+  startSession: (customName?: string) => void;
   endSession: () => void;
 
   // Save/load management.
   saveGame: (slotId: string, name?: string) => void;
   loadSlot: (slotId: string) => void;
   deleteSlot: (slotId: string) => void;
+  renameActiveSlot: (name: string) => void;
   autoSave: () => void;
   switchPark: (newParkIds: string[]) => void;
 
@@ -202,8 +203,16 @@ function buildTaskPools(settings: Settings): { small: Task[]; big: Task[] } {
     const filteredRides = heightFilterEnabled
       ? parkRides.filter(r => r.heightRequirement === 0 || r.heightRequirement <= minHeightInches)
       : parkRides;
-    const rideTasks = generateRideTasks(filteredRides);
-    big = [...big, ...rideTasks];
+    big = [...big, ...generateRideTasks(filteredRides)];
+
+    // Ride-activity tasks (e.g. "Score 100k on Toy Story Mania") — filtered by
+    // selected park and the player's height setting, same as generated ride tasks.
+    const rideActivityTasks = RIDE_ACTIVITY_TASKS.filter(t => {
+      if (!parkIds.includes(t.parkId!)) return false;
+      if (heightFilterEnabled && t.heightRequirement! > minHeightInches) return false;
+      return matchesTheme(t);
+    });
+    big = [...big, ...rideActivityTasks];
   }
 
   return { small: shuffle(small), big: shuffle(big) };
@@ -445,7 +454,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   // ─── Session lifecycle ────────────────────────────────────────────────────
 
   /** Creates a new game session — builds task pools, draws initial hand + challenges, assigns to save slot */
-  startSession: () => {
+  startSession: (customName?: string) => {
     const { settings, saveSlots } = get();
 
     // New sessions automatically claim the first empty save slot so the player
@@ -475,12 +484,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       completedTasks: [],
     };
 
-    // Build default slot name: "Mar 29 - Magic Kingdom"
+    // Build default slot name: "Mar 29 - Magic Kingdom" (overridden by customName if provided)
     const date = new Date();
     const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const formatted = `${monthNames[date.getMonth()]} ${date.getDate()}`;
     const parkName = PARKS.find(p => p.id === settings.parkIds[0])?.name ?? 'Unknown Park';
-    const slotName = `${formatted} - ${parkName}`;
+    const slotName = customName?.trim() || `${formatted} - ${parkName}`;
 
     const slot: SaveSlot = {
       id: `slot-${Date.now()}`,
@@ -600,6 +609,17 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     set(updates as any);
+    get().saveToStorage();
+  },
+
+  /** Rename the currently active save slot */
+  renameActiveSlot: (name) => {
+    const { saveSlots, activeSlotId } = get();
+    if (!activeSlotId) return;
+    const newSlots = saveSlots.map(s =>
+      s && s.id === activeSlotId ? { ...s, name: name.trim() } : s
+    );
+    set({ saveSlots: newSlots } as any);
     get().saveToStorage();
   },
 

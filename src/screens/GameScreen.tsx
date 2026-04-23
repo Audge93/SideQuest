@@ -249,15 +249,22 @@ export default function GameScreen() {
         <StatusBar barStyle="light-content" />
 
         <View style={styles.screenContent}>
-          <View style={styles.headerCard}>
-            <View style={styles.statsRow}>
-              <HeaderStatPill value={`${session.currentStreak}`} label="Streak" />
-              <HeaderStatPill
-                value={`${session.sessionScore} pts`}
-                label="Points"
-                emphasized
-              />
-              <HeaderStatPill value={`${session.completedTasks.length}`} label="Completed" />
+          <View style={styles.statsBar}>
+            <View style={styles.statSegment}>
+              <Text style={styles.statSegmentValue}>{session.currentStreak}</Text>
+              <Text style={styles.statSegmentLabel}>Streak</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={[styles.statSegment, styles.statSegmentCenter]}>
+              <Text style={[styles.statSegmentValue, styles.statSegmentValueCenter]}>
+                {session.sessionScore} pts
+              </Text>
+              <Text style={styles.statSegmentLabel}>Points</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statSegment}>
+              <Text style={styles.statSegmentValue}>{session.completedTasks.length}</Text>
+              <Text style={styles.statSegmentLabel}>Completed</Text>
             </View>
           </View>
 
@@ -501,26 +508,6 @@ export default function GameScreen() {
   );
 }
 
-function HeaderStatPill({
-  value,
-  label,
-  emphasized = false,
-}: {
-  value: string;
-  label: string;
-  emphasized?: boolean;
-}) {
-  return (
-    <View style={[styles.statPill, emphasized && styles.statPillEmphasized]}>
-      <View>
-        <Text style={[styles.statPillValue, emphasized && styles.statPillValueEmphasized]}>
-          {value}
-        </Text>
-        <Text style={styles.statPillLabel}>{label}</Text>
-      </View>
-    </View>
-  );
-}
 
 function DiscardBadge({ remaining }: { remaining: number }) {
   return (
@@ -677,49 +664,44 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  headerCard: {
-    backgroundColor: 'rgba(34, 29, 63, 0.34)',
-    borderRadius: 24,
-    paddingHorizontal: Math.round(14 * sw),
-    paddingVertical: Math.round(10 * sh),
-    shadowColor: '#050816',
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.26,
-    shadowRadius: 26,
-    elevation: 8,
-  },
-  statsRow: {
+  statsBar: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: Math.round(6 * sw),
-  },
-  statPill: {
     backgroundColor: 'rgba(255,255,255,0.90)',
-    borderRadius: 16,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    minWidth: Math.round(62 * sw),
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#050816',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    elevation: 7,
+  },
+  statSegment: {
+    flex: 1,
     alignItems: 'center',
+    paddingVertical: Math.round(9 * sh),
   },
-  statPillEmphasized: {
-    paddingHorizontal: 10,
-    minWidth: Math.round(92 * sw),
+  statSegmentCenter: {
+    backgroundColor: 'rgba(120, 212, 160, 0.18)',
   },
-  statPillValue: {
+  statDivider: {
+    width: 1,
+    backgroundColor: 'rgba(0,0,0,0.09)',
+    marginVertical: Math.round(6 * sh),
+  },
+  statSegmentValue: {
     color: COLORS.textDark,
-    fontSize: Math.round(13 * sw),
+    fontSize: Math.round(15 * sw),
     fontWeight: '900',
     textAlign: 'center',
   },
-  statPillValueEmphasized: {
-    fontSize: Math.round(26 * sw),
-    lineHeight: Math.round(28 * sw),
+  statSegmentValueCenter: {
+    fontSize: Math.round(17 * sw),
   },
-  statPillLabel: {
+  statSegmentLabel: {
     color: COLORS.textMuted,
     fontSize: Math.round(9 * sw),
     fontWeight: '600',
-    marginTop: 1,
+    marginTop: 2,
     textAlign: 'center',
   },
 
