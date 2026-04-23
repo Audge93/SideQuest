@@ -44,9 +44,7 @@ export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
           useNativeDriver: true,
         }),
       ]),
-      // Phase 2: Hold so the player reads the back (2.5s)
-      Animated.delay(2500),
-      // Phase 3: Flip the card over (0.8s)
+      // Phase 2: Flip the card over (0.8s)
       Animated.timing(flipAnim, {
         toValue: 1,
         duration: 800,
