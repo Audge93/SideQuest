@@ -64,10 +64,24 @@ function getCategoryForBadge(badgeId: string): string | null {
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
-  const { player, session, updatePlayerName, resetAllData } = useGameStore();
+  const { player, session, saveSlots, activeSlotId, updatePlayerName, renameActiveSlot, resetAllData } = useGameStore();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(player.name);
+  const [editingGameName, setEditingGameName] = useState(false);
+  const [gameNameInput, setGameNameInput] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  const activeSlot = saveSlots.find(s => s && s.id === activeSlotId) ?? null;
+
+  const handleSaveGameName = () => {
+    const trimmed = gameNameInput.trim();
+    if (!trimmed) {
+      Alert.alert('Name Required', 'Please enter a game name.');
+      return;
+    }
+    renameActiveSlot(trimmed);
+    setEditingGameName(false);
+  };
 
   // Saves the edited profile name back into global state after basic validation.
   const handleSaveName = () => {
@@ -124,6 +138,37 @@ export default function ProfileScreen() {
           <Text style={{ fontSize: 15, color: '#fff', fontWeight: '800' }}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.pageTitle}>Profile</Text>
+
+        {/* Current game name — only shown when there is an active session */}
+        {session && activeSlot && (
+          <View style={styles.playerCard}>
+            <Text style={[styles.scoreLabel, { marginBottom: 6 }]}>CURRENT GAME</Text>
+            {editingGameName ? (
+              <View style={styles.nameEditRow}>
+                <TextInput
+                  style={styles.nameInput}
+                  value={gameNameInput}
+                  onChangeText={setGameNameInput}
+                  autoFocus
+                  maxLength={30}
+                  placeholderTextColor={COLORS.textLight}
+                  selectionColor={COLORS.green}
+                />
+                <TouchableOpacity style={styles.saveBtn} onPress={handleSaveGameName}>
+                  <Text style={styles.saveBtnText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.nameRow}
+                onPress={() => { setGameNameInput(activeSlot.name); setEditingGameName(true); }}
+              >
+                <Text style={styles.playerName}>{activeSlot.name}</Text>
+                <Text style={styles.editIcon}>✏️</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* High-level identity and progression snapshot for the current player. */}
         <View style={styles.playerCard}>

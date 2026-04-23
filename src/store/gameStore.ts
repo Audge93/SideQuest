@@ -136,13 +136,14 @@ interface GameState {
   updatePlayerName: (name: string) => void;
 
   // Session lifecycle.
-  startSession: () => void;
+  startSession: (customName?: string) => void;
   endSession: () => void;
 
   // Save/load management.
   saveGame: (slotId: string, name?: string) => void;
   loadSlot: (slotId: string) => void;
   deleteSlot: (slotId: string) => void;
+  renameActiveSlot: (name: string) => void;
   autoSave: () => void;
   switchPark: (newParkIds: string[]) => void;
 
@@ -453,7 +454,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   // ─── Session lifecycle ────────────────────────────────────────────────────
 
   /** Creates a new game session — builds task pools, draws initial hand + challenges, assigns to save slot */
-  startSession: () => {
+  startSession: (customName?: string) => {
     const { settings, saveSlots } = get();
 
     // New sessions automatically claim the first empty save slot so the player
@@ -483,12 +484,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       completedTasks: [],
     };
 
-    // Build default slot name: "Mar 29 - Magic Kingdom"
+    // Build default slot name: "Mar 29 - Magic Kingdom" (overridden by customName if provided)
     const date = new Date();
     const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const formatted = `${monthNames[date.getMonth()]} ${date.getDate()}`;
     const parkName = PARKS.find(p => p.id === settings.parkIds[0])?.name ?? 'Unknown Park';
-    const slotName = `${formatted} - ${parkName}`;
+    const slotName = customName?.trim() || `${formatted} - ${parkName}`;
 
     const slot: SaveSlot = {
       id: `slot-${Date.now()}`,
@@ -608,6 +609,17 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     set(updates as any);
+    get().saveToStorage();
+  },
+
+  /** Rename the currently active save slot */
+  renameActiveSlot: (name) => {
+    const { saveSlots, activeSlotId } = get();
+    if (!activeSlotId) return;
+    const newSlots = saveSlots.map(s =>
+      s && s.id === activeSlotId ? { ...s, name: name.trim() } : s
+    );
+    set({ saveSlots: newSlots } as any);
     get().saveToStorage();
   },
 
