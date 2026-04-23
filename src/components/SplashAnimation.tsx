@@ -94,19 +94,9 @@ export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
     outputRange: [1, 1, 0, 0],
   });
 
-  const outlineStyle = {
-    textShadow: '-2px -2px 0 #3D2260, 2px -2px 0 #3D2260, -2px 2px 0 #3D2260, 2px 2px 0 #3D2260',
-  } as any;
-
   return (
     <Animated.View style={[styles.container, { opacity: containerOpacity }]}>
       <StatusBar barStyle="light-content" />
-
-      {/* Static sticker — present from the first frame, not animated */}
-      <View style={styles.sticker}>
-        <Text style={[styles.stickerLine, outlineStyle]}>THEME PARK</Text>
-        <Text style={[styles.stickerLine, outlineStyle]}>SCAVENGER HUNT</Text>
-      </View>
 
       {/* Card animation group */}
       <Animated.View
@@ -182,32 +172,6 @@ const styles = StyleSheet.create({
   },
   cardGroup: {
     alignItems: 'center',
-  },
-  sticker: {
-    position: 'absolute',
-    bottom: 110,
-    alignSelf: 'center',
-    backgroundColor: '#FFD700',
-    paddingHorizontal: 22,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 3,
-    borderColor: '#3D2260',
-    transform: [{ rotate: '-4deg' }],
-    shadowColor: '#2D1A4E',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.55,
-    shadowRadius: 0,
-    elevation: 8,
-    alignItems: 'center',
-  },
-  stickerLine: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    letterSpacing: 3,
-    lineHeight: 26,
   },
   cardWrapper: {
     width: CARD_W,
