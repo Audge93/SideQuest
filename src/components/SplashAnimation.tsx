@@ -44,8 +44,8 @@ export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
           useNativeDriver: true,
         }),
       ]),
-      // Phase 2: Hold so the player reads the back (5s)
-      Animated.delay(5000),
+      // Phase 2: Hold so the player reads the back (2.5s)
+      Animated.delay(2500),
       // Phase 3: Flip the card over (0.8s)
       Animated.timing(flipAnim, {
         toValue: 1,
@@ -97,62 +97,67 @@ export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
   return (
     <Animated.View style={[styles.container, { opacity: containerOpacity }]}>
       <StatusBar barStyle="light-content" />
+      {/* Group: sticker + card animate together (float in, pop off) */}
       <Animated.View
         style={[
-          styles.cardWrapper,
+          styles.cardGroup,
           {
             opacity: cardOpacity,
-            transform: [
-              { translateY },
-              { scale: scaleAnim },
-            ],
+            transform: [{ translateY }, { scale: scaleAnim }],
           },
         ]}
       >
-        {/* Back of card (shown first, flips away) */}
-        <Animated.View
-          style={[
-            styles.cardFace,
-            styles.cardBack,
-            {
-              opacity: backOpacity,
-              transform: [{ perspective: 1000 }, { rotateY: backRotation }],
-            },
-          ]}
-        >
-          <View style={styles.backPattern}>
-            <View style={styles.backInnerBorder}>
-              <Text style={styles.backWordTop}>SIDE</Text>
-              <View style={styles.cardDivider}>
-                <View style={styles.backDividerLine} />
-                <Text style={styles.backDividerStar}>✦</Text>
-                <View style={styles.backDividerLine} />
-              </View>
-              <Text style={styles.backWordBottom}>QUEST</Text>
-            </View>
-          </View>
+        {/* Sticker — floats above the card, fades in with the front face */}
+        <Animated.View style={[styles.sticker, { opacity: frontOpacity }]}>
+          <Text style={styles.stickerText}>Theme Park · Scavenger Hunt</Text>
         </Animated.View>
 
-        {/* Front of card (logo — revealed by flip) */}
-        <Animated.View
-          style={[
-            styles.cardFace,
-            styles.cardFront,
-            {
-              opacity: frontOpacity,
-              transform: [{ perspective: 1000 }, { rotateY: frontRotation }],
-            },
-          ]}
-        >
-          <Text style={styles.cardS}>S</Text>
-          <View style={styles.cardDivider}>
-            <View style={styles.cardDividerLine} />
-            <Text style={styles.cardDividerStar}>✦</Text>
-            <View style={styles.cardDividerLine} />
-          </View>
-          <Text style={styles.cardQ}>Q</Text>
-          <Text style={styles.cardTagline}>Theme Park{'\n'}Scavenger Hunt</Text>
-        </Animated.View>
+        {/* Card */}
+        <View style={styles.cardWrapper}>
+          {/* Back of card (shown first, flips away) */}
+          <Animated.View
+            style={[
+              styles.cardFace,
+              styles.cardBack,
+              {
+                opacity: backOpacity,
+                transform: [{ perspective: 1000 }, { rotateY: backRotation }],
+              },
+            ]}
+          >
+            <View style={styles.backPattern}>
+              <View style={styles.backInnerBorder}>
+                <Text style={styles.backWordTop}>SIDE</Text>
+                <View style={styles.cardDivider}>
+                  <View style={styles.backDividerLine} />
+                  <Text style={styles.backDividerStar}>✦</Text>
+                  <View style={styles.backDividerLine} />
+                </View>
+                <Text style={styles.backWordBottom}>QUEST</Text>
+              </View>
+            </View>
+          </Animated.View>
+
+          {/* Front of card (logo — revealed by flip) */}
+          <Animated.View
+            style={[
+              styles.cardFace,
+              styles.cardFront,
+              {
+                opacity: frontOpacity,
+                transform: [{ perspective: 1000 }, { rotateY: frontRotation }],
+              },
+            ]}
+          >
+            <Text style={styles.cardS}>S</Text>
+            <View style={styles.cardDivider}>
+              <View style={styles.cardDividerLine} />
+              <Text style={styles.cardDividerStar}>✦</Text>
+              <View style={styles.cardDividerLine} />
+            </View>
+            <Text style={styles.cardQ}>Q</Text>
+          </Animated.View>
+        </View>
       </Animated.View>
     </Animated.View>
   );
@@ -169,6 +174,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 999,
+  },
+  cardGroup: {
+    alignItems: 'center',
+  },
+  sticker: {
+    backgroundColor: '#FFE566',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 10,
+    transform: [{ rotate: '-3deg' }],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  stickerText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#5A3E8A',
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   cardWrapper: {
     width: CARD_W,
@@ -269,15 +298,5 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#9B7FD4',
     letterSpacing: 4,
-  },
-  cardTagline: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#B8A9D4',
-    letterSpacing: 0.8,
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 14,
-    textTransform: 'uppercase',
   },
 });
