@@ -274,6 +274,7 @@ export default function ProfileScreen() {
                 onPress={() => {
                   resetAllData();
                   setShowResetConfirm(false);
+                  navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
                 }}
                 activeOpacity={0.7}
               >
