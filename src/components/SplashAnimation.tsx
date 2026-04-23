@@ -94,10 +94,21 @@ export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
     outputRange: [1, 1, 0, 0],
   });
 
+  const outlineStyle = {
+    textShadow: '-2px -2px 0 #3D2260, 2px -2px 0 #3D2260, -2px 2px 0 #3D2260, 2px 2px 0 #3D2260',
+  } as any;
+
   return (
     <Animated.View style={[styles.container, { opacity: containerOpacity }]}>
       <StatusBar barStyle="light-content" />
-      {/* Group: sticker + card animate together (float in, pop off) */}
+
+      {/* Static sticker — present from the first frame, not animated */}
+      <View style={styles.sticker}>
+        <Text style={[styles.stickerLine, outlineStyle]}>THEME PARK</Text>
+        <Text style={[styles.stickerLine, outlineStyle]}>SCAVENGER HUNT</Text>
+      </View>
+
+      {/* Card animation group */}
       <Animated.View
         style={[
           styles.cardGroup,
@@ -107,12 +118,6 @@ export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
           },
         ]}
       >
-        {/* Sticker — floats above the card, fades in with the front face */}
-        <Animated.View style={[styles.sticker, { opacity: frontOpacity }]}>
-          <Text style={styles.stickerText}>Theme Park · Scavenger Hunt</Text>
-        </Animated.View>
-
-        {/* Card */}
         <View style={styles.cardWrapper}>
           {/* Back of card (shown first, flips away) */}
           <Animated.View
@@ -179,25 +184,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sticker: {
-    backgroundColor: '#FFE566',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginBottom: 10,
-    transform: [{ rotate: '-3deg' }],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 4,
-    elevation: 4,
+    position: 'absolute',
+    bottom: 110,
+    alignSelf: 'center',
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 3,
+    borderColor: '#3D2260',
+    transform: [{ rotate: '-4deg' }],
+    shadowColor: '#2D1A4E',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.55,
+    shadowRadius: 0,
+    elevation: 8,
+    alignItems: 'center',
   },
-  stickerText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#5A3E8A',
+  stickerLine: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#FFFFFF',
     textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 3,
+    lineHeight: 26,
   },
   cardWrapper: {
     width: CARD_W,
