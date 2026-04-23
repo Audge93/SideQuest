@@ -61,23 +61,25 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
       <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-        {/* Back button */}
-        <TouchableOpacity
-          style={{
-            alignSelf: 'flex-start',
-            backgroundColor: COLORS.blue,
-            borderRadius: RADII.button,
-            paddingVertical: 10,
-            paddingHorizontal: 20,
-            marginBottom: 12,
-            borderBottomWidth: 3,
-            borderBottomColor: COLORS.blueDark,
-          }}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <Text style={{ fontSize: 15, color: '#fff', fontWeight: '800' }}>‹ Back</Text>
-        </TouchableOpacity>
+        {/* Header row: back on left, return-to-menu on right when in-game */}
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.backBtnText}>‹ Back</Text>
+          </TouchableOpacity>
+          {session && (
+            <TouchableOpacity
+              style={styles.returnMenuBtn}
+              onPress={handleReturnToMenu}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.returnMenuBtnText}>Main Menu</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <Text style={styles.pageTitle}>Settings</Text>
 
         {/* Height filtering changes which ride tasks are allowed to appear when
@@ -217,15 +219,6 @@ export default function SettingsScreen() {
           </SettingRow>
         </SectionCard>
 
-        {session && (
-          <TouchableOpacity
-            style={styles.returnMenuBtn}
-            onPress={handleReturnToMenu}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.returnMenuBtnText}>Return to Main Menu</Text>
-          </TouchableOpacity>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -440,13 +433,30 @@ const styles = StyleSheet.create({
   themeChipTextSelected: {
     color: COLORS.greenDark,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  backBtn: {
+    backgroundColor: COLORS.blue,
+    borderRadius: RADII.button,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderBottomWidth: 3,
+    borderBottomColor: COLORS.blueDark,
+  },
+  backBtnText: {
+    fontSize: 15,
+    color: '#fff',
+    fontWeight: '800',
+  },
   returnMenuBtn: {
-    marginTop: 24,
-    marginBottom: 8,
     backgroundColor: COLORS.red,
     borderRadius: RADII.button,
-    paddingVertical: 14,
-    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderBottomWidth: 3,
     borderBottomColor: '#d06060',
   },
