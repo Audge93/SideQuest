@@ -773,6 +773,7 @@ const styles = StyleSheet.create({
     color: COLORS.textDark,
     borderWidth: 1.5,
     borderColor: COLORS.borderMedium,
+    marginBottom: 20,
   },
   modalDivider: {
     height: 1,
