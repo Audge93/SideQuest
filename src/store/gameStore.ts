@@ -218,11 +218,23 @@ function buildTaskPools(settings: Settings): { small: Task[]; big: Task[] } {
   return { small: shuffle(small), big: shuffle(big) };
 }
 
-/** Draws up to `count` tasks from a pool, excluding already-used tasks */
+const MAX_TRIVIA_IN_HAND = 3;
+
+/** Draws up to `count` tasks from a pool, excluding already-used tasks, capping trivia at MAX_TRIVIA_IN_HAND */
 function drawFromPool(pool: Task[], exclude: Task[], count: number): Task[] {
   const excludeIds = new Set(exclude.map(t => t.id));
   const available = pool.filter(t => !excludeIds.has(t.id));
-  return available.slice(0, count);
+  const result: Task[] = [];
+  let triviaCount = 0;
+  for (const task of available) {
+    if (result.length >= count) break;
+    if (task.category === 'trivia') {
+      if (triviaCount >= MAX_TRIVIA_IN_HAND) continue;
+      triviaCount++;
+    }
+    result.push(task);
+  }
+  return result;
 }
 
 /**
@@ -253,12 +265,16 @@ function replaceInArray(arr: Task[], taskId: string, replacement: Task | undefin
 }
 
 /** Picks a random replacement task from the pool that isn't in any exclusion list */
-function pickReplacement(pool: Task[], exclude: Task[], alsoExclude?: Task[]): Task | undefined {
+function pickReplacement(pool: Task[], exclude: Task[], alsoExclude?: Task[], handAfterRemoval?: Task[]): Task | undefined {
   const excludeIds = new Set(exclude.map(t => t.id));
   if (alsoExclude) {
     for (const t of alsoExclude) excludeIds.add(t.id);
   }
-  const available = pool.filter(t => !excludeIds.has(t.id));
+  const triviaInHand = handAfterRemoval ? handAfterRemoval.filter(t => t.category === 'trivia').length : 0;
+  let available = pool.filter(t => !excludeIds.has(t.id));
+  if (triviaInHand >= MAX_TRIVIA_IN_HAND) {
+    available = available.filter(t => t.category !== 'trivia');
+  }
   if (available.length === 0) return undefined;
   return available[Math.floor(Math.random() * available.length)];
 }
@@ -684,7 +700,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       task = session.hand.find(t => t.id === taskId);
       if (!task) return;
       const { small } = buildTaskPools(settings);
-      const replacement = pickReplacement(small, newHand, session.completedTasks);
+      const handAfterRemoval = newHand.filter(t => t.id !== taskId);
+      const replacement = pickReplacement(small, newHand, session.completedTasks, handAfterRemoval);
       newHand = replaceInArray(newHand, taskId, replacement);
     }
 
@@ -756,7 +773,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!task) return;
 
     const { small } = buildTaskPools(settings);
-    const replacement = pickReplacement(small, session.hand, session.completedTasks);
+    const handAfterRemoval = session.hand.filter(t => t.id !== taskId);
+    const replacement = pickReplacement(small, session.hand, session.completedTasks, handAfterRemoval);
     const newHand = replaceInArray(session.hand, taskId, replacement);
 
     const updatedSession: Session = {
@@ -804,7 +822,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       if (!task) return;
 
       const { small } = buildTaskPools(settings);
-      const replacement = pickReplacement(small, session.hand, session.completedTasks);
+      const handAfterRemoval = session.hand.filter(t => t.id !== taskId);
+      const replacement = pickReplacement(small, session.hand, session.completedTasks, handAfterRemoval);
       const newHand = replaceInArray(session.hand, taskId, replacement);
 
       const updatedSession: Session = {

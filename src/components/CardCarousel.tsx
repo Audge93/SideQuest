@@ -559,13 +559,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Math.round(8 * sw),
     paddingHorizontal: Math.round(12 * sw),
-    paddingTop: Math.round(14 * sh),
-    paddingBottom: Math.round(12 * sh),
+    paddingTop: Math.round(16 * sh),
+    paddingBottom: Math.round(14 * sh),
   },
   cardActionBtn: {
     flex: 1,
-    paddingVertical: Math.round(8 * sh),
-    borderRadius: Math.round(10 * sw),
+    paddingVertical: Math.round(9.2 * sh),
+    borderRadius: Math.round(12 * sw),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
   completeBtnText: {
     color: COLORS.white,
     fontWeight: '800',
-    fontSize: Math.round(13 * sw),
+    fontSize: Math.round(15 * sw),
   },
   discardBtn: {
     backgroundColor: COLORS.white,
@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
   discardBtnText: {
     color: COLORS.textBody,
     fontWeight: '700',
-    fontSize: Math.round(13 * sw),
+    fontSize: Math.round(15 * sw),
   },
   disabledBtn: {
     backgroundColor: COLORS.surfaceSecondary,
