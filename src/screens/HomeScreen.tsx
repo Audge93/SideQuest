@@ -1032,8 +1032,9 @@ const styles = StyleSheet.create({
   },
   continueBtnText: {
     color: COLORS.white,
-    fontWeight: '700',
-    fontSize: 16,
+    fontWeight: '900',
+    fontSize: 18,
+    letterSpacing: 0.5,
   },
 
   // Top nav icons
