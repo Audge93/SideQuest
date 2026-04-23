@@ -418,7 +418,6 @@ export default function HomeScreen() {
                 />
 
                 {/* Game Name */}
-                <View style={styles.modalDivider} />
                 <Text style={styles.modalFieldLabel}>GAME NAME</Text>
                 <TextInput
                   style={styles.modalNameInput}
@@ -436,7 +435,6 @@ export default function HomeScreen() {
                 />
 
                 {/* Resort Dropdown */}
-                <View style={styles.modalDivider} />
                 <Text style={styles.modalFieldLabel}>RESORT</Text>
                 <TouchableOpacity
                   style={styles.modalDropdown}
