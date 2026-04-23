@@ -44,7 +44,9 @@ export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
           useNativeDriver: true,
         }),
       ]),
-      // Phase 2: Flip the card over (0.8s)
+      // Phase 2: Hold so the player reads the back (5s)
+      Animated.delay(5000),
+      // Phase 3: Flip the card over (0.8s)
       Animated.timing(flipAnim, {
         toValue: 1,
         duration: 800,
@@ -120,9 +122,13 @@ export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
         >
           <View style={styles.backPattern}>
             <View style={styles.backInnerBorder}>
-              <Text style={styles.backDiamond}>✦</Text>
-              <Text style={styles.backDiamond}>✦</Text>
-              <Text style={styles.backDiamond}>✦</Text>
+              <Text style={styles.backWordTop}>SIDE</Text>
+              <View style={styles.cardDivider}>
+                <View style={styles.backDividerLine} />
+                <Text style={styles.backDividerStar}>✦</Text>
+                <View style={styles.backDividerLine} />
+              </View>
+              <Text style={styles.backWordBottom}>QUEST</Text>
             </View>
           </View>
         </Animated.View>
@@ -145,6 +151,7 @@ export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
             <View style={styles.cardDividerLine} />
           </View>
           <Text style={styles.cardQ}>Q</Text>
+          <Text style={styles.cardTagline}>Theme Park{'\n'}Scavenger Hunt</Text>
         </Animated.View>
       </Animated.View>
     </Animated.View>
@@ -204,9 +211,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 16,
   },
-  backDiamond: {
-    fontSize: 22,
-    color: 'rgba(255,255,255,0.5)',
+  backWordTop: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: 'rgba(255,255,255,0.92)',
+    letterSpacing: 3,
+  },
+  backWordBottom: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: 'rgba(255,255,255,0.92)',
+    letterSpacing: 3,
+  },
+  backDividerLine: {
+    flex: 1,
+    height: 2.5,
+    backgroundColor: 'rgba(255,255,255,0.35)',
+    borderRadius: 1,
+  },
+  backDividerStar: {
+    fontSize: 18,
+    marginHorizontal: 8,
+    color: 'rgba(255,255,255,0.6)',
   },
 
   // Front of card — white with S ✦ Q logo
@@ -243,5 +269,15 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#9B7FD4',
     letterSpacing: 4,
+  },
+  cardTagline: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#B8A9D4',
+    letterSpacing: 0.8,
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 14,
+    textTransform: 'uppercase',
   },
 });
