@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Slider from '@react-native-community/slider';
@@ -33,7 +34,22 @@ const CATEGORY_INFO: { key: keyof CategoryToggles; label: string; icon: string }
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
-  const { settings, updateSettings, updateCategoryToggle, toggleRide } = useGameStore();
+  const { settings, updateSettings, updateCategoryToggle, toggleRide, session } = useGameStore();
+
+  const handleReturnToMenu = () => {
+    Alert.alert(
+      'Return to Main Menu?',
+      'Your game is saved and you can continue it later.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Return',
+          style: 'destructive',
+          onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }),
+        },
+      ]
+    );
+  };
   const [showRideDrilldown, setShowRideDrilldown] = useState(false);
 
   // The ride drilldown is scoped to the currently selected park so the player
@@ -200,6 +216,16 @@ export default function SettingsScreen() {
             />
           </SettingRow>
         </SectionCard>
+
+        {session && (
+          <TouchableOpacity
+            style={styles.returnMenuBtn}
+            onPress={handleReturnToMenu}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.returnMenuBtnText}>Return to Main Menu</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -413,5 +439,20 @@ const styles = StyleSheet.create({
   },
   themeChipTextSelected: {
     color: COLORS.greenDark,
+  },
+  returnMenuBtn: {
+    marginTop: 24,
+    marginBottom: 8,
+    backgroundColor: COLORS.red,
+    borderRadius: RADII.button,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderBottomWidth: 3,
+    borderBottomColor: '#d06060',
+  },
+  returnMenuBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
   },
 });
