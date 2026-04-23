@@ -9,7 +9,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Task, Session, Settings, Player, Badge, BadgeTier, CategoryToggles, ParkThemeTag, SaveSlot, MAX_SAVE_SLOTS } from '../types';
-import { SMALL_TASKS, BIG_TASKS, generateRideTasks } from '../data/tasks';
+import { SMALL_TASKS, BIG_TASKS, RIDE_ACTIVITY_TASKS, generateRideTasks } from '../data/tasks';
 import { TRIVIA_TASKS } from '../data/trivia';
 import { RIDES, PARKS } from '../data/parks';
 
@@ -202,8 +202,16 @@ function buildTaskPools(settings: Settings): { small: Task[]; big: Task[] } {
     const filteredRides = heightFilterEnabled
       ? parkRides.filter(r => r.heightRequirement === 0 || r.heightRequirement <= minHeightInches)
       : parkRides;
-    const rideTasks = generateRideTasks(filteredRides);
-    big = [...big, ...rideTasks];
+    big = [...big, ...generateRideTasks(filteredRides)];
+
+    // Ride-activity tasks (e.g. "Score 100k on Toy Story Mania") — filtered by
+    // selected park and the player's height setting, same as generated ride tasks.
+    const rideActivityTasks = RIDE_ACTIVITY_TASKS.filter(t => {
+      if (!parkIds.includes(t.parkId!)) return false;
+      if (heightFilterEnabled && t.heightRequirement! > minHeightInches) return false;
+      return matchesTheme(t);
+    });
+    big = [...big, ...rideActivityTasks];
   }
 
   return { small: shuffle(small), big: shuffle(big) };

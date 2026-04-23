@@ -234,6 +234,67 @@ export const BIG_TASKS: Task[] = [
   { id: 'seek-u-m-1', size: 'big', category: 'scavenger', displayCategory: 'Seek', description: 'Find themed candy from 3 different franchise shops', points: 50, difficulty: 'medium', tag: 'universal' },
 ];
 
+// ─── Ride Activity Tasks ────────────────────────────────────────────────────
+// Tasks tied to specific rides that require meeting that ride's height
+// requirement. Unlike generated ride tasks ("Ride X"), these set specific
+// in-ride objectives. Filtered at runtime by park selection and height filter.
+
+export const RIDE_ACTIVITY_TASKS: Task[] = [
+
+  // ── Magic Kingdom ──────────────────────────────────────────────────────────
+  { id: 'rideact-buzz-mk-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Score higher than 100,000 on Buzz Lightyear's Space Ranger Spin", points: 75, difficulty: 'hard', rideId: 'wdw-mk-buzz-lightyears-space-ranger-spin', parkId: 'wdw-mk', heightRequirement: 0, tag: 'disney' },
+  { id: 'rideact-buzz-mk-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Target only Z targets on Buzz Lightyear's Space Ranger Spin", points: 50, difficulty: 'medium', rideId: 'wdw-mk-buzz-lightyears-space-ranger-spin', parkId: 'wdw-mk', heightRequirement: 0, tag: 'disney' },
+  { id: 'rideact-pirates-mk-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Count every time you hear 'Yo ho, yo ho' on Pirates of the Caribbean", points: 50, difficulty: 'medium', rideId: 'wdw-mk-pirates-of-the-caribbean', parkId: 'wdw-mk', heightRequirement: 0, tag: 'disney' },
+  { id: 'rideact-spacemtn-mk-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Keep your hands up for the entire Space Mountain ride', points: 50, difficulty: 'medium', rideId: 'wdw-mk-space-mountain', parkId: 'wdw-mk', heightRequirement: 44, tag: 'disney' },
+  { id: 'rideact-bigthunder-mk-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Spot the hidden skull on Big Thunder Mountain Railroad', points: 50, difficulty: 'medium', rideId: 'wdw-mk-big-thunder-mountain-railroad', parkId: 'wdw-mk', heightRequirement: 40, tag: 'disney' },
+  { id: 'rideact-speedway-mk-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Complete Tomorrowland Speedway without touching the guide rail', points: 75, difficulty: 'hard', rideId: 'wdw-mk-tomorrowland-speedway', parkId: 'wdw-mk', heightRequirement: 32, tag: 'disney' },
+
+  // ── Hollywood Studios ──────────────────────────────────────────────────────
+  { id: 'rideact-tsm-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Score higher than 100,000 points on Toy Story Mania!', points: 75, difficulty: 'hard', rideId: 'wdw-hs-toy-story-mania', parkId: 'wdw-hs', heightRequirement: 0, tag: 'disney' },
+  { id: 'rideact-tsm-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Beat everyone in your group's score on Toy Story Mania!", points: 50, difficulty: 'medium', rideId: 'wdw-hs-toy-story-mania', parkId: 'wdw-hs', heightRequirement: 0, tag: 'disney' },
+  { id: 'rideact-tot-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Keep your hands raised for the entire Tower of Terror drop sequence', points: 50, difficulty: 'medium', rideId: 'wdw-hs-tower-of-terror', parkId: 'wdw-hs', heightRequirement: 40, tag: 'disney' },
+  { id: 'rideact-tot-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Count the exact number of elevator drops on Tower of Terror', points: 75, difficulty: 'hard', rideId: 'wdw-hs-tower-of-terror', parkId: 'wdw-hs', heightRequirement: 40, tag: 'disney' },
+  { id: 'rideact-falcon-hs-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Claim the pilot seat on Millennium Falcon: Smugglers Run', points: 50, difficulty: 'medium', rideId: 'wdw-hs-millennium-falcon-smugglers-run', parkId: 'wdw-hs', heightRequirement: 38, tag: 'disney' },
+  { id: 'rideact-falcon-hs-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Complete Millennium Falcon: Smugglers Run with no failed shots', points: 75, difficulty: 'hard', rideId: 'wdw-hs-millennium-falcon-smugglers-run', parkId: 'wdw-hs', heightRequirement: 38, tag: 'disney' },
+  { id: 'rideact-rotr-hs-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Count every stormtrooper you encounter on Rise of the Resistance', points: 50, difficulty: 'medium', rideId: 'wdw-hs-star-wars-rise-of-the-resistance', parkId: 'wdw-hs', heightRequirement: 40, tag: 'disney' },
+
+  // ── EPCOT ──────────────────────────────────────────────────────────────────
+  { id: 'rideact-testtrack-ep-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Design a car on Test Track that scores 100% in all categories', points: 75, difficulty: 'hard', rideId: 'wdw-ep-test-track', parkId: 'wdw-ep', heightRequirement: 40, tag: 'disney' },
+  { id: 'rideact-soarin-ep-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Spot 5 different landmarks on Soarin' Around the World", points: 50, difficulty: 'medium', rideId: 'wdw-ep-soarin-around-the-world', parkId: 'wdw-ep', heightRequirement: 40, tag: 'disney' },
+  { id: 'rideact-sse-ep-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Count the number of scenes on Spaceship Earth', points: 75, difficulty: 'hard', rideId: 'wdw-ep-spaceship-earth', parkId: 'wdw-ep', heightRequirement: 0, tag: 'disney' },
+  { id: 'rideact-mspace-ep-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Complete Mission: SPACE orange mission with zero team errors', points: 75, difficulty: 'hard', rideId: 'wdw-ep-mission-space', parkId: 'wdw-ep', heightRequirement: 40, tag: 'disney' },
+
+  // ── Animal Kingdom ─────────────────────────────────────────────────────────
+  { id: 'rideact-safari-ak-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Spot 10 different animals on Kilimanjaro Safaris', points: 50, difficulty: 'medium', rideId: 'wdw-ak-kilimanjaro-safaris', parkId: 'wdw-ak', heightRequirement: 0, tag: 'disney' },
+  { id: 'rideact-everest-ak-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Keep your hands up through the backwards section of Expedition Everest', points: 50, difficulty: 'medium', rideId: 'wdw-ak-expedition-everest', parkId: 'wdw-ak', heightRequirement: 44, tag: 'disney' },
+  { id: 'rideact-kali-ak-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Correctly predict which seat gets the most wet on Kali River Rapids', points: 25, difficulty: 'easy', rideId: 'wdw-ak-kali-river-rapids', parkId: 'wdw-ak', heightRequirement: 38, tag: 'disney' },
+
+  // ── Disneyland ─────────────────────────────────────────────────────────────
+  { id: 'rideact-indy-dl-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Count every skull you spot in the Indiana Jones Adventure queue', points: 50, difficulty: 'medium', rideId: 'dl-dl-indiana-jones-adventure', parkId: 'dl-dl', heightRequirement: 46, tag: 'disney' },
+  { id: 'rideact-buzz-dl-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Score higher than 100,000 on Buzz Lightyear Astro Blasters', points: 75, difficulty: 'hard', rideId: 'dl-dl-buzz-lightyear-astro-blasters', parkId: 'dl-dl', heightRequirement: 0, tag: 'disney' },
+  { id: 'rideact-pirates-dl-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Count every time you spot Captain Jack Sparrow on Pirates of the Caribbean', points: 50, difficulty: 'medium', rideId: 'dl-dl-pirates-of-the-caribbean', parkId: 'dl-dl', heightRequirement: 0, tag: 'disney' },
+
+  // ── Disney California Adventure ────────────────────────────────────────────
+  { id: 'rideact-webslinger-dca-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Score higher than 80,000 on WEB SLINGERS: A Spider-Man Adventure', points: 75, difficulty: 'hard', rideId: 'dl-dca-web-slingers-a-spider-man-adventure', parkId: 'dl-dca', heightRequirement: 0, tag: 'disney' },
+  { id: 'rideact-tsm-dca-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Score higher than 100,000 on Toy Story Midway Mania!', points: 75, difficulty: 'hard', rideId: 'dl-dca-toy-story-midway-mania', parkId: 'dl-dca', heightRequirement: 0, tag: 'disney' },
+  { id: 'rideact-rsr-dca-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Win your race car heat on Radiator Springs Racers', points: 50, difficulty: 'medium', rideId: 'dl-dca-radiator-springs-racers', parkId: 'dl-dca', heightRequirement: 40, tag: 'disney' },
+
+  // ── Universal Studios Florida ──────────────────────────────────────────────
+  { id: 'rideact-mib-usf-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Score higher than 100,000 on MEN IN BLACK: Alien Attack', points: 75, difficulty: 'hard', rideId: 'uor-us-men-in-black-alien-attack', parkId: 'uor-us', heightRequirement: 42, tag: 'universal' },
+  { id: 'rideact-mib-usf-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Hit the spinning target on MEN IN BLACK: Alien Attack', points: 50, difficulty: 'medium', rideId: 'uor-us-men-in-black-alien-attack', parkId: 'uor-us', heightRequirement: 42, tag: 'universal' },
+
+  // ── Islands of Adventure ───────────────────────────────────────────────────
+  { id: 'rideact-spidey-ioa-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Count every villain on The Amazing Adventures of Spider-Man', points: 50, difficulty: 'medium', rideId: 'uor-ioa-amazing-adventures-of-spider-man', parkId: 'uor-ioa', heightRequirement: 40, tag: 'universal' },
+
+  // ── Epic Universe ──────────────────────────────────────────────────────────
+  { id: 'rideact-mariokart-eu-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Score higher than 5,000 points on Mario Kart: Bowser's Challenge", points: 50, difficulty: 'medium', rideId: 'uor-eu-mario-kart-bowsers-challenge', parkId: 'uor-eu', heightRequirement: 40, tag: 'universal' },
+  { id: 'rideact-mariokart-eu-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Beat Bowser's score on Mario Kart: Bowser's Challenge", points: 75, difficulty: 'hard', rideId: 'uor-eu-mario-kart-bowsers-challenge', parkId: 'uor-eu', heightRequirement: 40, tag: 'universal' },
+
+  // ── Universal Studios Hollywood ────────────────────────────────────────────
+  { id: 'rideact-mariokart-ush-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Score higher than 5,000 points on Mario Kart: Bowser's Challenge", points: 50, difficulty: 'medium', rideId: 'ush-us-mario-kart-bowsers-challenge', parkId: 'ush-us', heightRequirement: 40, tag: 'universal' },
+  { id: 'rideact-mariokart-ush-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Beat Bowser's score on Mario Kart: Bowser's Challenge", points: 75, difficulty: 'hard', rideId: 'ush-us-mario-kart-bowsers-challenge', parkId: 'ush-us', heightRequirement: 40, tag: 'universal' },
+];
+
 // ─── Ride Task Generator ────────────────────────────────────────────────────
 
 // Generates standardized ride challenge tasks while respecting any ride-level
