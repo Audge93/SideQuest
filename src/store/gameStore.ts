@@ -112,10 +112,6 @@ const DEFAULT_PLAYER: Player = {
   id: 'player-1',
   name: 'Player 1',
   color: '#89B4F7',
-  lifetimeScore: 0,
-  badges: DEFAULT_BADGES,
-  visitedParks: [],
-  categoryCompletions: {},
 };
 
 // ─── Store Types ──────────────────────────────────────────────────────────────
@@ -368,7 +364,7 @@ function checkBadges(
   categoryCounts: Record<string, number>,
   totalCompletions: number,
   currentStreak: number,
-  lifetimeScore: number,
+  sessionScore: number,
   visitedParks: string[],
 ): Badge[] {
   const countByCategory = (cat: string) => categoryCounts[cat] || 0;
@@ -396,10 +392,10 @@ function checkBadges(
       case 'streak-silver': earned = currentStreak >= 10; break;
       case 'streak-gold': earned = currentStreak >= 20; break;
       case 'streak-platinum': earned = currentStreak >= 30; break;
-      case 'score-bronze': earned = lifetimeScore >= 100; break;
-      case 'score-silver': earned = lifetimeScore >= 500; break;
-      case 'score-gold': earned = lifetimeScore >= 1000; break;
-      case 'score-platinum': earned = lifetimeScore >= 5000; break;
+      case 'score-bronze': earned = sessionScore >= 100; break;
+      case 'score-silver': earned = sessionScore >= 500; break;
+      case 'score-gold': earned = sessionScore >= 1000; break;
+      case 'score-platinum': earned = sessionScore >= 5000; break;
       case 'hopper-bronze': earned = visitedParks.length >= 2; break;
       case 'hopper-silver': earned = visitedParks.length >= 4; break;
       case 'hopper-gold': earned = visitedParks.length >= 6; break;
@@ -514,6 +510,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       lastSavedAt: Date.now(),
       session,
       settings: { ...settings },
+      badges: DEFAULT_BADGES.map(b => ({ ...b, earned: false, earnedAt: undefined })),
+      categoryCompletions: {},
+      visitedParks: [...settings.parkIds],
     };
 
     const newSlots = [...saveSlots];
@@ -523,48 +522,33 @@ export const useGameStore = create<GameState>((set, get) => ({
     get().saveToStorage();
   },
 
-  /** Ends the active session — merges score + completions into lifetime profile, checks badges */
+  /** Ends the active session — finalises badge state on the save slot, marks inactive */
   endSession: () => {
-    const { session, player } = get();
+    const { session, saveSlots, activeSlotId } = get();
     if (!session) return;
 
-    // Session score only becomes permanent lifetime score when the run ends.
-    const newLifetime = player.lifetimeScore + session.sessionScore;
-
-    // Deduplicate visited parks
-    const allVisited = [...new Set([...player.visitedParks, ...session.parkIds])];
-
-    // Merge session category completions into lifetime counts
-    const updatedCatCompletions = { ...(player.categoryCompletions || {}) };
+    // Build final category completion counts from the completed task list
+    const finalCatCounts: Record<string, number> = {};
     for (const t of session.completedTasks) {
-      updatedCatCompletions[t.category] = (updatedCatCompletions[t.category] || 0) + 1;
+      finalCatCounts[t.category] = (finalCatCounts[t.category] || 0) + 1;
     }
 
-    // Check badges using combined lifetime counts (no session tasks since they're now merged)
-    const totalCompletions = Object.values(updatedCatCompletions).reduce((a, b) => a + b, 0);
-    let updatedBadges = checkBadges(
-      player.badges, updatedCatCompletions, totalCompletions,
-      session.currentStreak, newLifetime, allVisited,
-    );
-    updatedBadges = checkBadges(
-      updatedBadges, updatedCatCompletions, totalCompletions,
-      session.currentStreak, newLifetime, allVisited,
-    );
-
-    const updatedPlayer: Player = {
-      ...player,
-      lifetimeScore: newLifetime,
-      badges: updatedBadges,
-      visitedParks: allVisited,
-      categoryCompletions: updatedCatCompletions,
-    };
-
-    // Remove the slot from saveSlots and clear activeSlotId
-    const { saveSlots, activeSlotId } = get();
-    const newSlots = saveSlots.map(s => (s && s.id === activeSlotId ? null : s));
+    // Keep the slot with its final badge/stats state so the player can review
+    // their results after the game ends. Clear activeSlotId so no game is "active".
+    const newSlots = saveSlots.map(s => {
+      if (s && s.id === activeSlotId) {
+        return {
+          ...s,
+          session: { ...session, active: false },
+          categoryCompletions: finalCatCounts,
+          visitedParks: [...new Set([...s.visitedParks, ...session.parkIds])],
+          lastSavedAt: Date.now(),
+        };
+      }
+      return s;
+    });
 
     set({
-      player: updatedPlayer,
       session: { ...session, active: false },
       saveSlots: newSlots,
       activeSlotId: null,
@@ -732,34 +716,44 @@ export const useGameStore = create<GameState>((set, get) => ({
       completedTasks: [...session.completedTasks, task],
     };
 
-    // Check badges after completion — combine lifetime + session counts
-    const { player } = get();
-    const newLifetime = player.lifetimeScore + newScore;
-    const allVisited = [...new Set([...player.visitedParks, ...updatedSession.parkIds])];
-    const combinedCounts = buildCategoryCounts(
-      player.categoryCompletions || {},
-      updatedSession.completedTasks,
-    );
-    const totalCompletions = Object.values(combinedCounts).reduce((a, b) => a + b, 0);
+    // Check badges using the active save slot's badge state (per-game, not lifetime)
+    const { saveSlots, activeSlotId } = get();
+    const activeSlot = saveSlots.find(s => s && s.id === activeSlotId);
 
-    let updatedBadges = checkBadges(
-      player.badges, combinedCounts, totalCompletions,
-      newStreak, newLifetime, allVisited,
-    );
-    // Run twice so completionist badges can see freshly earned category badges
-    updatedBadges = checkBadges(
-      updatedBadges, combinedCounts, totalCompletions,
-      newStreak, newLifetime, allVisited,
-    );
+    if (activeSlot) {
+      const allVisited = [...new Set([...activeSlot.visitedParks, ...updatedSession.parkIds])];
+      const combinedCounts = buildCategoryCounts(
+        activeSlot.categoryCompletions || {},
+        updatedSession.completedTasks,
+      );
+      const totalCompletions = Object.values(combinedCounts).reduce((a, b) => a + b, 0);
 
-    // Detect newly earned badges by id (safe across storage loads)
-    const freshlyEarned = findNewlyEarned(player.badges, updatedBadges);
+      let updatedBadges = checkBadges(
+        activeSlot.badges, combinedCounts, totalCompletions,
+        newStreak, newScore, allVisited,
+      );
+      // Run twice so completionist badges can see freshly earned category badges
+      updatedBadges = checkBadges(
+        updatedBadges, combinedCounts, totalCompletions,
+        newStreak, newScore, allVisited,
+      );
 
-    set({
-      session: updatedSession,
-      player: { ...player, badges: updatedBadges },
-      newlyEarnedBadges: [...get().newlyEarnedBadges, ...freshlyEarned],
-    });
+      const freshlyEarned = findNewlyEarned(activeSlot.badges, updatedBadges);
+
+      const newSlots = saveSlots.map(s =>
+        s && s.id === activeSlotId
+          ? { ...s, badges: updatedBadges, visitedParks: allVisited }
+          : s,
+      );
+
+      set({
+        session: updatedSession,
+        saveSlots: newSlots,
+        newlyEarnedBadges: [...get().newlyEarnedBadges, ...freshlyEarned],
+      });
+    } else {
+      set({ session: updatedSession });
+    }
     get().saveToStorage();
   },
 
@@ -844,18 +838,13 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // ─── Data management ──────────────────────────────────────────────────────
 
-  /** Wipes all progress — deep-clones badges, clears AsyncStorage, resets to defaults */
+  /** Wipes all save data — preserves profile name, clears all games and badges */
   resetAllData: async () => {
-    // Deep-clone badges so earned state is fully reset
-    const freshBadges = DEFAULT_BADGES.map(b => ({ ...b, earned: false, earnedAt: undefined }));
-    const freshPlayer = {
+    const { player } = get();
+    const freshPlayer: Player = {
       ...DEFAULT_PLAYER,
-      badges: freshBadges,
-      lifetimeScore: 0,
-      visitedParks: [] as string[],
-      categoryCompletions: {} as Record<string, number>,
+      name: player.name,
     };
-    // Clear storage first to prevent stale data on reload
     await AsyncStorage.removeItem('parkquest_state');
     set({
       player: freshPlayer,
@@ -864,7 +853,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       saveSlots: [null, null, null],
       activeSlotId: null,
     });
-    // Save clean state
     await get().saveToStorage();
   },
 
@@ -895,14 +883,35 @@ export const useGameStore = create<GameState>((set, get) => ({
             lastSavedAt: Date.now(),
             session,
             settings: saved.settings ? { ...DEFAULT_SETTINGS, ...saved.settings } : { ...DEFAULT_SETTINGS },
+            badges: DEFAULT_BADGES.map(b => ({ ...b, earned: false, earnedAt: undefined })),
+            categoryCompletions: {},
+            visitedParks: session.parkIds ?? [],
           };
           saveSlots = [migratedSlot, null, null];
           activeSlotId = migratedSlot.id;
         }
 
+        // Migrate older save slots that predate per-slot badge storage
+        saveSlots = saveSlots.map(s => {
+          if (!s) return null;
+          const raw = s as any;
+          return {
+            ...s,
+            badges: raw.badges ?? DEFAULT_BADGES.map((b: Badge) => ({ ...b, earned: false, earnedAt: undefined })),
+            categoryCompletions: raw.categoryCompletions ?? {},
+            visitedParks: raw.visitedParks ?? (s.session?.parkIds ?? []),
+          };
+        });
+
+        // Load only identity fields from player — badges/score now live on save slots
+        const savedPlayer = (saved.player ?? {}) as any;
         set({
           settings: { ...DEFAULT_SETTINGS, ...saved.settings },
-          player: { ...DEFAULT_PLAYER, ...saved.player },
+          player: {
+            id: savedPlayer.id ?? DEFAULT_PLAYER.id,
+            name: savedPlayer.name ?? DEFAULT_PLAYER.name,
+            color: savedPlayer.color ?? DEFAULT_PLAYER.color,
+          },
           session: session,
           saveSlots,
           activeSlotId,

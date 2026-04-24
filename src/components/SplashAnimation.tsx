@@ -44,7 +44,9 @@ export default function SplashAnimation({ onFinish }: SplashAnimationProps) {
           useNativeDriver: true,
         }),
       ]),
-      // Phase 2: Flip the card over (0.8s)
+      // Phase 2: Hold so the player reads the back (5s)
+      Animated.delay(5000),
+      // Phase 3: Flip the card over (0.8s)
       Animated.timing(flipAnim, {
         toValue: 1,
         duration: 800,
@@ -270,5 +272,15 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#9B7FD4',
     letterSpacing: 4,
+  },
+  cardTagline: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#B8A9D4',
+    letterSpacing: 0.8,
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 14,
+    textTransform: 'uppercase',
   },
 });
