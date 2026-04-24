@@ -765,8 +765,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   challengeIcon: {
-    width: Math.round(22 * sw),
-    height: Math.round(22 * sw),
+    width: Math.round(26 * sw),
+    height: Math.round(26 * sw),
   },
   challengePoints: {
     fontSize: Math.round(12 * sw),
@@ -882,8 +882,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   detailIcon: {
-    width: 44,
-    height: 44,
+    width: 53,
+    height: 53,
   },
   detailLabel: {
     color: COLORS.textMuted,

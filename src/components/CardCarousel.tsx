@@ -534,8 +534,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconImage: {
-    width: Math.round(20 * sw),
-    height: Math.round(20 * sw),
+    width: Math.round(24 * sw),
+    height: Math.round(24 * sw),
   },
   ptsText: {
     fontWeight: '900',
@@ -650,8 +650,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalIconImage: {
-    width: Math.round(34 * sw),
-    height: Math.round(34 * sw),
+    width: Math.round(41 * sw),
+    height: Math.round(41 * sw),
   },
   modalPts: {
     fontWeight: '900',

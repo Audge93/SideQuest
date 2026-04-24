@@ -232,8 +232,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeIconImage: {
-    width: Math.round(24 * sw),
-    height: Math.round(24 * sw),
+    width: Math.round(29 * sw),
+    height: Math.round(29 * sw),
   },
   badgeCategory: {
     color: COLORS.textMuted,
@@ -303,8 +303,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   expandedIconImage: {
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
   },
   expandedPointsLine: {
     color: COLORS.textBody,
