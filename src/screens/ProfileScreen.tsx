@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
-import { Badge, BadgeTier } from '../types';
+import { Badge, BadgeTier, SaveSlot } from '../types';
 import { COLORS, SHADOWS, RADII } from '../theme/theme';
 
 const TIER_COLORS: Record<BadgeTier, string> = {
@@ -94,25 +94,34 @@ export default function ProfileScreen() {
     setEditingName(false);
   };
 
-  // Reused summaries that power the top-level profile stats and badge sections.
-  const earnedBadges = player.badges.filter(b => b.earned);
+  // Show the active slot's badges; fall back to the most recently saved slot,
+  // then to an empty state if no games have been played yet.
+  const displaySlot: SaveSlot | null = saveSlots.find(s => s && s.id === activeSlotId)
+    ?? [...saveSlots]
+        .filter((s): s is SaveSlot => s !== null)
+        .sort((a, b) => b.lastSavedAt - a.lastSavedAt)[0]
+    ?? null;
 
-  // Build combined category counts (lifetime + current session)
-  const combinedCounts: Record<string, number> = { ...(player.categoryCompletions || {}) };
+  const slotBadges = displaySlot?.badges ?? [];
+  const earnedBadges = slotBadges.filter(b => b.earned);
+  const visitedParks = displaySlot?.visitedParks ?? [];
+
+  // Build category counts from slot's stored completions + any live session tasks
+  const combinedCounts: Record<string, number> = { ...(displaySlot?.categoryCompletions || {}) };
   if (session) {
     for (const t of session.completedTasks) {
       combinedCounts[t.category] = (combinedCounts[t.category] || 0) + 1;
     }
   }
 
-  // Group badges by tier
+  // Group slot badges by tier
   const badgesByTier: Record<BadgeTier, Badge[]> = {
     bronze: [],
     silver: [],
     gold: [],
     platinum: [],
   };
-  player.badges.forEach(b => {
+  slotBadges.forEach(b => {
     badgesByTier[b.tier].push(b);
   });
 
@@ -120,23 +129,25 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
       <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-        {/* Back button */}
-        <TouchableOpacity
-          style={{
-            alignSelf: 'flex-start',
-            backgroundColor: COLORS.blue,
-            borderRadius: RADII.button,
-            paddingVertical: 10,
-            paddingHorizontal: 20,
-            marginBottom: 12,
-            borderBottomWidth: 3,
-            borderBottomColor: COLORS.blueDark,
-          }}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <Text style={{ fontSize: 15, color: '#fff', fontWeight: '800' }}>‹ Back</Text>
-        </TouchableOpacity>
+        {/* Header row: back on left, main menu on right when in-game */}
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.backBtnText}>‹ Back</Text>
+          </TouchableOpacity>
+          {session && (
+            <TouchableOpacity
+              style={styles.returnMenuBtn}
+              onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.returnMenuBtnText}>Main Menu</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <Text style={styles.pageTitle}>Profile</Text>
 
         {/* Current game name — only shown when there is an active session */}
@@ -198,17 +209,12 @@ export default function ProfileScreen() {
           )}
           <View style={styles.scoresRow}>
             <View style={styles.scoreItem}>
-              <Text style={styles.scoreValue}>{player.lifetimeScore.toLocaleString()}</Text>
-              <Text style={styles.scoreLabel}>Lifetime Points</Text>
-            </View>
-            <View style={styles.scoreDivider} />
-            <View style={styles.scoreItem}>
               <Text style={styles.scoreValue}>{earnedBadges.length}</Text>
               <Text style={styles.scoreLabel}>Badges Earned</Text>
             </View>
             <View style={styles.scoreDivider} />
             <View style={styles.scoreItem}>
-              <Text style={styles.scoreValue}>{player.visitedParks?.length ?? 0}</Text>
+              <Text style={styles.scoreValue}>{visitedParks.length}</Text>
               <Text style={styles.scoreLabel}>Parks Visited</Text>
             </View>
           </View>
@@ -216,6 +222,9 @@ export default function ProfileScreen() {
 
         {/* Badge collection grouped by tier so progress is easy to scan. */}
         <SectionHeader title="BADGES" />
+        {slotBadges.length === 0 && (
+          <Text style={styles.noBadgesText}>Start a game to earn badges!</Text>
+        )}
         {TIER_LABELS.map(tier => {
           const tierBadges = badgesByTier[tier];
           if (tierBadges.length === 0) return null;
@@ -266,7 +275,7 @@ export default function ProfileScreen() {
             <Text style={styles.resetCardIcon}>⚠️</Text>
             <Text style={styles.resetCardTitle}>Reset All Data?</Text>
             <Text style={styles.resetCardMessage}>
-              This will permanently erase all badges, lifetime score, and profile progress. This cannot be undone.
+              This will permanently erase all saved games, badges, and progress. Your profile name will be kept. This cannot be undone.
             </Text>
             <View style={styles.resetCardActions}>
               <TouchableOpacity
@@ -646,5 +655,44 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontWeight: '600',
     fontSize: 15,
+  },
+  noBadgesText: {
+    color: COLORS.textMuted,
+    fontSize: 14,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginVertical: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  backBtn: {
+    backgroundColor: COLORS.blue,
+    borderRadius: RADII.button,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderBottomWidth: 3,
+    borderBottomColor: COLORS.blueDark,
+  },
+  backBtnText: {
+    fontSize: 15,
+    color: '#fff',
+    fontWeight: '800',
+  },
+  returnMenuBtn: {
+    backgroundColor: COLORS.red,
+    borderRadius: RADII.button,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderBottomWidth: 3,
+    borderBottomColor: '#d06060',
+  },
+  returnMenuBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
   },
 });

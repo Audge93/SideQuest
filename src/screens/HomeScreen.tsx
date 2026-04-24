@@ -271,10 +271,6 @@ export default function HomeScreen() {
                 ? `Welcome back, ${player.name}!`
                 : 'Welcome!'}
             </Text>
-            <View style={styles.lifetimeRow}>
-              <Text style={styles.lifetimeLabel}>Lifetime Score</Text>
-              <Text style={styles.lifetimeScore}>{player.lifetimeScore.toLocaleString()} pts</Text>
-            </View>
           </View>
 
           {/* ── Action Buttons ── */}

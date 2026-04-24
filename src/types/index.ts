@@ -86,14 +86,10 @@ export interface Badge {
 }
 
 export interface Player {
-  // Persistent player profile that survives between individual play sessions.
+  // Persistent player profile — only identity data shared across all games.
   id: string;
   name: string;
   color: string;
-  lifetimeScore: number;
-  badges: Badge[];
-  visitedParks: string[];
-  categoryCompletions: Record<string, number>;
 }
 
 export interface Session {
@@ -137,13 +133,17 @@ export interface Settings {
 }
 
 export interface SaveSlot {
-  // Named save entry containing a frozen session plus the settings used for it.
+  // Named save entry — fully self-contained so each game is independent.
+  // Badges, category progress, and visited parks are per-slot, not global.
   id: string;
   name: string;
   createdAt: number;
   lastSavedAt: number;
   session: Session;
   settings: Settings;
+  badges: Badge[];
+  categoryCompletions: Record<string, number>;
+  visitedParks: string[];
 }
 
 // Current cap for how many save entries the player can keep at once.
