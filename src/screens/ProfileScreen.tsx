@@ -120,23 +120,38 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
       <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-        {/* Back button */}
-        <TouchableOpacity
-          style={{
-            alignSelf: 'flex-start',
-            backgroundColor: COLORS.blue,
-            borderRadius: RADII.button,
-            paddingVertical: 10,
-            paddingHorizontal: 20,
-            marginBottom: 12,
-            borderBottomWidth: 3,
-            borderBottomColor: COLORS.blueDark,
-          }}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <Text style={{ fontSize: 15, color: '#fff', fontWeight: '800' }}>‹ Back</Text>
-        </TouchableOpacity>
+        {/* Header row: back on left, main menu on right when in-game */}
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.backBtnText}>‹ Back</Text>
+          </TouchableOpacity>
+          {session && (
+            <TouchableOpacity
+              style={styles.returnMenuBtn}
+              onPress={() => {
+                Alert.alert(
+                  'Return to Main Menu?',
+                  'Your game is saved and you can continue it later.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Return',
+                      style: 'destructive',
+                      onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }),
+                    },
+                  ]
+                );
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.returnMenuBtnText}>Main Menu</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <Text style={styles.pageTitle}>Profile</Text>
 
         {/* Current game name — only shown when there is an active session */}
@@ -647,5 +662,37 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontWeight: '600',
     fontSize: 15,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  backBtn: {
+    backgroundColor: COLORS.blue,
+    borderRadius: RADII.button,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderBottomWidth: 3,
+    borderBottomColor: COLORS.blueDark,
+  },
+  backBtnText: {
+    fontSize: 15,
+    color: '#fff',
+    fontWeight: '800',
+  },
+  returnMenuBtn: {
+    backgroundColor: COLORS.red,
+    borderRadius: RADII.button,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderBottomWidth: 3,
+    borderBottomColor: '#d06060',
+  },
+  returnMenuBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
   },
 });
