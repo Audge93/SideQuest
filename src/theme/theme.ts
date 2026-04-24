@@ -83,16 +83,16 @@ export const CATEGORY_LABELS: Record<string, string> = {
 // Maps internal category ids to their PNG icon assets.
 // treat uses snack.PNG (the filename chosen when uploading).
 export const CATEGORY_ICON_IMAGES: Record<string, any> = {
-  find:    require('../../assets/icons/find.PNG'),
-  photo:   require('../../assets/icons/photo.PNG'),
-  trivia:  require('../../assets/icons/trivia.PNG'),
-  act:     require('../../assets/icons/act.PNG'),
-  ride:    require('../../assets/icons/ride.PNG'),
-  treat:   require('../../assets/icons/snack.PNG'),
-  pins:    require('../../assets/icons/pins.PNG'),
-  meet:    require('../../assets/icons/meet.PNG'),
-  explore: require('../../assets/icons/explore.PNG'),
-  seek:    require('../../assets/icons/seek.PNG'),
+  find:    require('../../assets/icons/find.png'),
+  photo:   require('../../assets/icons/photo.png'),
+  trivia:  require('../../assets/icons/trivia.png'),
+  act:     require('../../assets/icons/act.png'),
+  ride:    require('../../assets/icons/ride.png'),
+  treat:   require('../../assets/icons/snack.png'),
+  pins:    require('../../assets/icons/pins.png'),
+  meet:    require('../../assets/icons/meet.png'),
+  explore: require('../../assets/icons/explore.png'),
+  seek:    require('../../assets/icons/seek.png'),
 };
 
 // Lightweight emoji icons kept for text contexts (e.g. settings labels).
