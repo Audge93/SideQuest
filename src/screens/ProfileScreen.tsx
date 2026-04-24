@@ -132,20 +132,7 @@ export default function ProfileScreen() {
           {session && (
             <TouchableOpacity
               style={styles.returnMenuBtn}
-              onPress={() => {
-                Alert.alert(
-                  'Return to Main Menu?',
-                  'Your game is saved and you can continue it later.',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Return',
-                      style: 'destructive',
-                      onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }),
-                    },
-                  ]
-                );
-              }}
+              onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })}
               activeOpacity={0.7}
             >
               <Text style={styles.returnMenuBtnText}>Main Menu</Text>

@@ -37,18 +37,7 @@ export default function SettingsScreen() {
   const { settings, updateSettings, updateCategoryToggle, toggleRide, session } = useGameStore();
 
   const handleReturnToMenu = () => {
-    Alert.alert(
-      'Return to Main Menu?',
-      'Your game is saved and you can continue it later.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Return',
-          style: 'destructive',
-          onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }),
-        },
-      ]
-    );
+    navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
   };
   const [showRideDrilldown, setShowRideDrilldown] = useState(false);
 
