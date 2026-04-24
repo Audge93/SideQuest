@@ -265,7 +265,9 @@ function replaceInArray(arr: Task[], taskId: string, replacement: Task | undefin
   return arr.map(t => (t.id === taskId ? replacement : t));
 }
 
-/** Picks a random replacement task from the pool that isn't in any exclusion list */
+/** Picks a random replacement task from the pool that isn't in any exclusion list.
+ *  If the pool is exhausted (all tasks completed), recycles by only avoiding
+ *  cards currently in hand so the game can continue indefinitely. */
 function pickReplacement(pool: Task[], exclude: Task[], alsoExclude?: Task[], handAfterRemoval?: Task[]): Task | undefined {
   const excludeIds = new Set(exclude.map(t => t.id));
   if (alsoExclude) {
@@ -276,6 +278,16 @@ function pickReplacement(pool: Task[], exclude: Task[], alsoExclude?: Task[], ha
   if (triviaInHand >= MAX_TRIVIA_IN_HAND) {
     available = available.filter(t => t.category !== 'trivia');
   }
+
+  // Pool exhausted — recycle completed tasks, only avoid what's currently in hand
+  if (available.length === 0) {
+    const handIds = new Set((handAfterRemoval ?? []).map(t => t.id));
+    available = pool.filter(t => !handIds.has(t.id));
+    if (triviaInHand >= MAX_TRIVIA_IN_HAND) {
+      available = available.filter(t => t.category !== 'trivia');
+    }
+  }
+
   if (available.length === 0) return undefined;
   return available[Math.floor(Math.random() * available.length)];
 }
@@ -305,9 +317,11 @@ function pickChallengeReplacement(
   }
 
   const fallback = pool.filter(t => !otherVisibleIds.has(t.id));
-  if (fallback.length === 0) return undefined;
+  // Full recycle — just pick anything from the pool if all else is exhausted
+  const source = fallback.length > 0 ? fallback : pool;
+  if (source.length === 0) return undefined;
   return createChallengeInstance(
-    fallback[Math.floor(Math.random() * fallback.length)],
+    source[Math.floor(Math.random() * source.length)],
   );
 }
 
