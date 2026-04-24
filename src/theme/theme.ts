@@ -54,46 +54,45 @@ export const COLORS = {
 // Maps internal category ids to the accent color used on task cards, icons,
 // challenge badges, and other category-driven UI treatments.
 export const CATEGORY_COLORS: Record<string, string> = {
-  observation: COLORS.catObservation,
+  find: COLORS.catObservation,
   photo: COLORS.catPhoto,
   trivia: COLORS.catTrivia,
-  action: COLORS.catAction,
+  act: COLORS.catAction,
   ride: COLORS.catRide,
-  food: COLORS.catFood,
-  pin: COLORS.catPin,
-  character: COLORS.catCharacter,
-  exploration: COLORS.catExploration,
-  scavenger: COLORS.catScavenger,
+  treat: COLORS.catFood,
+  pins: COLORS.catPin,
+  meet: COLORS.catCharacter,
+  explore: COLORS.catExploration,
+  seek: COLORS.catScavenger,
 };
 
-// Short user-facing labels for each category. These are friendlier to display
-// in the UI than the internal ids stored in task data.
+// Short user-facing labels for each category.
 export const CATEGORY_LABELS: Record<string, string> = {
-  observation: 'Find',
+  find: 'Find',
   photo: 'Photo',
   trivia: 'Trivia',
-  action: 'Act',
+  act: 'Act',
   ride: 'Ride',
-  food: 'Treat',
-  pin: 'Pins',
-  character: 'Meet',
-  exploration: 'Explore',
-  scavenger: 'Seek',
+  treat: 'Treat',
+  pins: 'Pins',
+  meet: 'Meet',
+  explore: 'Explore',
+  seek: 'Seek',
 };
 
 // Lightweight emoji icons for each task type so the app can show distinct
 // category markers without depending on an external icon set.
 export const CATEGORY_ICONS: Record<string, string> = {
-  observation: '🔍',
+  find: '🔍',
   photo: '📸',
   trivia: '🧠',
-  action: '🎬',
+  act: '🎬',
   ride: '🎢',
-  food: '🍦',
-  pin: '📌',
-  character: '🎭',
-  exploration: '🗺️',
-  scavenger: '🎯',
+  treat: '🍦',
+  pins: '📌',
+  meet: '🎭',
+  explore: '🗺️',
+  seek: '🎯',
 };
 
 // Reusable depth presets so buttons, cards, and chips all cast shadows in a
