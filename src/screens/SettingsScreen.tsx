@@ -34,7 +34,7 @@ const CATEGORY_INFO: { key: keyof CategoryToggles; label: string; icon: string }
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
-  const { settings, updateSettings, updateCategoryToggle, toggleRide, session } = useGameStore();
+  const { settings, updateSettings, updateCategoryToggle, toggleRide, session, triggerTips } = useGameStore();
 
   const handleReturnToMenu = () => {
     navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
@@ -207,6 +207,21 @@ export default function SettingsScreen() {
             />
           </SettingRow>
         </SectionCard>
+
+        {session && (
+          <SectionCard title="HELP">
+            <TouchableOpacity
+              style={styles.showTipsBtn}
+              onPress={() => {
+                triggerTips();
+                navigation.goBack();
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.showTipsBtnText}>💡  Show Tips</Text>
+            </TouchableOpacity>
+          </SectionCard>
+        )}
 
       </ScrollView>
     </SafeAreaView>
@@ -453,5 +468,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
     fontWeight: '800',
+  },
+  showTipsBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderLight,
+  },
+  showTipsBtnText: {
+    color: COLORS.blue,
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

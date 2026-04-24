@@ -99,6 +99,8 @@ export default function GameScreen() {
     clearNewBadges,
     autoSave,
     switchPark,
+    showTipsOnNext,
+    clearPendingTips,
   } = useGameStore();
 
   const [showSmallConfetti, setShowSmallConfetti] = useState(false);
@@ -108,11 +110,11 @@ export default function GameScreen() {
   const [selectedResortId, setSelectedResortId] = useState<string>(RESORTS[0].id);
   const [selectedParkId, setSelectedParkId] = useState<string>(RESORTS[0].parkIds[0]);
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
-  const [showTips, setShowTips] = useState(true);
+  const [showTips, setShowTips] = useState(false);
   const [badgeQueue, setBadgeQueue] = useState<Badge[]>([]);
   const [activeBadge, setActiveBadge] = useState<Badge | null>(null);
   const processedBadgeIdsRef = useRef(new Set<string>());
-  const sessionIdRef = useRef(session?.id);
+
 
   const openParkModal = useCallback(() => {
     const currentParkIds = settings.parkIds;
@@ -159,12 +161,12 @@ export default function GameScreen() {
   }, []);
 
   useEffect(() => {
-    if (session?.id && session.id !== sessionIdRef.current) {
-      sessionIdRef.current = session.id;
+    if (showTipsOnNext) {
       setCurrentTipIndex(0);
       setShowTips(true);
+      clearPendingTips();
     }
-  }, [session?.id]);
+  }, [showTipsOnNext]);
 
   useEffect(() => {
     if (newlyEarnedBadges.length === 0) return;

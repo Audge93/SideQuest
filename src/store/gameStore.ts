@@ -150,6 +150,11 @@ interface GameState {
   answerTrivia: (taskId: string, correct: boolean) => void;
   clearNewBadges: () => void;
   resetAllData: () => void;
+  triggerTips: () => void;
+  clearPendingTips: () => void;
+
+  // Transient UI flag — true means GameScreen should show tips on next render.
+  showTipsOnNext: boolean;
 
   // Persistence helpers.
   loadFromStorage: () => Promise<void>;
@@ -439,6 +444,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   newlyEarnedBadges: [],
   saveSlots: [null, null, null],
   activeSlotId: null,
+  showTipsOnNext: false,
 
   // ─── Settings actions ─────────────────────────────────────────────────────
 
@@ -518,7 +524,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newSlots = [...saveSlots];
     newSlots[emptyIndex] = slot;
 
-    set({ session, saveSlots: newSlots, activeSlotId: slot.id });
+    set({ session, saveSlots: newSlots, activeSlotId: slot.id, showTipsOnNext: true });
     get().saveToStorage();
   },
 
@@ -834,6 +840,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   clearNewBadges: () => {
     // Clears the transient unlock queue once the popup sequence is complete.
     set({ newlyEarnedBadges: [] });
+  },
+
+  triggerTips: () => {
+    set({ showTipsOnNext: true });
+  },
+
+  clearPendingTips: () => {
+    set({ showTipsOnNext: false });
   },
 
   // ─── Data management ──────────────────────────────────────────────────────
