@@ -42,7 +42,7 @@ export const COLORS = {
   catObservation: '#89B4F7',
   catPhoto: '#7CCFA6',
   catTrivia: '#F0D878',
-  catAction: '#FFD080',
+  catAction: '#C0B0F5',
   catRide: '#F09090',
   catFood: '#F5B882',
   catPin: '#C8A4F0',
