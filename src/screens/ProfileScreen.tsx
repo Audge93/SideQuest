@@ -64,12 +64,12 @@ function getCategoryForBadge(badgeId: string): string | null {
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
-  const { player, session, saveSlots, activeSlotId, updatePlayerName, renameActiveSlot, resetAllData } = useGameStore();
+  const { player, session, saveSlots, activeSlotId, updatePlayerName, renameActiveSlot, deleteSlot } = useGameStore();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(player.name);
   const [editingGameName, setEditingGameName] = useState(false);
   const [gameNameInput, setGameNameInput] = useState('');
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const activeSlot = saveSlots.find(s => s && s.id === activeSlotId) ?? null;
 
@@ -253,45 +253,46 @@ export default function ProfileScreen() {
             </View>
           );
         })}
-        {/* Destructive account-wide reset is visually separated from normal profile controls. */}
-        <TouchableOpacity
-          style={styles.resetBtn}
-          onPress={() => setShowResetConfirm(true)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.resetBtnText}>Reset All Data</Text>
-        </TouchableOpacity>
+        {displaySlot && (
+          <TouchableOpacity
+            style={styles.resetBtn}
+            onPress={() => setShowDeleteConfirm(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.resetBtnText}>Delete Game Save</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
-      {/* Reset Confirmation Modal */}
+      {/* Delete Game Save Confirmation Modal */}
       <Modal
-        visible={showResetConfirm}
+        visible={showDeleteConfirm}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowResetConfirm(false)}
+        onRequestClose={() => setShowDeleteConfirm(false)}
       >
         <View style={styles.resetOverlay}>
           <View style={styles.resetCard}>
-            <Text style={styles.resetCardIcon}>⚠️</Text>
-            <Text style={styles.resetCardTitle}>Reset All Data?</Text>
+            <Text style={styles.resetCardIcon}>🗑️</Text>
+            <Text style={styles.resetCardTitle}>Delete Game Save?</Text>
             <Text style={styles.resetCardMessage}>
-              This will permanently erase all saved games, badges, and progress. Your profile name will be kept. This cannot be undone.
+              {displaySlot ? `"${displaySlot.name}" will be permanently deleted. This cannot be undone.` : ''}
             </Text>
             <View style={styles.resetCardActions}>
               <TouchableOpacity
                 style={styles.resetConfirmBtn}
                 onPress={() => {
-                  resetAllData();
-                  setShowResetConfirm(false);
+                  if (displaySlot) deleteSlot(displaySlot.id);
+                  setShowDeleteConfirm(false);
                   navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={styles.resetConfirmBtnText}>Reset Everything</Text>
+                <Text style={styles.resetConfirmBtnText}>Yes, Delete</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.resetCancelBtn}
-                onPress={() => setShowResetConfirm(false)}
+                onPress={() => setShowDeleteConfirm(false)}
                 activeOpacity={0.7}
               >
                 <Text style={styles.resetCancelBtnText}>Cancel</Text>
