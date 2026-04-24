@@ -21,9 +21,10 @@ import {
   Animated,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Image,
 } from 'react-native';
 import { Task } from '../types';
-import { COLORS, SHADOWS, CATEGORY_COLORS, CATEGORY_ICONS } from '../theme/theme';
+import { COLORS, SHADOWS, CATEGORY_COLORS, CATEGORY_ICONS, CATEGORY_ICON_IMAGES } from '../theme/theme';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const sw = SCREEN_W / 390;
@@ -140,7 +141,7 @@ function TaskCard({
         <View style={styles.iconPtsRow}>
           <View style={[styles.iconOuter, { backgroundColor: color }]}>
             <View style={styles.iconInner}>
-              <Text style={styles.iconEmoji}>{icon}</Text>
+              <Image source={CATEGORY_ICON_IMAGES[task.category]} style={styles.iconImage} resizeMode="contain" />
             </View>
           </View>
           <Text style={[styles.ptsText, { color }]}>{task.points} pts</Text>
@@ -264,7 +265,7 @@ function TriviaModal({
           <View style={styles.modalBody}>
             <View style={[styles.modalIconOuter, { backgroundColor: color }]}>
               <View style={styles.modalIconInner}>
-                <Text style={styles.modalIconEmoji}>{icon}</Text>
+                <Image source={CATEGORY_ICON_IMAGES[task.category]} style={styles.modalIconImage} resizeMode="contain" />
               </View>
             </View>
             <Text style={[styles.modalPts, { color }]}>{task.points} pts</Text>
@@ -532,8 +533,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconEmoji: {
-    fontSize: Math.round(15 * sw),
+  iconImage: {
+    width: Math.round(20 * sw),
+    height: Math.round(20 * sw),
   },
   ptsText: {
     fontWeight: '900',
@@ -647,8 +649,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modalIconEmoji: {
-    fontSize: Math.round(28 * sw),
+  modalIconImage: {
+    width: Math.round(34 * sw),
+    height: Math.round(34 * sw),
   },
   modalPts: {
     fontWeight: '900',

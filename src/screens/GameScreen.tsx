@@ -25,6 +25,7 @@ import {
   Modal,
   ScrollView,
   Pressable,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Badge, Task } from '../types';
@@ -33,7 +34,7 @@ import BadgeUnlockPopup from '../components/BadgeUnlockPopup';
 import CardCarousel from '../components/CardCarousel';
 import { useGameStore } from '../store/gameStore';
 import { PARKS } from '../data/parks';
-import { CATEGORY_COLORS, CATEGORY_ICONS, COLORS, SHADOWS, RADII } from '../theme/theme';
+import { CATEGORY_COLORS, CATEGORY_ICONS, CATEGORY_ICON_IMAGES, COLORS, SHADOWS, RADII } from '../theme/theme';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const sw = SCREEN_W / 390;
@@ -543,7 +544,7 @@ function ChallengeMiniCard({
       <Text style={styles.challengeCategory}>{task.displayCategory.toUpperCase()}</Text>
       <View style={[styles.challengeIconShell, { backgroundColor: `${accent}20` }]}>
         <View style={[styles.challengeIconCore, { backgroundColor: accent }]}>
-          <Text style={styles.challengeIcon}>{CATEGORY_ICONS[task.category] ?? '✨'}</Text>
+          <Image source={CATEGORY_ICON_IMAGES[task.category]} style={styles.challengeIcon} resizeMode="contain" />
         </View>
       </View>
       <Text style={[styles.challengePoints, { color: accent }]}>{task.points} pts</Text>
@@ -573,7 +574,7 @@ function ChallengeDetailModal({
         <Pressable style={styles.detailCard} onPress={e => e.stopPropagation()}>
           <View style={[styles.detailIconShell, { backgroundColor: `${accent}18` }]}>
             <View style={[styles.detailIconCore, { backgroundColor: accent }]}>
-              <Text style={styles.detailIcon}>{CATEGORY_ICONS[task.category] ?? '✨'}</Text>
+              <Image source={CATEGORY_ICON_IMAGES[task.category]} style={styles.detailIcon} resizeMode="contain" />
             </View>
           </View>
 
@@ -764,7 +765,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   challengeIcon: {
-    fontSize: Math.round(15 * sw),
+    width: Math.round(22 * sw),
+    height: Math.round(22 * sw),
   },
   challengePoints: {
     fontSize: Math.round(12 * sw),
@@ -880,7 +882,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   detailIcon: {
-    fontSize: 28,
+    width: 44,
+    height: 44,
   },
   detailLabel: {
     color: COLORS.textMuted,

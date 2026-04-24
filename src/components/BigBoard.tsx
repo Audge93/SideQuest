@@ -17,9 +17,10 @@ import {
   Alert,
   Dimensions,
   Animated,
+  Image,
 } from 'react-native';
 import { Task } from '../types';
-import { COLORS, SHADOWS, RADII, CATEGORY_COLORS, CATEGORY_ICONS } from '../theme/theme';
+import { COLORS, SHADOWS, RADII, CATEGORY_COLORS, CATEGORY_ICONS, CATEGORY_ICON_IMAGES } from '../theme/theme';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const sw = SCREEN_W / 390;
@@ -57,7 +58,7 @@ function BigTaskBadge({ task, onPress }: BigTaskBadgeProps) {
         <Text style={styles.badgeCategory} numberOfLines={1}>{task.displayCategory}</Text>
         <View style={[styles.badgeCircle, { backgroundColor: color }]}>
           <View style={styles.badgeIconInner}>
-            <Text style={styles.badgeIcon}>{icon}</Text>
+            <Image source={CATEGORY_ICON_IMAGES[task.category]} style={styles.badgeIconImage} resizeMode="contain" />
           </View>
         </View>
         <Text style={styles.badgePoints}>{task.points} <Text style={styles.badgePtsLabel}>pts</Text></Text>
@@ -93,7 +94,7 @@ function ExpandedBigTask({ task, sessionScore, onComplete, onSwap, onClose }: Ex
           <View style={styles.expandedBody}>
             <View style={[styles.expandedIconOuter, { backgroundColor: color }]}>
               <View style={styles.expandedIconInner}>
-                <Text style={styles.expandedIconEmoji}>{icon}</Text>
+                <Image source={CATEGORY_ICON_IMAGES[task.category]} style={styles.expandedIconImage} resizeMode="contain" />
               </View>
             </View>
 
@@ -230,8 +231,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeIcon: {
-    fontSize: Math.round(18 * sw),
+  badgeIconImage: {
+    width: Math.round(24 * sw),
+    height: Math.round(24 * sw),
   },
   badgeCategory: {
     color: COLORS.textMuted,
@@ -300,8 +302,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  expandedIconEmoji: {
-    fontSize: 36,
+  expandedIconImage: {
+    width: 50,
+    height: 50,
   },
   expandedPointsLine: {
     color: COLORS.textBody,

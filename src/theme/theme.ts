@@ -80,8 +80,22 @@ export const CATEGORY_LABELS: Record<string, string> = {
   seek: 'Seek',
 };
 
-// Lightweight emoji icons for each task type so the app can show distinct
-// category markers without depending on an external icon set.
+// Maps internal category ids to their PNG icon assets.
+// treat uses snack.PNG (the filename chosen when uploading).
+export const CATEGORY_ICON_IMAGES: Record<string, any> = {
+  find:    require('../../assets/icons/find.PNG'),
+  photo:   require('../../assets/icons/photo.PNG'),
+  trivia:  require('../../assets/icons/trivia.PNG'),
+  act:     require('../../assets/icons/act.PNG'),
+  ride:    require('../../assets/icons/ride.PNG'),
+  treat:   require('../../assets/icons/snack.PNG'),
+  pins:    require('../../assets/icons/pins.PNG'),
+  meet:    require('../../assets/icons/meet.PNG'),
+  explore: require('../../assets/icons/explore.PNG'),
+  seek:    require('../../assets/icons/seek.PNG'),
+};
+
+// Lightweight emoji icons kept for text contexts (e.g. settings labels).
 export const CATEGORY_ICONS: Record<string, string> = {
   find: '🔍',
   photo: '📸',
