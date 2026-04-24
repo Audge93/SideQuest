@@ -550,8 +550,8 @@ export default function HomeScreen() {
                         <Text style={styles.toggleDesc}>Include pin trading challenges</Text>
                       </View>
                       <Switch
-                        value={settings.categoryToggles.pin}
-                        onValueChange={v => updateCategoryToggle('pin', v)}
+                        value={settings.categoryToggles.pins}
+                        onValueChange={v => updateCategoryToggle('pins', v)}
                         trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
                         thumbColor="#fff"
                         style={styles.toggleSwitch}

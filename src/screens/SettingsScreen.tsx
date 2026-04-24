@@ -20,16 +20,16 @@ import { COLORS, RADII } from '../theme/theme';
 // Metadata used to render the category toggle list without duplicating label
 // and icon markup for every individual row in the settings UI.
 const CATEGORY_INFO: { key: keyof CategoryToggles; label: string; icon: string }[] = [
-  { key: 'observation', label: 'Observation', icon: '👁️' },
+  { key: 'find', label: 'Find', icon: '🔍' },
   { key: 'photo', label: 'Photo Challenges', icon: '📸' },
   { key: 'trivia', label: 'Trivia', icon: '🧠' },
-  { key: 'action', label: 'Act', icon: '🎬' },
+  { key: 'act', label: 'Act', icon: '🎬' },
   { key: 'ride', label: 'Ride-Based', icon: '🎢' },
-  { key: 'food', label: 'Food & Treat', icon: '🍦' },
-  { key: 'pin', label: 'Pin Trading', icon: '📌' },
-  { key: 'character', label: 'Character Meet & Greet', icon: '🎭' },
-  { key: 'exploration', label: 'Exploration', icon: '🗺️' },
-  { key: 'scavenger', label: 'Scavenger', icon: '🔍' },
+  { key: 'treat', label: 'Treat', icon: '🍦' },
+  { key: 'pins', label: 'Pin Trading', icon: '📌' },
+  { key: 'meet', label: 'Character Meet & Greet', icon: '🎭' },
+  { key: 'explore', label: 'Exploration', icon: '🗺️' },
+  { key: 'seek', label: 'Seek', icon: '🎯' },
 ];
 
 export default function SettingsScreen() {

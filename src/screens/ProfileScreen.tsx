@@ -36,16 +36,16 @@ const TIER_LABELS: BadgeTier[] = ['bronze', 'silver', 'gold', 'platinum'];
 
 /** Maps badge base id → task category for looking up completion progress */
 const BADGE_TO_CATEGORY: Record<string, string> = {
-  'sharp-eye': 'observation',
+  'sharp-eye': 'find',
   'shutterbug': 'photo',
   'brain-box': 'trivia',
-  'scene-stealer': 'action',
+  'scene-stealer': 'act',
   'thrill-seeker': 'ride',
-  'foodie': 'food',
-  'pin-pro': 'pin',
-  'star-struck': 'character',
-  'trailblazer': 'exploration',
-  'treasure-hunter': 'scavenger',
+  'foodie': 'treat',
+  'pin-pro': 'pins',
+  'star-struck': 'meet',
+  'trailblazer': 'explore',
+  'treasure-hunter': 'seek',
 };
 
 /** Extracts the numeric threshold from badge description, e.g. "Complete 10 Find tasks" → 10 */
@@ -54,7 +54,7 @@ function getThreshold(badge: Badge): number | null {
   return match ? parseInt(match[1], 10) : null;
 }
 
-/** Gets the task category for a badge id like "sharp-eye-bronze" → "observation" */
+/** Gets the task category for a badge id like "sharp-eye-bronze" → "find" */
 function getCategoryForBadge(badgeId: string): string | null {
   for (const [baseId, category] of Object.entries(BADGE_TO_CATEGORY)) {
     if (badgeId.startsWith(baseId)) return category;

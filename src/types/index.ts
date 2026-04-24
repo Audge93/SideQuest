@@ -11,8 +11,8 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 
 // Small categories populate the player's hand, while big categories appear on
 // the challenge board and usually award more points.
-export type SmallCategory = 'observation' | 'photo' | 'trivia' | 'action';
-export type BigCategory = 'ride' | 'food' | 'pin' | 'character' | 'exploration' | 'scavenger';
+export type SmallCategory = 'find' | 'photo' | 'trivia' | 'act';
+export type BigCategory = 'ride' | 'treat' | 'pins' | 'meet' | 'explore' | 'seek';
 export type TaskCategory = SmallCategory | BigCategory;
 
 // Ride intensity is stored separately from point value so the app can reason
@@ -109,16 +109,16 @@ export interface Session {
 
 export interface CategoryToggles {
   // Individual switches that turn task categories on or off for generation.
-  observation: boolean;
+  find: boolean;
   photo: boolean;
   trivia: boolean;
-  action: boolean;
+  act: boolean;
   ride: boolean;
-  food: boolean;
-  pin: boolean;
-  character: boolean;
-  exploration: boolean;
-  scavenger: boolean;
+  treat: boolean;
+  pins: boolean;
+  meet: boolean;
+  explore: boolean;
+  seek: boolean;
 }
 
 export interface Settings {

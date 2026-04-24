@@ -67,7 +67,7 @@ function TaskCard({
       ? ''
       : task.category === 'photo'
       ? 'Take the photo to complete'
-      : task.category === 'observation'
+      : task.category === 'find'
       ? 'Spot it to earn points'
       : 'Complete this task to earn points');
 

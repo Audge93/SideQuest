@@ -53,16 +53,16 @@ function catBadges(
 
 const DEFAULT_BADGES: Badge[] = [
   // Category badges (10 categories x 4 tiers = 40)
-  ...catBadges('sharp-eye', 'Sharp Eye', '🔍', 'observation', 'Find', [10, 25, 50, 100]),
+  ...catBadges('sharp-eye', 'Sharp Eye', '🔍', 'find', 'Find', [10, 25, 50, 100]),
   ...catBadges('shutterbug', 'Shutterbug', '📸', 'photo', 'Photo', [10, 25, 50, 100]),
   ...catBadges('brain-box', 'Brain Box', '🧠', 'trivia', 'Trivia', [10, 25, 50, 100]),
-  ...catBadges('scene-stealer', 'Scene Stealer', '🎬', 'action', 'Act', [10, 25, 50, 100]),
+  ...catBadges('scene-stealer', 'Scene Stealer', '🎬', 'act', 'Act', [10, 25, 50, 100]),
   ...catBadges('thrill-seeker', 'Thrill Seeker', '🎢', 'ride', 'Ride', [10, 25, 50, 100]),
-  ...catBadges('foodie', 'Foodie', '🍦', 'food', 'Treat', [10, 25, 50, 100]),
-  ...catBadges('pin-pro', 'Pin Pro', '📌', 'pin', 'Pins', [10, 25, 50, 100]),
-  ...catBadges('star-struck', 'Star Struck', '🎭', 'character', 'Meet', [10, 25, 50, 100]),
-  ...catBadges('trailblazer', 'Trailblazer', '🗺️', 'exploration', 'Explore', [10, 25, 50, 100]),
-  ...catBadges('treasure-hunter', 'Treasure Hunter', '🎯', 'scavenger', 'Seek', [10, 25, 50, 100]),
+  ...catBadges('foodie', 'Foodie', '🍦', 'treat', 'Treat', [10, 25, 50, 100]),
+  ...catBadges('pin-pro', 'Pin Pro', '📌', 'pins', 'Pins', [10, 25, 50, 100]),
+  ...catBadges('star-struck', 'Star Struck', '🎭', 'meet', 'Meet', [10, 25, 50, 100]),
+  ...catBadges('trailblazer', 'Trailblazer', '🗺️', 'explore', 'Explore', [10, 25, 50, 100]),
+  ...catBadges('treasure-hunter', 'Treasure Hunter', '🎯', 'seek', 'Seek', [10, 25, 50, 100]),
   // Milestone badges (tiered)
   { id: 'first-steps', name: 'First Steps', description: 'Complete your first task', icon: '🎉', tier: 'bronze', earned: false },
   // Streak tiers
@@ -92,16 +92,16 @@ const DEFAULT_SETTINGS: Settings = {
   heightFilterEnabled: false,
   minHeightInches: 40,
   categoryToggles: {
-    observation: true,
+    find: true,
     photo: true,
     trivia: true,
-    action: true,
+    act: true,
     ride: true,
-    food: true,
-    pin: true,
-    character: true,
-    exploration: true,
-    scavenger: true,
+    treat: true,
+    pins: true,
+    meet: true,
+    explore: true,
+    seek: true,
   },
   darkMode: 'system',
   soundEnabled: true,
@@ -187,16 +187,16 @@ function buildTaskPools(settings: Settings): { small: Task[]; big: Task[] } {
   // Theme filter: only include tasks that match the active park themes (or have no tag)
   const matchesTheme = (t: Task) => !t.tag || activeThemes.has(t.tag);
 
-  // Small pool: observation, photo, action from SMALL_TASKS + trivia from TRIVIA_TASKS
-  const enabledSmallCategories = (['observation', 'photo', 'action'] as const).filter(c => categoryToggles[c]);
+  // Small pool: find, photo, act from SMALL_TASKS + trivia from TRIVIA_TASKS
+  const enabledSmallCategories = (['find', 'photo', 'act'] as const).filter(c => categoryToggles[c]);
   let small: Task[] = SMALL_TASKS.filter(t => enabledSmallCategories.includes(t.category as any) && matchesTheme(t));
   if (categoryToggles.trivia) {
     const filteredTrivia = TRIVIA_TASKS.filter(matchesTheme);
     small = [...small, ...filteredTrivia];
   }
 
-  // Big pool: food, pin, character, exploration, scavenger from BIG_TASKS + ride tasks
-  const enabledBigCategories = (['food', 'pin', 'character', 'exploration', 'scavenger'] as const).filter(c => categoryToggles[c]);
+  // Big pool: treat, pins, meet, explore, seek from BIG_TASKS + ride tasks
+  const enabledBigCategories = (['treat', 'pins', 'meet', 'explore', 'seek'] as const).filter(c => categoryToggles[c]);
   let big: Task[] = BIG_TASKS.filter(t => enabledBigCategories.includes(t.category as any) && matchesTheme(t));
 
   if (categoryToggles.ride) {
@@ -345,16 +345,16 @@ const CAT_THRESHOLDS: Record<string, [number, number, number, number]> = {
 };
 
 const CAT_TO_CATEGORY: Record<string, string> = {
-  'sharp-eye': 'observation',
+  'sharp-eye': 'find',
   'shutterbug': 'photo',
   'brain-box': 'trivia',
-  'scene-stealer': 'action',
+  'scene-stealer': 'act',
   'thrill-seeker': 'ride',
-  'foodie': 'food',
-  'pin-pro': 'pin',
-  'star-struck': 'character',
-  'trailblazer': 'exploration',
-  'treasure-hunter': 'scavenger',
+  'foodie': 'treat',
+  'pin-pro': 'pins',
+  'star-struck': 'meet',
+  'trailblazer': 'explore',
+  'treasure-hunter': 'seek',
 };
 
 const TIER_INDEX: Record<BadgeTier, number> = { bronze: 0, silver: 1, gold: 2, platinum: 3 };
@@ -931,10 +931,34 @@ export const useGameStore = create<GameState>((set, get) => ({
           };
         });
 
+        // Migrate old category toggle keys to new names
+        const rawToggles = (saved.settings?.categoryToggles ?? {}) as Record<string, boolean>;
+        const migratedToggles: Partial<CategoryToggles> = { ...rawToggles } as any;
+        const KEY_RENAMES: Record<string, keyof CategoryToggles> = {
+          observation: 'find',
+          action: 'act',
+          food: 'treat',
+          pin: 'pins',
+          character: 'meet',
+          exploration: 'explore',
+          scavenger: 'seek',
+        };
+        for (const [oldKey, newKey] of Object.entries(KEY_RENAMES)) {
+          if (oldKey in rawToggles && !(newKey in rawToggles)) {
+            (migratedToggles as any)[newKey] = rawToggles[oldKey];
+            delete (migratedToggles as any)[oldKey];
+          }
+        }
+        const migratedSettings: Settings = {
+          ...DEFAULT_SETTINGS,
+          ...saved.settings,
+          categoryToggles: { ...DEFAULT_SETTINGS.categoryToggles, ...migratedToggles },
+        };
+
         // Load only identity fields from player — badges/score now live on save slots
         const savedPlayer = (saved.player ?? {}) as any;
         set({
-          settings: { ...DEFAULT_SETTINGS, ...saved.settings },
+          settings: migratedSettings,
           player: {
             id: savedPlayer.id ?? DEFAULT_PLAYER.id,
             name: savedPlayer.name ?? DEFAULT_PLAYER.name,
