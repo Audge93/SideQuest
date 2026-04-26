@@ -140,9 +140,7 @@ function TaskCard({
       <View style={styles.cardBody}>
         <View style={styles.iconPtsRow}>
           <View style={[styles.iconOuter, { backgroundColor: color }]}>
-            <View style={styles.iconInner}>
-              <Image source={CATEGORY_ICON_IMAGES[task.category]} style={styles.iconImage} resizeMode="contain" />
-            </View>
+            <Image source={CATEGORY_ICON_IMAGES[task.category]} style={styles.iconImage} resizeMode="contain" />
           </View>
           <Text style={[styles.ptsText, { color }]}>{task.points} pts</Text>
         </View>
@@ -264,9 +262,7 @@ function TriviaModal({
           </View>
           <View style={styles.modalBody}>
             <View style={[styles.modalIconOuter, { backgroundColor: color }]}>
-              <View style={styles.modalIconInner}>
-                <Image source={CATEGORY_ICON_IMAGES[task.category]} style={styles.modalIconImage} resizeMode="contain" />
-              </View>
+              <Image source={CATEGORY_ICON_IMAGES[task.category]} style={styles.modalIconImage} resizeMode="contain" />
             </View>
             <Text style={[styles.modalPts, { color }]}>{task.points} pts</Text>
             <Text style={styles.modalDescription}>{task.description}</Text>
@@ -521,22 +517,12 @@ const styles = StyleSheet.create({
     borderRadius: Math.round(12 * sw),
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(0,0,0,0.08)',
+    overflow: 'hidden',
     ...SHADOWS.chip,
   },
-  iconInner: {
-    width: Math.round(32 * sw),
-    height: Math.round(32 * sw),
-    borderRadius: Math.round(8 * sw),
-    backgroundColor: 'rgba(255,255,255,0.93)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
   iconImage: {
-    width: Math.round(23 * sw),
-    height: Math.round(23 * sw),
+    width: Math.round(38 * sw),
+    height: Math.round(38 * sw),
   },
   ptsText: {
     fontWeight: '900',
@@ -638,22 +624,12 @@ const styles = StyleSheet.create({
     borderRadius: Math.round(17 * sw),
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(0,0,0,0.08)',
+    overflow: 'hidden',
     ...SHADOWS.button,
   },
-  modalIconInner: {
-    width: Math.round(53 * sw),
-    height: Math.round(53 * sw),
-    borderRadius: Math.round(12 * sw),
-    backgroundColor: 'rgba(255,255,255,0.93)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
   modalIconImage: {
-    width: Math.round(38 * sw),
-    height: Math.round(38 * sw),
+    width: Math.round(63 * sw),
+    height: Math.round(63 * sw),
   },
   modalPts: {
     fontWeight: '900',
