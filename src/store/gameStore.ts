@@ -171,14 +171,16 @@ interface GameState {
 function buildTaskPools(settings: Settings): { small: Task[]; big: Task[] } {
   const { categoryToggles, parkIds, heightFilterEnabled, minHeightInches } = settings;
 
-  // Determine which park themes are active (disney, universal, or both)
+  // Determine which park themes are active (disney, universal, zoo, or any combo)
   const activeThemes = new Set<ParkThemeTag>();
   for (const pid of parkIds) {
     const park = PARKS.find(p => p.id === pid);
     if (!park || park.theme === 'custom') {
-      // "Any Park" / custom → include all themes
+      // "Any Park" / custom → include theme park content
       activeThemes.add('disney');
       activeThemes.add('universal');
+    } else if (park.theme === 'zoo') {
+      activeThemes.add('zoo');
     } else {
       activeThemes.add(park.theme as ParkThemeTag);
     }
