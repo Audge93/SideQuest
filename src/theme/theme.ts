@@ -45,7 +45,7 @@ export const COLORS = {
   catAction: '#C0B0F5',
   catRide: '#F09090',
   catFood: '#F5B882',
-  catPin: '#C8A4F0',
+  catPin: '#F5A842',
   catCharacter: '#F0A4D0',
   catExploration: '#82D0DC',
   catScavenger: '#B0D878',
