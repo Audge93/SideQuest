@@ -163,8 +163,49 @@ const UNIVERSAL_TRIVIA: Task[] = [
   { id: 'tri-u-h-18', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: "What is the name of the portal hub area at Epic Universe?", points: 15, difficulty: 'hard', tag: 'universal', triviaChoices: ['Universal Gateway', 'Celestial Park', 'The Nexus', 'Starlight Station'], triviaAnswer: 1 },
 ];
 
+// ─── Zoo Trivia ─────────────────────────────────────────────────────────────
+
+const ZOO_TRIVIA: Task[] = [
+  // ── Easy (5 pts) ──
+  { id: 'tri-z-e-1', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is the largest land animal on Earth?', points: 5, difficulty: 'easy', tag: 'zoo', triviaChoices: ['Hippopotamus', 'White Rhinoceros', 'African Elephant', 'Giraffe'], triviaAnswer: 2 },
+  { id: 'tri-z-e-2', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What do you call a group of lions?', points: 5, difficulty: 'easy', tag: 'zoo', triviaChoices: ['Pack', 'Herd', 'Pride', 'Colony'], triviaAnswer: 2 },
+  { id: 'tri-z-e-3', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: "What is a baby kangaroo called?", points: 5, difficulty: 'easy', tag: 'zoo', triviaChoices: ['Cub', 'Pup', 'Kit', 'Joey'], triviaAnswer: 3 },
+  { id: 'tri-z-e-4', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What do giant pandas mainly eat?', points: 5, difficulty: 'easy', tag: 'zoo', triviaChoices: ['Fish', 'Bamboo', 'Berries', 'Grass'], triviaAnswer: 1 },
+  { id: 'tri-z-e-5', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which animal is the fastest land animal?', points: 5, difficulty: 'easy', tag: 'zoo', triviaChoices: ['Lion', 'Cheetah', 'Greyhound', 'Pronghorn'], triviaAnswer: 1 },
+  { id: 'tri-z-e-6', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'How many legs does a spider have?', points: 5, difficulty: 'easy', tag: 'zoo', triviaChoices: ['6', '8', '10', '12'], triviaAnswer: 1 },
+  { id: 'tri-z-e-7', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which bird is known for its impressive tail feather display?', points: 5, difficulty: 'easy', tag: 'zoo', triviaChoices: ['Flamingo', 'Peacock', 'Toucan', 'Macaw'], triviaAnswer: 1 },
+  { id: 'tri-z-e-8', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is the tallest animal in the world?', points: 5, difficulty: 'easy', tag: 'zoo', triviaChoices: ['Elephant', 'Giraffe', 'Moose', 'Camel'], triviaAnswer: 1 },
+  { id: 'tri-z-e-9', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which of these animals is a reptile?', points: 5, difficulty: 'easy', tag: 'zoo', triviaChoices: ['Frog', 'Salamander', 'Komodo Dragon', 'Axolotl'], triviaAnswer: 2 },
+  { id: 'tri-z-e-10', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which big cat cannot roar?', points: 5, difficulty: 'easy', tag: 'zoo', triviaChoices: ['Lion', 'Tiger', 'Cheetah', 'Jaguar'], triviaAnswer: 2 },
+  { id: 'tri-z-e-11', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What color is a polar bear\'s skin under its white fur?', points: 5, difficulty: 'easy', tag: 'zoo', triviaChoices: ['Pink', 'White', 'Black', 'Grey'], triviaAnswer: 2 },
+  { id: 'tri-z-e-12', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is the only mammal capable of true flight?', points: 5, difficulty: 'easy', tag: 'zoo', triviaChoices: ['Sugar Glider', 'Flying Squirrel', 'Bat', 'Colugo'], triviaAnswer: 2 },
+  { id: 'tri-z-e-13', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What do flamingos eat that gives them their pink color?', points: 5, difficulty: 'easy', tag: 'zoo', triviaChoices: ['Krill and algae', 'Pink berries', 'Salmon', 'Red flowers'], triviaAnswer: 0 },
+  { id: 'tri-z-e-14', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which animal has the longest neck?', points: 5, difficulty: 'easy', tag: 'zoo', triviaChoices: ['Camel', 'Ostrich', 'Giraffe', 'Emu'], triviaAnswer: 2 },
+
+  // ── Medium (10 pts) ──
+  { id: 'tri-z-m-1', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'How many hearts does an octopus have?', points: 10, difficulty: 'medium', tag: 'zoo', triviaChoices: ['1', '2', '3', '4'], triviaAnswer: 2 },
+  { id: 'tri-z-m-2', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is a group of flamingos called?', points: 10, difficulty: 'medium', tag: 'zoo', triviaChoices: ['A flock', 'A colony', 'A flamboyance', 'A bloom'], triviaAnswer: 2 },
+  { id: 'tri-z-m-3', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'How long is an elephant\'s pregnancy (gestation)?', points: 10, difficulty: 'medium', tag: 'zoo', triviaChoices: ['About 9 months', 'About 15 months', 'About 22 months', 'About 12 months'], triviaAnswer: 2 },
+  { id: 'tri-z-m-4', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which animal has the most powerful bite force?', points: 10, difficulty: 'medium', tag: 'zoo', triviaChoices: ['Hippopotamus', 'Great White Shark', 'Saltwater Crocodile', 'Nile Crocodile'], triviaAnswer: 2 },
+  { id: 'tri-z-m-5', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is the world\'s largest species of penguin?', points: 10, difficulty: 'medium', tag: 'zoo', triviaChoices: ['King Penguin', 'Emperor Penguin', 'Macaroni Penguin', 'Chinstrap Penguin'], triviaAnswer: 1 },
+  { id: 'tri-z-m-6', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is the name for a group of meerkats?', points: 10, difficulty: 'medium', tag: 'zoo', triviaChoices: ['A troop', 'A mob', 'A band', 'A gang'], triviaAnswer: 1 },
+  { id: 'tri-z-m-7', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'How many species of big cats are there?', points: 10, difficulty: 'medium', tag: 'zoo', triviaChoices: ['4', '5', '7', '9'], triviaAnswer: 1 },
+  { id: 'tri-z-m-8', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What continent is the home of wild gorillas?', points: 10, difficulty: 'medium', tag: 'zoo', triviaChoices: ['Asia', 'South America', 'Africa', 'Australia'], triviaAnswer: 2 },
+  { id: 'tri-z-m-9', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which sea animal uses ink as a defense?', points: 10, difficulty: 'medium', tag: 'zoo', triviaChoices: ['Sea Urchin', 'Jellyfish', 'Octopus', 'Sea Slug'], triviaAnswer: 2 },
+  { id: 'tri-z-m-10', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What do you call an animal that eats both plants and meat?', points: 10, difficulty: 'medium', tag: 'zoo', triviaChoices: ['Herbivore', 'Carnivore', 'Omnivore', 'Insectivore'], triviaAnswer: 2 },
+
+  // ── Hard (15 pts) ──
+  { id: 'tri-z-h-1', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What year did the first modern public zoo open (Paris)?', points: 15, difficulty: 'hard', tag: 'zoo', triviaChoices: ['1753', '1793', '1828', '1860'], triviaAnswer: 1 },
+  { id: 'tri-z-h-2', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'How many bones does a shark have?', points: 15, difficulty: 'hard', tag: 'zoo', triviaChoices: ['About 200', 'About 100', 'About 50', '0 — sharks have no bones'], triviaAnswer: 3 },
+  { id: 'tri-z-h-3', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is the term for animals that are active at dusk and dawn?', points: 15, difficulty: 'hard', tag: 'zoo', triviaChoices: ['Nocturnal', 'Diurnal', 'Crepuscular', 'Matutinal'], triviaAnswer: 2 },
+  { id: 'tri-z-h-4', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which primate shares roughly 98.7% of DNA with humans?', points: 15, difficulty: 'hard', tag: 'zoo', triviaChoices: ['Gorilla', 'Orangutan', 'Bonobo/Chimpanzee', 'Gibbon'], triviaAnswer: 2 },
+  { id: 'tri-z-h-5', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is the conservation status of the Giant Panda as of 2021?', points: 15, difficulty: 'hard', tag: 'zoo', triviaChoices: ['Critically Endangered', 'Endangered', 'Vulnerable', 'Near Threatened'], triviaAnswer: 2 },
+  { id: 'tri-z-h-6', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which animal has the longest recorded lifespan in captivity?', points: 15, difficulty: 'hard', tag: 'zoo', triviaChoices: ['African Elephant', 'Aldabra Giant Tortoise', 'Macaw', 'Koi Fish'], triviaAnswer: 1 },
+  { id: 'tri-z-h-7', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is the term for a species found only in one specific location?', points: 15, difficulty: 'hard', tag: 'zoo', triviaChoices: ['Invasive', 'Endemic', 'Migratory', 'Cosmopolitan'], triviaAnswer: 1 },
+];
+
 // ─── Combined Export ────────────────────────────────────────────────────────
 
 // Merged export consumed by the store before theme filtering is applied.
-export const TRIVIA_TASKS: Task[] = [...DISNEY_TRIVIA, ...UNIVERSAL_TRIVIA];
-export { DISNEY_TRIVIA, UNIVERSAL_TRIVIA };
+export const TRIVIA_TASKS: Task[] = [...DISNEY_TRIVIA, ...UNIVERSAL_TRIVIA, ...ZOO_TRIVIA];
+export { DISNEY_TRIVIA, UNIVERSAL_TRIVIA, ZOO_TRIVIA };

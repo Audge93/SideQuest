@@ -130,6 +130,38 @@ export const SMALL_TASKS: Task[] = [
   { id: 'act-u-e-2', size: 'small', category: 'act', displayCategory: 'Act', description: 'Hulk smash pose, hold 5 seconds', points: 5, difficulty: 'easy', tag: 'universal' },
   { id: 'act-u-m-1', size: 'small', category: 'act', displayCategory: 'Act', description: 'Say "I\'m gonna wreck it!" in your best villain voice', points: 10, difficulty: 'medium', tag: 'universal' },
   { id: 'act-u-m-2', size: 'small', category: 'act', displayCategory: 'Act', description: 'Walk like a Minion for 30 seconds', points: 10, difficulty: 'medium', tag: 'universal' },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ── Zoo-only Find 🔍 ─────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  { id: 'find-z-e-1', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot an animal hiding or camouflaged in its habitat', points: 5, difficulty: 'easy', tag: 'zoo' },
+  { id: 'find-z-e-2', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find an animal that is sleeping or resting', points: 5, difficulty: 'easy', tag: 'zoo' },
+  { id: 'find-z-e-3', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot an animal currently eating or foraging', points: 5, difficulty: 'easy', tag: 'zoo' },
+  { id: 'find-z-e-4', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find a sign explaining an animal conservation story', points: 5, difficulty: 'easy', tag: 'zoo' },
+  { id: 'find-z-e-5', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot an animal with stripes, spots, or bold markings', points: 5, difficulty: 'easy', tag: 'zoo' },
+  { id: 'find-z-m-1', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find an animal from a continent different from the last one you visited', points: 10, difficulty: 'medium', tag: 'zoo' },
+  { id: 'find-z-m-2', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot an animal interacting with enrichment or a toy', points: 10, difficulty: 'medium', tag: 'zoo' },
+  { id: 'find-z-m-3', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find a bird that cannot fly in the zoo', points: 10, difficulty: 'medium', tag: 'zoo' },
+  { id: 'find-z-m-4', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot an animal looking directly at you', points: 10, difficulty: 'medium', tag: 'zoo' },
+  { id: 'find-z-h-1', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot 3 different animal behaviors in one habitat (eating, playing, grooming)', points: 15, difficulty: 'hard', tag: 'zoo' },
+  { id: 'find-z-h-2', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find an animal listed as endangered on its exhibit sign', points: 15, difficulty: 'hard', tag: 'zoo' },
+  { id: 'find-z-h-3', size: 'small', category: 'find', displayCategory: 'Find', description: 'Locate a nocturnal animal that is active during your visit', points: 15, difficulty: 'hard', tag: 'zoo' },
+
+  // ── Zoo-only Photo 📸 ─────────────────────────────────────────────────────
+  { id: 'photo-z-e-1', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Photo mimicking the pose of the nearest animal', points: 5, difficulty: 'easy', tag: 'zoo' },
+  { id: 'photo-z-e-2', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Selfie with your favorite animal exhibit in the background', points: 5, difficulty: 'easy', tag: 'zoo' },
+  { id: 'photo-z-e-3', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Group photo where everyone makes an animal face', points: 5, difficulty: 'easy', tag: 'zoo' },
+  { id: 'photo-z-m-1', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Photo framed to look like a wildlife documentary shot', points: 10, difficulty: 'medium', tag: 'zoo' },
+  { id: 'photo-z-m-2', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Recreate an animal behavior using your group', points: 10, difficulty: 'medium', tag: 'zoo' },
+  { id: 'photo-z-h-1', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Photo that tells a conservation story using only zoo props and signs', points: 15, difficulty: 'hard', tag: 'zoo' },
+
+  // ── Zoo-only Act 🎬 ───────────────────────────────────────────────────────
+  { id: 'act-z-e-1', size: 'small', category: 'act', displayCategory: 'Act', description: 'Walk like your favorite zoo animal for 20 seconds', points: 5, difficulty: 'easy', tag: 'zoo' },
+  { id: 'act-z-e-2', size: 'small', category: 'act', displayCategory: 'Act', description: 'Make the sound of the last animal you saw', points: 5, difficulty: 'easy', tag: 'zoo' },
+  { id: 'act-z-e-3', size: 'small', category: 'act', displayCategory: 'Act', description: 'Freeze like a statue when a zoo worker passes', points: 5, difficulty: 'easy', tag: 'zoo' },
+  { id: 'act-z-m-1', size: 'small', category: 'act', displayCategory: 'Act', description: 'Narrate the nearest animal in David Attenborough style for 30 seconds', points: 10, difficulty: 'medium', tag: 'zoo' },
+  { id: 'act-z-m-2', size: 'small', category: 'act', displayCategory: 'Act', description: 'Act out an animal stalking its prey in slow motion', points: 10, difficulty: 'medium', tag: 'zoo' },
+  { id: 'act-z-h-1', size: 'small', category: 'act', displayCategory: 'Act', description: 'Give a 45-second wildlife ranger speech about the nearest animal', points: 15, difficulty: 'hard', tag: 'zoo' },
 ];
 
 // ─── Big Tasks ──────────────────────────────────────────────────────────────
@@ -232,6 +264,39 @@ export const BIG_TASKS: Task[] = [
   { id: 'seek-u-e-3', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Find a hidden movie prop in a themed queue', points: 25, difficulty: 'easy', tag: 'universal' },
   { id: 'seek-u-e-4', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Spot a Daily Prophet headline in the Wizarding World', points: 25, difficulty: 'easy', tag: 'universal' },
   { id: 'seek-u-m-1', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Find themed candy from 3 different franchise shops', points: 50, difficulty: 'medium', tag: 'universal' },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ── Zoo-only Treat 🍦 ────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  { id: 'treat-z-e-1', size: 'big', category: 'treat', displayCategory: 'Treat', description: "Get a snack from the zoo's main concession area", points: 25, difficulty: 'easy', tag: 'zoo' },
+  { id: 'treat-z-e-2', size: 'big', category: 'treat', displayCategory: 'Treat', description: "Try a zoo-branded or animal-themed treat", points: 25, difficulty: 'easy', tag: 'zoo' },
+  { id: 'treat-z-m-1', size: 'big', category: 'treat', displayCategory: 'Treat', description: 'Get snacks from 2 different food spots in the zoo', points: 50, difficulty: 'medium', tag: 'zoo' },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ── Zoo-only Meet 🎭 ─────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  { id: 'meet-z-e-1', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Watch an animal feeding or training demonstration', points: 25, difficulty: 'easy', tag: 'zoo' },
+  { id: 'meet-z-e-2', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Observe an animal up close at the viewing glass', points: 25, difficulty: 'easy', tag: 'zoo' },
+  { id: 'meet-z-e-3', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Spot 3 different species in one habitat area', points: 25, difficulty: 'easy', tag: 'zoo' },
+  { id: 'meet-z-m-1', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Watch an animal interacting with a zookeeper', points: 50, difficulty: 'medium', tag: 'zoo' },
+  { id: 'meet-z-m-2', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Observe two animals from different species in the same space', points: 50, difficulty: 'medium', tag: 'zoo' },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ── Zoo-only Explore 🗺️ ──────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  { id: 'explore-z-e-1', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Walk through an entire habitat section without skipping a single exhibit', points: 25, difficulty: 'easy', tag: 'zoo' },
+  { id: 'explore-z-e-2', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Find a quiet, off-the-beaten-path exhibit most visitors walk past', points: 25, difficulty: 'easy', tag: 'zoo' },
+  { id: 'explore-z-m-1', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Read every informational sign in one complete habitat area', points: 50, difficulty: 'medium', tag: 'zoo' },
+  { id: 'explore-z-m-2', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Walk the full zoo loop or perimeter path', points: 50, difficulty: 'medium', tag: 'zoo' },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ── Zoo-only Seek 🎯 ─────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  { id: 'seek-z-e-1', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Spot at least one animal from each of 4 different continents', points: 25, difficulty: 'easy', tag: 'zoo' },
+  { id: 'seek-z-e-2', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Find both a reptile and an amphibian during your visit', points: 25, difficulty: 'easy', tag: 'zoo' },
+  { id: 'seek-z-e-3', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Spot an animal doing something funny or unexpected', points: 25, difficulty: 'easy', tag: 'zoo' },
+  { id: 'seek-z-m-1', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Find 5 animals whose exhibit signs mention conservation or endangered status', points: 50, difficulty: 'medium', tag: 'zoo' },
+  { id: 'seek-z-m-2', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Find animals representing 3 different diet types (carnivore, herbivore, omnivore)', points: 50, difficulty: 'medium', tag: 'zoo' },
 ];
 
 // ─── Ride Activity Tasks ────────────────────────────────────────────────────

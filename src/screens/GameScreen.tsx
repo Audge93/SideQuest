@@ -46,6 +46,7 @@ const RESORTS = [
   { id: 'uor', label: 'Universal Orlando', icon: '🌍', parkIds: ['uor-us', 'uor-ioa', 'uor-eu'] },
   { id: 'ush', label: 'Universal Hollywood', icon: '🎬', parkIds: ['ush-us'] },
   { id: 'custom', label: 'Any Park', icon: '🎪', parkIds: ['custom'] },
+  { id: 'zoo', label: 'Any Zoo', icon: '🦁', parkIds: ['zoo'] },
 ];
 
 const GAME_TIPS = [

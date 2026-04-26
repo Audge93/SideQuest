@@ -14,6 +14,7 @@ export const PARKS: Park[] = [
   { id: 'uor-eu', name: 'Epic Universe', shortName: 'EU', theme: 'universal' },
   { id: 'ush-us', name: 'Universal Studios Hollywood', shortName: 'USH', theme: 'universal' },
   { id: 'custom', name: 'Any Park', shortName: 'MY', theme: 'custom' },
+  { id: 'zoo', name: 'Any Zoo', shortName: 'ZOO', theme: 'zoo' },
 ];
 
 // Master attraction catalog. The store turns these into ride tasks at runtime

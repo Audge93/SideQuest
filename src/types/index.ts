@@ -19,8 +19,8 @@ export type TaskCategory = SmallCategory | BigCategory;
 // about attraction intensity in a human-friendly way.
 export type RideIntensity = 'gentle' | 'moderate' | 'thrill';
 
-// Theme tags let task content be filtered to Disney or Universal contexts.
-export type ParkThemeTag = 'disney' | 'universal';
+// Theme tags let task content be filtered to Disney, Universal, or Zoo contexts.
+export type ParkThemeTag = 'disney' | 'universal' | 'zoo';
 
 export interface Task {
   // Stable identifier used by save data, completion logic, and replacement.
@@ -68,7 +68,7 @@ export interface Park {
   id: string;
   name: string;
   shortName: string;
-  theme: 'disney' | 'universal' | 'custom';
+  theme: 'disney' | 'universal' | 'custom' | 'zoo';
 }
 
 // Badge tiers create a progression ladder for each achievement line.

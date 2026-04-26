@@ -67,6 +67,7 @@ const RESORTS: Resort[] = [
   { id: 'uor', label: 'Universal Orlando', icon: '🌍', parkIds: ['uor-us', 'uor-ioa', 'uor-eu'] },
   { id: 'ush', label: 'Universal Hollywood', icon: '🎬', parkIds: ['ush-us'] },
   { id: 'custom', label: 'Any Park', icon: '🎪', parkIds: ['custom'] },
+  { id: 'zoo', label: 'Any Zoo', icon: '🦁', parkIds: ['zoo'] },
 ];
 
 // Disney resort IDs — used to conditionally show pin trading toggle
