@@ -129,6 +129,7 @@ export default function HomeScreen() {
 
   // Derived helpers
   const isDisneyResort = DISNEY_RESORT_IDS.includes(selectedResortId || '');
+  const isZooResort = selectedResortId === 'zoo';
   const canAdvance = !!selectedParkId && !!parkIsInResort;
 
   // ─── Handlers ───────────────────────────────────────────────────────────
@@ -562,45 +563,49 @@ export default function HomeScreen() {
                   </>
                 )}
 
-                {/* Height Filter */}
-                <View style={styles.toggleRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.toggleLabel}>🎢  Filter by height</Text>
-                    <Text style={styles.toggleDesc}>Hides rides above your shortest rider</Text>
-                  </View>
-                  <Switch
-                    value={settings.heightFilterEnabled}
-                    onValueChange={v => updateSettings({ heightFilterEnabled: v })}
-                    trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
-                    thumbColor="#fff"
-                    style={styles.toggleSwitch}
-                  />
-                </View>
+                {/* Height Filter — not applicable for zoos (no rides) */}
+                {!isZooResort && (
+                  <>
+                    <View style={styles.toggleRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.toggleLabel}>🎢  Filter by height</Text>
+                        <Text style={styles.toggleDesc}>Hides rides above your shortest rider</Text>
+                      </View>
+                      <Switch
+                        value={settings.heightFilterEnabled}
+                        onValueChange={v => updateSettings({ heightFilterEnabled: v })}
+                        trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
+                        thumbColor="#fff"
+                        style={styles.toggleSwitch}
+                      />
+                    </View>
 
-                {settings.heightFilterEnabled && (
-                  <View style={styles.sliderArea}>
-                    <View style={styles.heightDisplay}>
-                      <Text style={styles.heightValue}>{settings.minHeightInches}"</Text>
-                      <Text style={styles.heightFeet}>
-                        ({Math.floor(settings.minHeightInches / 12)}'{settings.minHeightInches % 12}")
-                      </Text>
-                    </View>
-                    <Slider
-                      style={styles.slider}
-                      minimumValue={32}
-                      maximumValue={54}
-                      step={1}
-                      value={settings.minHeightInches}
-                      onValueChange={v => updateSettings({ minHeightInches: v })}
-                      minimumTrackTintColor={COLORS.green}
-                      maximumTrackTintColor={COLORS.borderMedium}
-                      thumbTintColor={COLORS.green}
-                    />
-                    <View style={styles.sliderLabels}>
-                      <Text style={styles.sliderLabel}>32"</Text>
-                      <Text style={styles.sliderLabel}>54"</Text>
-                    </View>
-                  </View>
+                    {settings.heightFilterEnabled && (
+                      <View style={styles.sliderArea}>
+                        <View style={styles.heightDisplay}>
+                          <Text style={styles.heightValue}>{settings.minHeightInches}"</Text>
+                          <Text style={styles.heightFeet}>
+                            ({Math.floor(settings.minHeightInches / 12)}'{settings.minHeightInches % 12}")
+                          </Text>
+                        </View>
+                        <Slider
+                          style={styles.slider}
+                          minimumValue={32}
+                          maximumValue={54}
+                          step={1}
+                          value={settings.minHeightInches}
+                          onValueChange={v => updateSettings({ minHeightInches: v })}
+                          minimumTrackTintColor={COLORS.green}
+                          maximumTrackTintColor={COLORS.borderMedium}
+                          thumbTintColor={COLORS.green}
+                        />
+                        <View style={styles.sliderLabels}>
+                          <Text style={styles.sliderLabel}>32"</Text>
+                          <Text style={styles.sliderLabel}>54"</Text>
+                        </View>
+                      </View>
+                    )}
+                  </>
                 )}
 
                 {/* Page 2 Buttons: Back / Start Game */}
