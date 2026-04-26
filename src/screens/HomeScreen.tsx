@@ -183,6 +183,10 @@ export default function HomeScreen() {
       Alert.alert('Select a Park', 'Please pick a resort and park before continuing.');
       return;
     }
+    if (isZooResort) {
+      handleConfirmStart();
+      return;
+    }
     animateLayout();
     setModalPage(2);
   };
@@ -387,7 +391,7 @@ export default function HomeScreen() {
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>New Game</Text>
             <Text style={styles.modalSubtitle}>
-              {modalPage === 1 ? 'Step 1 of 2' : 'Step 2 of 2'}
+              {isZooResort ? 'Step 1 of 1' : modalPage === 1 ? 'Step 1 of 2' : 'Step 2 of 2'}
             </Text>
 
             {/* ── PAGE 1: Name + Resort/Park ── */}
@@ -531,7 +535,7 @@ export default function HomeScreen() {
                       onPress={handleModalNext}
                       disabled={!canAdvance}
                     >
-                      <Text style={styles.modalNextBtnText}>Next</Text>
+                      <Text style={styles.modalNextBtnText}>{isZooResort ? 'Start Game' : 'Next'}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
