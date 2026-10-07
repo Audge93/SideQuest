@@ -153,3 +153,10 @@ test('settings and profile render with the custom icon set', async ({ page }) =>
   await expect(page.getByText('Sharp Eye (Bronze)')).toBeVisible();
   await snap(page, '09-profile');
 });
+
+test('the app still starts when the game font is slow or blocked', async ({ page }) => {
+  // Mimics Safari stalling or skipping web fonts; the app must not wait on it.
+  await page.route('**/*.ttf', () => {});
+  await page.goto('/', { waitUntil: 'commit' });
+  await expect(byId(page, 'new-game-btn')).toBeVisible({ timeout: 8000 });
+});

@@ -8,9 +8,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { enableScreens } from 'react-native-screens';
-import { useFonts, LilitaOne_400Regular } from '@expo-google-fonts/lilita-one';
+import { LilitaOne_400Regular } from '@expo-google-fonts/lilita-one';
+import { useFonts, FontDisplay } from 'expo-font';
 import AppNavigator from './src/navigation/AppNavigator';
 import SplashAnimation from './src/components/SplashAnimation';
 import { useGameStore } from './src/store/gameStore';
@@ -25,7 +26,12 @@ enableScreens();
 function AppLoader() {
   const loadFromStorage = useGameStore(s => s.loadFromStorage);
   const [showSplash, setShowSplash] = useState(true);
-  const [fontsLoaded, fontError] = useFonts({ LilitaOne_400Regular });
+  const [fontsLoaded, fontError] = useFonts({
+    LilitaOne_400Regular: { uri: LilitaOne_400Regular, display: FontDisplay.SWAP },
+  });
+  // On web, never block on the font: Safari can be slow or skip web fonts entirely,
+  // which left a blank screen. Text swaps to the game font when it arrives.
+  const ready = Platform.OS === 'web' || fontsLoaded || !!fontError;
 
   // Load persisted game state on mount
   useEffect(() => {
@@ -34,7 +40,7 @@ function AppLoader() {
 
   return (
     <View style={styles.root}>
-      {(fontsLoaded || fontError) && <AppNavigator />}
+      {ready && <AppNavigator />}
       {/* Splash animation overlay — unmounts after animation completes */}
       {showSplash && <SplashAnimation onFinish={() => setShowSplash(false)} />}
     </View>

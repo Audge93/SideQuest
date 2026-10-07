@@ -37,6 +37,27 @@
         flex: 1;
       }
     </style>
+    <!-- If the app fails to start, show the error instead of a blank screen (handy when testing on a phone). -->
+    <script>
+      (function () {
+        function showError(message) {
+          var root = document.getElementById('root');
+          if (!root || root.childElementCount > 0 && root.innerText.trim().length > 0) return;
+          var box = document.createElement('div');
+          box.setAttribute('style', 'margin:auto;padding:24px;max-width:340px;color:#fff;font:600 15px -apple-system,system-ui,sans-serif;text-align:center');
+          box.innerHTML = '<div style="font-size:20px;margin-bottom:10px">Side Quest couldn\'t start</div>' +
+            '<div style="opacity:.75;word-break:break-word;margin-bottom:16px"></div>' +
+            '<button style="font:700 16px system-ui;padding:10px 22px;border-radius:12px;border:0;background:#3dbe6e;color:#fff">Reload</button>';
+          box.children[1].textContent = String(message || 'Unknown error');
+          box.children[2].onclick = function () { location.reload(); };
+          document.body.appendChild(box);
+        }
+        window.addEventListener('error', function (e) { setTimeout(function () { showError(e.message); }, 1500); });
+        window.addEventListener('unhandledrejection', function (e) {
+          setTimeout(function () { showError(e.reason && (e.reason.message || e.reason)); }, 1500);
+        });
+      })();
+    </script>
   </head>
 
   <body>
