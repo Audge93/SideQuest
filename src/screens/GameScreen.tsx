@@ -9,7 +9,6 @@
  */
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   View,
   Text,
@@ -28,11 +27,12 @@ import { useNavigation } from '@react-navigation/native';
 import { Badge, Task } from '../types';
 import Confetti from '../components/Confetti';
 import BadgeUnlockPopup from '../components/BadgeUnlockPopup';
-import CardCarousel from '../components/CardCarousel';
+import CardCarousel, { handCardWidth } from '../components/CardCarousel';
 import CardFace from '../components/CardFace';
 import CardBurst from '../components/CardBurst';
 import DraftPicker from '../components/DraftPicker';
 import GameButton from '../components/GameButton';
+import GameIcon, { IconName } from '../components/icons/GameIcon';
 import { useGameStore } from '../store/gameStore';
 import { PARKS } from '../data/parks';
 import { CATEGORY_FRAME_COLORS, COLORS, FONTS, INK, TABLE } from '../theme/theme';
@@ -45,7 +45,7 @@ const CHALLENGE_W = Math.round(Math.min((SCREEN_W - SIDE_PAD * 2 - CHALLENGE_GAP
 const DETAIL_CARD_W = Math.round(Math.min(SCREEN_W * 0.72, 290, SCREEN_H * 0.42));
 const SWAP_COST = 25;
 
-const GAME_TIPS = [
+const GAME_TIPS: { id: string; title: string; message: string; icon: IconName | 'card' }[] = [
   {
     id: 'tip-hand',
     title: 'Your Hand',
@@ -56,31 +56,31 @@ const GAME_TIPS = [
     id: 'tip-draft',
     title: 'Pick Your Next Quest',
     message: 'Whenever a card leaves your hand you choose its replacement from 3 new cards, so you stay in control of what you do next.',
-    icon: '🃏',
+    icon: 'draft',
   },
   {
     id: 'tip-challenge',
     title: 'Challenges',
     message: 'Challenge cards are bigger quests worth more points. Tap one to view it, complete it, or swap it for 25 points.',
-    icon: '🏆',
+    icon: 'trophy',
   },
   {
     id: 'tip-discard',
     title: 'Discards',
     message: 'Discards are limited and reset your streak. You earn one back for every 5 tasks you complete.',
-    icon: '🔄',
+    icon: 'swap',
   },
   {
     id: 'tip-streak',
     title: 'Streaks',
     message: 'Complete tasks in a row to build your streak. Every 5 in a row earns a +10 bonus.',
-    icon: '🔥',
+    icon: 'flame',
   },
   {
     id: 'tip-badges',
     title: 'Badges',
     message: 'Consistent play unlocks badges over time. Your progress is tracked in your profile.',
-    icon: '🏅',
+    icon: 'medal',
   },
 ];
 
@@ -105,6 +105,7 @@ export default function GameScreen() {
   const [showBigFirework, setShowBigFirework] = useState(false);
   const [challengeBurst, setChallengeBurst] = useState<{ key: number; task: Task; bonus: number } | null>(null);
   const [showDraft, setShowDraft] = useState(false);
+  const [handHeight, setHandHeight] = useState(0);
   const draft = session?.draft ?? null;
   const [expandedChallenge, setExpandedChallenge] = useState<Task | null>(null);
   const [showParkModal, setShowParkModal] = useState(false);
@@ -226,7 +227,7 @@ export default function GameScreen() {
 
   return (
     <ImageBackground
-      source={require('../../assets/HomeScreenBackgroundImage.png')}
+      source={require('../../assets/HomeScreenBackgroundImage.jpg')}
       style={styles.backgroundImage}
       resizeMode="cover"
     >
@@ -240,14 +241,18 @@ export default function GameScreen() {
             score={session.sessionScore}
             streak={session.currentStreak}
             completed={session.completedTasks.length}
-            parkLabel={currentPark ? `${currentPark.icon}  ${currentPark.name}` : undefined}
-            onParkPress={openParkModal}
           />
 
           <View style={styles.section}>
             <View style={styles.sectionHeadingRow}>
               <Text style={styles.sectionTitle}>Challenges</Text>
-              <Text style={styles.sectionHint}>Big quests · tap to play</Text>
+              {currentPark ? (
+                <TouchableOpacity testID="park-chip" style={styles.parkChip} onPress={openParkModal} activeOpacity={0.8} hitSlop={8}>
+                  <GameIcon name={currentPark.icon} size={22} />
+                  <Text style={styles.parkChipText} numberOfLines={1}>{currentPark.name}</Text>
+                  <GameIcon name="chevron-down" size={14} />
+                </TouchableOpacity>
+              ) : null}
             </View>
             <View style={styles.challengeRow}>
               {session.challengeTasks.map(task => (
@@ -268,7 +273,10 @@ export default function GameScreen() {
               <Text style={styles.sectionTitle}>Your Hand</Text>
               <Text style={styles.sectionHint}>Swipe to browse</Text>
             </View>
+            <View style={styles.handArea} onLayout={e => setHandHeight(e.nativeEvent.layout.height)}>
+              {handHeight > 0 && (
             <CardCarousel
+              cardWidth={handCardWidth(handHeight)}
               cards={session.hand}
               openSlotIndex={draft?.slotIndex ?? null}
               currentStreak={session.currentStreak}
@@ -277,6 +285,8 @@ export default function GameScreen() {
               onTriviaAnswer={(id, correct) => answerTrivia(id, correct)}
               discardsRemaining={session.discardsRemaining}
             />
+              )}
+            </View>
           </View>
         </View>
 
@@ -299,10 +309,10 @@ export default function GameScreen() {
 
         <View style={styles.navShell}>
           <View style={styles.navBar}>
-            <NavItem icon="cards-playing-outline" label="Game" active />
-            <NavItem icon="castle" label="Park" onPress={openParkModal} />
-            <NavItem icon="cog-outline" label="Settings" onPress={() => navigation.navigate('Settings')} />
-            <NavItem icon="account-outline" label="Profile" onPress={() => navigation.navigate('Profile')} />
+            <NavItem icon="cards" label="Game" active />
+            <NavItem icon="park-mk" label="Park" onPress={openParkModal} />
+            <NavItem icon="gear" label="Settings" onPress={() => navigation.navigate('Settings')} />
+            <NavItem icon="profile" label="Profile" onPress={() => navigation.navigate('Profile')} />
           </View>
         </View>
       </SafeAreaView>
@@ -332,7 +342,7 @@ export default function GameScreen() {
                 <Text style={styles.tipLogoLetter}>Q</Text>
               </View>
             ) : (
-              <Text style={styles.tipIcon}>{GAME_TIPS[currentTipIndex].icon}</Text>
+              <GameIcon name={GAME_TIPS[currentTipIndex].icon as IconName} size={64} />
             )}
 
             <Text style={styles.panelTitle}>{GAME_TIPS[currentTipIndex].title}</Text>
@@ -345,7 +355,7 @@ export default function GameScreen() {
             </View>
 
             <View style={styles.panelButtons}>
-              {currentTipIndex > 0 && <GameButton label="Back" tone="gray" onPress={handlePrevTip} />}
+              {currentTipIndex > 0 && <GameButton label="Back" tone="gray" onPress={handlePrevTip} style={styles.panelSecondary} />}
               <GameButton
                 label={currentTipIndex < GAME_TIPS.length - 1 ? 'Next' : 'Let’s Play!'}
                 tone="green"
@@ -379,7 +389,7 @@ export default function GameScreen() {
                     onPress={() => setSelectedParkId(park.id)}
                     activeOpacity={0.85}
                   >
-                    <Text style={styles.parkOptionIcon}>{park.icon}</Text>
+                    <GameIcon name={park.icon} size={30} />
                     <Text style={[styles.parkOptionLabel, selected && styles.parkOptionLabelSelected]}>{park.name}</Text>
                     {selected && <Text style={styles.parkOptionCheck}>✓</Text>}
                   </TouchableOpacity>
@@ -387,7 +397,7 @@ export default function GameScreen() {
               })}
             </View>
             <View style={styles.panelButtons}>
-              <GameButton label="Cancel" tone="gray" onPress={closeParkModal} />
+              <GameButton label="Cancel" tone="gray" onPress={closeParkModal} style={styles.panelSecondary} />
               <GameButton label="Switch" tone="green" onPress={handleConfirmSwitchPark} style={styles.panelPrimary} />
             </View>
           </View>
@@ -436,30 +446,23 @@ function ScoreHud({
   score,
   streak,
   completed,
-  parkLabel,
-  onParkPress,
 }: {
   score: number;
   streak: number;
   completed: number;
-  parkLabel?: string;
-  onParkPress: () => void;
 }) {
   const { display, bump } = useCountUp(score);
   const streakPips = streak % 5;
 
   return (
     <View style={styles.hud}>
-      {parkLabel ? (
-        <TouchableOpacity testID="park-chip" style={styles.parkChip} onPress={onParkPress} activeOpacity={0.8}>
-          <Text style={styles.parkChipText}>{parkLabel}</Text>
-          <MaterialCommunityIcons name="chevron-down" size={16} color="rgba(255,255,255,0.75)" />
-        </TouchableOpacity>
-      ) : null}
       <View style={styles.hudRow}>
         <View style={[styles.hudCell, styles.hudSide]}>
           <Text style={styles.hudLabel}>STREAK</Text>
-          <Text style={styles.hudValue}>🔥{streak}</Text>
+          <View style={styles.hudValueRow}>
+            <GameIcon name="flame" size={20} />
+            <Text style={styles.hudValue}>{streak}</Text>
+          </View>
           <View style={styles.pips}>
             {Array.from({ length: 5 }, (_, i) => (
               <View key={i} style={[styles.pip, i < streakPips && styles.pipOn]} />
@@ -478,7 +481,10 @@ function ScoreHud({
         </Animated.View>
         <View style={[styles.hudCell, styles.hudSide]}>
           <Text style={styles.hudLabel}>DONE</Text>
-          <Text style={styles.hudValue}>{completed}</Text>
+          <View style={styles.hudValueRow}>
+            <GameIcon name="check" size={20} />
+            <Text style={styles.hudValue}>{completed}</Text>
+          </View>
           <Text style={styles.hudSub}>quests</Text>
         </View>
       </View>
@@ -492,7 +498,7 @@ function NavItem({
   active,
   onPress,
 }: {
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  icon: IconName;
   label: string;
   active?: boolean;
   onPress?: () => void;
@@ -500,7 +506,7 @@ function NavItem({
   return (
     <TouchableOpacity style={styles.navItem} onPress={onPress} activeOpacity={0.8} disabled={active}>
       <View style={[styles.navIconWrap, active && styles.navIconWrapActive]}>
-        <MaterialCommunityIcons name={icon} size={22} color={active ? INK : 'rgba(255,255,255,0.75)'} />
+        <GameIcon name={icon} size={28} style={!active && styles.navIconIdle} />
       </View>
       <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
     </TouchableOpacity>
@@ -552,6 +558,7 @@ function ChallengeDetailModal({
               tone="blue"
               disabled={!canSwap}
               onPress={onSwap}
+              style={styles.panelSecondary}
             />
             <GameButton
               testID="challenge-complete-btn"
@@ -587,7 +594,7 @@ const styles = StyleSheet.create({
   screenContent: {
     flex: 1,
     paddingTop: 8,
-    paddingBottom: 92,
+    paddingBottom: 86,
     gap: 10,
   },
   loadingContainer: {
@@ -615,13 +622,21 @@ const styles = StyleSheet.create({
   parkChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 2,
+    gap: 5,
+    flexShrink: 1,
+    marginLeft: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    backgroundColor: TABLE.panel,
+    borderWidth: 2,
+    borderColor: INK,
   },
   parkChipText: {
+    flexShrink: 1,
     fontFamily: FONTS.display,
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 14,
     letterSpacing: 0.4,
   },
   hudRow: {
@@ -653,6 +668,11 @@ const styles = StyleSheet.create({
   },
   hudScoreLabel: {
     color: 'rgba(255, 255, 255, 0.85)',
+  },
+  hudValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   hudValue: {
     fontFamily: FONTS.display,
@@ -698,7 +718,7 @@ const styles = StyleSheet.create({
   },
   sectionHeadingRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     justifyContent: 'space-between',
   },
   handHeading: {
@@ -725,6 +745,9 @@ const styles = StyleSheet.create({
     paddingLeft: 6,
   },
   handSection: {
+    flex: 1,
+  },
+  handArea: {
     flex: 1,
     justifyContent: 'flex-end',
   },
@@ -753,9 +776,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   navIconWrap: {
-    paddingHorizontal: 14,
-    paddingVertical: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 2,
     borderRadius: 12,
+  },
+  navIconIdle: {
+    opacity: 0.75,
   },
   navIconWrapActive: {
     backgroundColor: TABLE.gold,
@@ -821,6 +847,9 @@ const styles = StyleSheet.create({
   panelPrimary: {
     flex: 1.6,
   },
+  panelSecondary: {
+    flex: 1,
+  },
   textBtn: {
     alignSelf: 'center',
     paddingVertical: 4,
@@ -832,9 +861,6 @@ const styles = StyleSheet.create({
   },
 
   // ── Tips ──
-  tipIcon: {
-    fontSize: 48,
-  },
   tipLogoCard: {
     width: 70,
     height: 96,
@@ -891,9 +917,6 @@ const styles = StyleSheet.create({
   parkOptionSelected: {
     backgroundColor: '#FFF8EC',
     borderColor: TABLE.gold,
-  },
-  parkOptionIcon: {
-    fontSize: 22,
   },
   parkOptionLabel: {
     flex: 1,

@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 4173;
 
-// Runs against the static web export (`npm run build:web`) at phone size.
+// Runs against the static web export (`npm run build:web`) at a standard and a small phone size.
 export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,
@@ -13,12 +13,13 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     baseURL: `http://localhost:${PORT}`,
-    ...devices['Pixel 7'],
-    viewport: { width: 390, height: 844 },
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'phone-chromium', use: { browserName: 'chromium' } }],
+  projects: [
+    { name: 'phone', use: { ...devices['Pixel 7'], viewport: { width: 390, height: 844 } } },
+    { name: 'small-phone', use: { ...devices['Pixel 7'], viewport: { width: 375, height: 667 } } },
+  ],
   webServer: {
     command: `node e2e/serve.mjs dist ${PORT}`,
     port: PORT,

@@ -37,7 +37,7 @@ function createChallengeInstance(task: Task): Task {
 
 /** Generates 4 tiered badges (bronze → platinum) for a task category */
 function catBadges(
-  baseId: string, name: string, icon: string, category: string, displayCat: string,
+  baseId: string, name: string, category: string, displayCat: string,
   tiers: [number, number, number, number],
 ): Badge[] {
   const tierNames: BadgeTier[] = ['bronze', 'silver', 'gold', 'platinum'];
@@ -45,7 +45,6 @@ function catBadges(
     id: `${baseId}-${tier}`,
     name: `${name} (${tier.charAt(0).toUpperCase() + tier.slice(1)})`,
     description: `Complete ${tiers[i]} ${displayCat} tasks`,
-    icon,
     tier,
     earned: false,
   }));
@@ -53,38 +52,38 @@ function catBadges(
 
 const DEFAULT_BADGES: Badge[] = [
   // Category badges (10 categories x 4 tiers = 40)
-  ...catBadges('sharp-eye', 'Sharp Eye', '🔍', 'find', 'Find', [10, 25, 50, 100]),
-  ...catBadges('shutterbug', 'Shutterbug', '📸', 'photo', 'Photo', [10, 25, 50, 100]),
-  ...catBadges('brain-box', 'Brain Box', '🧠', 'trivia', 'Trivia', [10, 25, 50, 100]),
-  ...catBadges('scene-stealer', 'Scene Stealer', '🎬', 'act', 'Act', [10, 25, 50, 100]),
-  ...catBadges('thrill-seeker', 'Thrill Seeker', '🎢', 'ride', 'Ride', [10, 25, 50, 100]),
-  ...catBadges('foodie', 'Foodie', '🍦', 'treat', 'Treat', [10, 25, 50, 100]),
-  ...catBadges('pin-pro', 'Pin Pro', '📌', 'pins', 'Pins', [10, 25, 50, 100]),
-  ...catBadges('star-struck', 'Star Struck', '🎭', 'meet', 'Meet', [10, 25, 50, 100]),
-  ...catBadges('trailblazer', 'Trailblazer', '🗺️', 'explore', 'Explore', [10, 25, 50, 100]),
-  ...catBadges('treasure-hunter', 'Treasure Hunter', '🎯', 'seek', 'Seek', [10, 25, 50, 100]),
+  ...catBadges('sharp-eye', 'Sharp Eye', 'find', 'Find', [10, 25, 50, 100]),
+  ...catBadges('shutterbug', 'Shutterbug', 'photo', 'Photo', [10, 25, 50, 100]),
+  ...catBadges('brain-box', 'Brain Box', 'trivia', 'Trivia', [10, 25, 50, 100]),
+  ...catBadges('scene-stealer', 'Scene Stealer', 'act', 'Act', [10, 25, 50, 100]),
+  ...catBadges('thrill-seeker', 'Thrill Seeker', 'ride', 'Ride', [10, 25, 50, 100]),
+  ...catBadges('foodie', 'Foodie', 'treat', 'Treat', [10, 25, 50, 100]),
+  ...catBadges('pin-pro', 'Pin Pro', 'pins', 'Pins', [10, 25, 50, 100]),
+  ...catBadges('star-struck', 'Star Struck', 'meet', 'Meet', [10, 25, 50, 100]),
+  ...catBadges('trailblazer', 'Trailblazer', 'explore', 'Explore', [10, 25, 50, 100]),
+  ...catBadges('treasure-hunter', 'Treasure Hunter', 'seek', 'Seek', [10, 25, 50, 100]),
   // Milestone badges (tiered)
-  { id: 'first-steps', name: 'First Steps', description: 'Complete your first task', icon: '🎉', tier: 'bronze', earned: false },
+  { id: 'first-steps', name: 'First Steps', description: 'Complete your first task', tier: 'bronze', earned: false },
   // Streak tiers
-  { id: 'streak-bronze', name: 'On Fire (Bronze)', description: 'Reach a 5-task streak', icon: '🔥', tier: 'bronze', earned: false },
-  { id: 'streak-silver', name: 'On Fire (Silver)', description: 'Reach a 10-task streak', icon: '🔥', tier: 'silver', earned: false },
-  { id: 'streak-gold', name: 'Blazing (Gold)', description: 'Reach a 20-task streak', icon: '🔥', tier: 'gold', earned: false },
-  { id: 'streak-platinum', name: 'Inferno (Platinum)', description: 'Reach a 30-task streak', icon: '💙', tier: 'platinum', earned: false },
+  { id: 'streak-bronze', name: 'On Fire (Bronze)', description: 'Reach a 5-task streak', tier: 'bronze', earned: false },
+  { id: 'streak-silver', name: 'On Fire (Silver)', description: 'Reach a 10-task streak', tier: 'silver', earned: false },
+  { id: 'streak-gold', name: 'Blazing (Gold)', description: 'Reach a 20-task streak', tier: 'gold', earned: false },
+  { id: 'streak-platinum', name: 'Inferno (Platinum)', description: 'Reach a 30-task streak', tier: 'platinum', earned: false },
   // Lifetime score tiers
-  { id: 'score-bronze', name: 'Centurion (Bronze)', description: 'Earn 100 lifetime points', icon: '🏅', tier: 'bronze', earned: false },
-  { id: 'score-silver', name: 'High Roller (Silver)', description: 'Earn 500 lifetime points', icon: '💎', tier: 'silver', earned: false },
-  { id: 'score-gold', name: 'Legend (Gold)', description: 'Earn 1,000 lifetime points', icon: '⭐', tier: 'gold', earned: false },
-  { id: 'score-platinum', name: 'Mythic (Platinum)', description: 'Earn 5,000 lifetime points', icon: '👑', tier: 'platinum', earned: false },
+  { id: 'score-bronze', name: 'Centurion (Bronze)', description: 'Earn 100 lifetime points', tier: 'bronze', earned: false },
+  { id: 'score-silver', name: 'High Roller (Silver)', description: 'Earn 500 lifetime points', tier: 'silver', earned: false },
+  { id: 'score-gold', name: 'Legend (Gold)', description: 'Earn 1,000 lifetime points', tier: 'gold', earned: false },
+  { id: 'score-platinum', name: 'Mythic (Platinum)', description: 'Earn 5,000 lifetime points', tier: 'platinum', earned: false },
   // Park hopper tiers
-  { id: 'hopper-bronze', name: 'Park Hopper (Bronze)', description: 'Visit 2 parks', icon: '🏰', tier: 'bronze', earned: false },
-  { id: 'hopper-silver', name: 'Park Hopper (Silver)', description: 'Visit 4 parks', icon: '🏰', tier: 'silver', earned: false },
-  { id: 'hopper-gold', name: 'Park Hopper (Gold)', description: 'Visit 6 parks', icon: '🏰', tier: 'gold', earned: false },
-  { id: 'hopper-platinum', name: 'Park Hopper (Platinum)', description: 'Visit 10 parks', icon: '🏰', tier: 'platinum', earned: false },
+  { id: 'hopper-bronze', name: 'Park Hopper (Bronze)', description: 'Visit 2 parks', tier: 'bronze', earned: false },
+  { id: 'hopper-silver', name: 'Park Hopper (Silver)', description: 'Visit 4 parks', tier: 'silver', earned: false },
+  { id: 'hopper-gold', name: 'Park Hopper (Gold)', description: 'Visit 6 parks', tier: 'gold', earned: false },
+  { id: 'hopper-platinum', name: 'Park Hopper (Platinum)', description: 'Visit 10 parks', tier: 'platinum', earned: false },
   // Completionist tiers
-  { id: 'completionist-bronze', name: 'Completionist (Bronze)', description: 'Earn all bronze category badges', icon: '🏆', tier: 'bronze', earned: false },
-  { id: 'completionist-silver', name: 'Completionist (Silver)', description: 'Earn all silver category badges', icon: '🏆', tier: 'silver', earned: false },
-  { id: 'completionist-gold', name: 'Completionist (Gold)', description: 'Earn all gold category badges', icon: '🏆', tier: 'gold', earned: false },
-  { id: 'completionist-platinum', name: 'Completionist (Platinum)', description: 'Earn all platinum category badges', icon: '🏆', tier: 'platinum', earned: false },
+  { id: 'completionist-bronze', name: 'Completionist (Bronze)', description: 'Earn all bronze category badges', tier: 'bronze', earned: false },
+  { id: 'completionist-silver', name: 'Completionist (Silver)', description: 'Earn all silver category badges', tier: 'silver', earned: false },
+  { id: 'completionist-gold', name: 'Completionist (Gold)', description: 'Earn all gold category badges', tier: 'gold', earned: false },
+  { id: 'completionist-platinum', name: 'Completionist (Platinum)', description: 'Earn all platinum category badges', tier: 'platinum', earned: false },
 ];
 
 const DEFAULT_SETTINGS: Settings = {

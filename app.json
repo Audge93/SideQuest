@@ -7,7 +7,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/HomeScreenBackgroundImage.png",
+      "image": "./assets/HomeScreenBackgroundImage.jpg",
       "resizeMode": "cover",
       "backgroundColor": "#0A0F26"
     },

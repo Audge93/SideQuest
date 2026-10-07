@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Task } from '../types';
+import GameIcon, { IconName } from './icons/GameIcon';
 import {
   CATEGORY_COLORS,
   CATEGORY_FRAME_COLORS,
-  CATEGORY_ICON_IMAGES,
   FONTS,
   INK,
   RARITY,
@@ -84,11 +84,7 @@ export default function CardFace({ task, width, variant = 'full', descriptionLin
               },
             ]}
           >
-            <Image
-              source={CATEGORY_ICON_IMAGES[task.category]}
-              style={{ width: Math.round(artHeight * 0.56), height: Math.round(artHeight * 0.56) }}
-              resizeMode="contain"
-            />
+            <GameIcon name={task.category as IconName} size={Math.round(artHeight * 0.56)} />
           </View>
         </View>
 
@@ -137,8 +133,10 @@ export default function CardFace({ task, width, variant = 'full', descriptionLin
               },
             ]}
           />
-          <Text style={[styles.footerText, { fontSize: Math.max(8, Math.round(12 * s)) }]}>{rarity.label}</Text>
-          {task.heightRequirement ? (
+          {!compact && (
+            <Text style={[styles.footerText, { fontSize: Math.max(8, Math.round(12 * s)) }]}>{rarity.label}</Text>
+          )}
+          {!compact && task.heightRequirement ? (
             <Text style={[styles.footerText, styles.footerRight, { fontSize: Math.max(8, Math.round(12 * s)) }]}>
               {task.heightRequirement}" min
             </Text>

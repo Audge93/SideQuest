@@ -120,35 +120,6 @@ export const CATEGORY_LABELS: Record<string, string> = {
   seek: 'Seek',
 };
 
-// Maps internal category ids to their PNG icon assets.
-// treat uses snack.PNG (the filename chosen when uploading).
-export const CATEGORY_ICON_IMAGES: Record<string, any> = {
-  find:    require('../../assets/icons/find.png'),
-  photo:   require('../../assets/icons/photo.png'),
-  trivia:  require('../../assets/icons/trivia.png'),
-  act:     require('../../assets/icons/act.png'),
-  ride:    require('../../assets/icons/ride.png'),
-  treat:   require('../../assets/icons/snack.png'),
-  pins:    require('../../assets/icons/pins.png'),
-  meet:    require('../../assets/icons/meet.png'),
-  explore: require('../../assets/icons/explore.png'),
-  seek:    require('../../assets/icons/seek.png'),
-};
-
-// Lightweight emoji icons kept for text contexts (e.g. settings labels).
-export const CATEGORY_ICONS: Record<string, string> = {
-  find: '🔍',
-  photo: '📸',
-  trivia: '🧠',
-  act: '🎬',
-  ride: '🎢',
-  treat: '🍦',
-  pins: '📌',
-  meet: '🎭',
-  explore: '🗺️',
-  seek: '🎯',
-};
-
 // Reusable depth presets so buttons, cards, and chips all cast shadows in a
 // consistent way and preserve the same playful visual hierarchy.
 export const SHADOWS = {

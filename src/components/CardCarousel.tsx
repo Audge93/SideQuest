@@ -27,15 +27,19 @@ import { CATEGORY_FRAME_COLORS, FONTS, INK, TABLE } from '../theme/theme';
 import CardBurst, { BurstVariant } from './CardBurst';
 import CardFace, { CARD_ASPECT } from './CardFace';
 import GameButton from './GameButton';
+import GameIcon from './icons/GameIcon';
 import { haptic } from '../utils/haptics';
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const { width: SCREEN_W } = Dimensions.get('window');
 
-const CARD_WIDTH = Math.round(Math.min(SCREEN_W * 0.66, 270, (SCREEN_H * 0.4) / CARD_ASPECT));
-const CARD_HEIGHT = Math.round(CARD_WIDTH * CARD_ASPECT);
 const CARD_GAP = 14;
-const SNAP_INTERVAL = CARD_WIDTH + CARD_GAP;
-const H_PADDING = Math.round((SCREEN_W - CARD_WIDTH) / 2);
+// Vertical space the carousel uses besides the card itself: list padding, dots, action bar.
+const HAND_CHROME = 112;
+
+// Largest hand card that fits the space the hand has been given.
+export function handCardWidth(availableHeight: number) {
+  return Math.round(Math.max(140, Math.min(SCREEN_W * 0.66, 270, (availableHeight - HAND_CHROME) / CARD_ASPECT)));
+}
 const INACTIVE_SCALE = 0.88;
 const FAN_TILT = 7;
 
@@ -49,11 +53,13 @@ const toDeg = (v: Animated.AnimatedInterpolation<number> | Animated.Value) =>
 // ── Hand card: deals in on mount, punches/shatters or tosses on exit ──
 function TaskCard({
   task,
+  width,
   dealDelay,
   exitKind,
   onExited,
 }: {
   task: Task;
+  width: number;
   dealDelay: number;
   exitKind: ExitKind | null;
   onExited: () => void;
@@ -129,7 +135,7 @@ function TaskCard({
         ],
       }}
     >
-      <CardFace task={task} width={CARD_WIDTH}>
+      <CardFace task={task} width={width}>
         <Animated.View pointerEvents="none" style={[styles.flash, { opacity: flash }]} />
       </CardFace>
     </Animated.View>
@@ -217,7 +223,7 @@ function TriviaModal({
 }
 
 // ── Open slot shown while the player drafts a replacement ────
-function OpenSlot() {
+function OpenSlot({ height }: { height: number }) {
   const pulse = useRef(new Animated.Value(0)).current;
   const appear = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -237,12 +243,13 @@ function OpenSlot() {
       style={[
         styles.openSlot,
         {
+          height,
           opacity: Animated.multiply(appear, pulse.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] })),
           transform: [{ scale: appear.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }],
         },
       ]}
     >
-      <Text style={styles.openSlotStar}>✦</Text>
+      <GameIcon name="sparkle" size={44} />
       <Text style={styles.openSlotText}>Choosing your{'\n'}next quest…</Text>
     </Animated.View>
   );
@@ -254,6 +261,7 @@ const isOpenSlot = (item: HandItem): item is { id: typeof OPEN_SLOT_ID } => item
 
 // ── Main Carousel ────────────────────────────────────────────
 export default function CardCarousel({
+  cardWidth,
   cards,
   openSlotIndex,
   currentStreak,
@@ -262,6 +270,7 @@ export default function CardCarousel({
   onTriviaAnswer,
   discardsRemaining,
 }: {
+  cardWidth: number;
   cards: Task[];
   openSlotIndex: number | null;
   currentStreak: number;
@@ -270,6 +279,8 @@ export default function CardCarousel({
   discardsRemaining: number;
   onTriviaAnswer: (id: string, correct: boolean) => void;
 }) {
+  const SNAP_INTERVAL = cardWidth + CARD_GAP;
+  const sidePadding = Math.round((SCREEN_W - cardWidth) / 2) - CARD_GAP / 2;
   const [activeIndex, setActiveIndex] = useState(0);
   const [triviaTask, setTriviaTask] = useState<Task | null>(null);
   const [exiting, setExiting] = useState<{ id: string; kind: ExitKind } | null>(null);
@@ -398,7 +409,7 @@ export default function CardCarousel({
           decelerationRate="fast"
           bounces={false}
           style={styles.list}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingHorizontal: sidePadding }]}
           onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
             useNativeDriver: true,
             listener: handleScroll,
@@ -417,16 +428,17 @@ export default function CardCarousel({
               <Pressable onPress={() => focusCard(index)} disabled={index === activeIndex}>
                 <Animated.View
                   style={{
-                    width: CARD_WIDTH,
+                    width: cardWidth,
                     marginHorizontal: CARD_GAP / 2,
                     transform: [{ translateY }, { rotate }, { scale }],
                   }}
                 >
                   {isOpenSlot(item) ? (
-                    <OpenSlot />
+                    <OpenSlot height={Math.round(cardWidth * CARD_ASPECT)} />
                   ) : (
                     <TaskCard
                       task={item}
+                      width={cardWidth}
                       dealDelay={initialIdsRef.current.has(item.id) ? 150 + index * 90 : 0}
                       exitKind={exiting?.id === item.id ? exiting.kind : null}
                       onExited={handleExited}
@@ -505,9 +517,8 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   listContent: {
-    paddingHorizontal: H_PADDING - CARD_GAP / 2,
-    paddingTop: 14,
-    paddingBottom: 22,
+    paddingTop: 12,
+    paddingBottom: 18,
   },
   flash: {
     ...StyleSheet.absoluteFillObject,
@@ -517,7 +528,6 @@ const styles = StyleSheet.create({
 
   // ── Open slot ──
   openSlot: {
-    height: CARD_HEIGHT,
     borderRadius: 18,
     borderWidth: 3,
     borderStyle: 'dashed',
@@ -526,10 +536,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-  },
-  openSlotStar: {
-    color: TABLE.gold,
-    fontSize: 38,
   },
   openSlotText: {
     fontFamily: FONTS.display,
@@ -561,7 +567,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     paddingHorizontal: 18,
-    marginTop: 12,
+    marginTop: 10,
   },
   actionSecondary: {
     flex: 2,

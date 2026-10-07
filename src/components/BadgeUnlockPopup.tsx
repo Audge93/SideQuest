@@ -18,6 +18,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Badge, BadgeTier } from '../types';
+import GameIcon, { badgeIconName } from './icons/GameIcon';
 import { COLORS, FONTS, INK, SHADOWS, TABLE } from '../theme/theme';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -303,12 +304,17 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
         >
           {/* "Badge Unlocked!" header */}
           <Animated.View
-            style={{
-              opacity: titleOpacity,
-              transform: [{ translateY: titleTranslateY }],
-            }}
+            style={[
+              styles.titleRow,
+              {
+                opacity: titleOpacity,
+                transform: [{ translateY: titleTranslateY }],
+              },
+            ]}
           >
-            <Text style={styles.unlockTitle}>✨ Badge Unlocked! ✨</Text>
+            <GameIcon name="sparkle" size={22} />
+            <Text style={styles.unlockTitle}>Badge Unlocked!</Text>
+            <GameIcon name="sparkle" size={22} />
           </Animated.View>
 
           {/* Glow ring behind badge */}
@@ -337,7 +343,7 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
                 },
               ]}
             >
-              <Text style={styles.badgeEmoji}>{badge.icon}</Text>
+              <GameIcon name={badgeIconName(badge.id)} size={Math.round(56 * sw)} />
             </Animated.View>
           </View>
 
@@ -419,6 +425,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...SHADOWS.cardActive,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: Math.round(18 * sh),
+  },
   unlockTitle: {
     fontFamily: FONTS.display,
     fontSize: Math.round(22 * sw),
@@ -427,7 +439,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 0,
     textAlign: 'center',
-    marginBottom: Math.round(18 * sh),
     letterSpacing: 0.5,
   },
   badgeContainer: {
@@ -454,11 +465,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'visible',
     ...SHADOWS.button,
-  },
-  badgeEmoji: {
-    fontSize: Math.round(42 * sw),
-    lineHeight: Math.round(50 * sw),
-    textAlign: 'center',
   },
   tierPill: {
     paddingHorizontal: Math.round(16 * sw),

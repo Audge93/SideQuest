@@ -37,6 +37,7 @@ import { useGameStore } from '../store/gameStore';
 // CategoryToggles type used indirectly via updateCategoryToggle
 import { SaveSlot } from '../types';
 import { PARKS } from '../data/parks';
+import GameIcon from '../components/icons/GameIcon';
 import { COLORS, FONTS, INK, TABLE } from '../theme/theme';
 
 // ─── Relative time helper ──────────────────────────────────────────────────
@@ -155,7 +156,7 @@ export default function HomeScreen() {
 
   return (
     <ImageBackground
-      source={require('../../assets/GameBackgroundImage.png')}
+      source={require('../../assets/GameBackgroundImage.jpg')}
       style={styles.backgroundImage}
       resizeMode="stretch"
     >
@@ -169,14 +170,14 @@ export default function HomeScreen() {
               onPress={() => navigation.navigate('Profile')}
               activeOpacity={0.7}
             >
-              <Text style={styles.topNavIcon}>{'\u{1F464}'}</Text>
+              <GameIcon name="profile" size={28} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.topNavBtn}
               onPress={() => navigation.navigate('Settings')}
               activeOpacity={0.7}
             >
-              <Text style={styles.topNavIcon}>{'\u2699\uFE0F'}</Text>
+              <GameIcon name="gear" size={28} />
             </TouchableOpacity>
           </View>
 
@@ -233,7 +234,13 @@ export default function HomeScreen() {
         onRequestClose={() => setShowContinueModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <ScrollView
+            style={styles.modalCard}
+            contentContainerStyle={styles.modalCardContent}
+            bounces={false}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             <Text style={styles.modalTitle}>Continue Game</Text>
             <Text style={styles.modalSubtitle}>Choose a saved game</Text>
             <View style={styles.modalDivider} />
@@ -302,7 +309,7 @@ export default function HomeScreen() {
                 <Text style={styles.modalBackBtnText}>Back</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
 
@@ -314,7 +321,13 @@ export default function HomeScreen() {
         onRequestClose={() => setShowNewGameModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <ScrollView
+            style={styles.modalCard}
+            contentContainerStyle={styles.modalCardContent}
+            bounces={false}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             <Text style={styles.modalTitle}>New Game</Text>
             <Text style={styles.modalSubtitle}>
               {modalPage === 1 ? 'Step 1 of 2' : 'Step 2 of 2'}
@@ -324,12 +337,14 @@ export default function HomeScreen() {
             {modalPage === 1 && (
               <View>
                 {/* Welcome tooltip */}
+                {!SHORT_SCREEN && (
                 <View style={styles.tooltip}>
                   <Text style={styles.tooltipText}>
                     Welcome to Side Quest, the theme park scavenger hunt.
                     You can play solo or co-op. Pick your park and let's go!
                   </Text>
                 </View>
+                )}
 
                 {/* Player / Team Name */}
                 <View style={styles.modalDivider} />
@@ -375,7 +390,7 @@ export default function HomeScreen() {
                         onPress={() => updateSettings({ parkIds: [park.id] })}
                         activeOpacity={0.8}
                       >
-                        <Text style={styles.parkTileIcon}>{park.icon}</Text>
+                        <GameIcon name={park.icon} size={44} />
                         <Text style={[styles.parkTileName, isSelected && styles.parkTileNameSelected]} numberOfLines={2}>
                           {park.name}
                         </Text>
@@ -411,8 +426,9 @@ export default function HomeScreen() {
                 {/* Pin Trading Toggle */}
                 <>
                     <View style={styles.toggleRow}>
+                      <GameIcon name="pins" size={34} />
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.toggleLabel}>📌  Pin Trading Tasks</Text>
+                        <Text style={styles.toggleLabel}>Pin Trading Tasks</Text>
                         <Text style={styles.toggleDesc}>Include pin trading challenges</Text>
                       </View>
                       <Switch
@@ -429,8 +445,9 @@ export default function HomeScreen() {
                 {/* Height Filter */}
                 <>
                     <View style={styles.toggleRow}>
+                      <GameIcon name="ruler" size={34} />
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.toggleLabel}>🎢  Filter by height</Text>
+                        <Text style={styles.toggleLabel}>Filter by height</Text>
                         <Text style={styles.toggleDesc}>Hides rides above your shortest rider</Text>
                       </View>
                       <Switch
@@ -482,7 +499,7 @@ export default function HomeScreen() {
                 </View>
               </View>
             )}
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </ImageBackground>
@@ -492,6 +509,7 @@ export default function HomeScreen() {
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const SHORT_SCREEN = SCREEN_H < 720;
 
 const PANEL_BORDER = {
   borderWidth: 3,
@@ -632,10 +650,14 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 400,
+    maxHeight: '100%',
+    flexGrow: 0,
     backgroundColor: TABLE.panel,
     borderRadius: 22,
-    padding: 22,
     ...PANEL_BORDER,
+  },
+  modalCardContent: {
+    padding: SHORT_SCREEN ? 16 : 22,
   },
   modalTitle: {
     fontFamily: FONTS.display,
@@ -665,7 +687,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     gap: 4,
-    paddingVertical: 12,
+    paddingVertical: SHORT_SCREEN ? 8 : 12,
     paddingHorizontal: 8,
     borderRadius: 14,
     borderWidth: 2.5,
@@ -676,9 +698,6 @@ const styles = StyleSheet.create({
   parkTileSelected: {
     borderColor: TABLE.gold,
     backgroundColor: '#FFF8EC',
-  },
-  parkTileIcon: {
-    fontSize: 28,
   },
   parkTileName: {
     fontFamily: FONTS.display,
@@ -757,6 +776,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12,
     paddingVertical: 10,
   },
   toggleLabel: {
@@ -869,9 +889,6 @@ const styles = StyleSheet.create({
     borderWidth: 2.5,
     borderBottomWidth: 5,
     borderColor: INK,
-  },
-  topNavIcon: {
-    fontSize: 18,
   },
 
   // Continue Game modal — save slot picker

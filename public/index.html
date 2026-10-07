@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Side Quest</title>
+
+    <!-- Phone web app: dark browser chrome and "Add to Home Screen" full-screen mode -->
+    <meta name="theme-color" content="#1B1430" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Side Quest" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <style id="expo-reset">
+      html,
+      body {
+        height: 100%;
+        background-color: #1b1430;
+      }
+      body {
+        overflow: hidden;
+        /* No rubber-band page bounce, gray tap flashes, double-tap zoom, or long-press callouts */
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        touch-action: manipulation;
+        -webkit-text-size-adjust: 100%;
+      }
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

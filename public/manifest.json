@@ -1,0 +1,18 @@
+{
+  "name": "Side Quest",
+  "short_name": "Side Quest",
+  "description": "Walt Disney World scavenger hunt card game",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1B1430",
+  "theme_color": "#1B1430",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

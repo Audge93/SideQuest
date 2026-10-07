@@ -3,7 +3,7 @@ import { test, expect, Page } from '@playwright/test';
 // Key screens are saved here so a person (or Claude) can review the UI after a run.
 async function snap(page: Page, name: string) {
   await page.waitForTimeout(450);
-  await page.screenshot({ path: `test-results/screens/${name}.png` });
+  await page.screenshot({ path: `test-results/screens/${test.info().project.name}/${name}.png` });
 }
 
 const byId = (page: Page, id: string) => page.locator(`[data-testid="${id}"]`);
@@ -77,7 +77,7 @@ test('completing a hand card scores points, then drafts a replacement into the s
 
   await byId(page, 'complete-btn').click();
   await page.waitForTimeout(50);
-  await page.screenshot({ path: 'test-results/screens/03-complete-burst.png' });
+  await page.screenshot({ path: `test-results/screens/${test.info().project.name}/03-complete-burst.png` });
   await expect(byId(page, 'open-slot')).toBeVisible();
   await expect.poll(() => score(page)).toBe(points);
 
@@ -140,4 +140,16 @@ test('switching parks redeals the hand for the new park', async ({ page }) => {
   await expect(byId(page, 'switch-park-wdw-ep')).toBeHidden();
   await expect(byId(page, 'park-chip')).toContainText('EPCOT');
   await expect(byId(page, 'hand-card')).toHaveCount(5);
+});
+
+test('settings and profile render with the custom icon set', async ({ page }) => {
+  await startGame(page);
+  await page.getByText('Settings', { exact: true }).click();
+  await expect(page.getByText('Haptic Feedback')).toBeVisible();
+  expect(await page.locator('svg').count()).toBeGreaterThan(10);
+  await snap(page, '08-settings');
+  await page.getByText('‹ Back').click();
+  await page.getByText('Profile', { exact: true }).click();
+  await expect(page.getByText('Sharp Eye (Bronze)')).toBeVisible();
+  await snap(page, '09-profile');
 });

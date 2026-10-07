@@ -23,6 +23,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
 import { Badge, BadgeTier, SaveSlot } from '../types';
 import { COLORS, SHADOWS, RADII } from '../theme/theme';
+import GameIcon, { badgeIconName } from '../components/icons/GameIcon';
 
 const TIER_COLORS: Record<BadgeTier, string> = {
   bronze: '#CD7F32',
@@ -175,7 +176,7 @@ export default function ProfileScreen() {
                 onPress={() => { setGameNameInput(activeSlot.name); setEditingGameName(true); }}
               >
                 <Text style={styles.playerName}>{activeSlot.name}</Text>
-                <Text style={styles.editIcon}>✏️</Text>
+                <GameIcon name="pencil" size={22} />
               </TouchableOpacity>
             )}
           </View>
@@ -204,7 +205,7 @@ export default function ProfileScreen() {
           ) : (
             <TouchableOpacity style={styles.nameRow} onPress={() => { setNameInput(player.name); setEditingName(true); }}>
               <Text style={styles.playerName}>{player.name}</Text>
-              <Text style={styles.editIcon}>✏️</Text>
+              <GameIcon name="pencil" size={22} />
             </TouchableOpacity>
           )}
           <View style={styles.scoresRow}>
@@ -273,7 +274,7 @@ export default function ProfileScreen() {
       >
         <View style={styles.resetOverlay}>
           <View style={styles.resetCard}>
-            <Text style={styles.resetCardIcon}>🗑️</Text>
+            <GameIcon name="trash" size={56} style={styles.resetCardIcon} />
             <Text style={styles.resetCardTitle}>Delete Game Save?</Text>
             <Text style={styles.resetCardMessage}>
               {displaySlot ? `"${displaySlot.name}" will be permanently deleted. This cannot be undone.` : ''}
@@ -326,7 +327,7 @@ function BadgeTile({
 
   return (
     <View style={[styles.badgeTile, earned ? { borderColor: tierColor } : styles.badgeTileLocked]}>
-      <Text style={[styles.badgeIcon, !earned && styles.badgeIconLocked]}>{badge.icon}</Text>
+      <GameIcon name={badgeIconName(badge.id)} size={38} style={[styles.badgeIcon, !earned && styles.badgeIconLocked]} />
       <Text style={[styles.badgeName, !earned && styles.badgeNameLocked]}>{badge.name}</Text>
       <Text style={styles.badgeDescription}>{badge.description}</Text>
 
@@ -417,7 +418,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
   },
-  editIcon: { fontSize: 16 },
   nameEditRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -523,12 +523,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceSecondary,
   },
   badgeIcon: {
-    fontSize: 30,
     marginBottom: 6,
   },
   badgeIconLocked: {
     opacity: 0.3,
-    fontSize: 30,
   },
   badgeName: {
     color: COLORS.textDark,
@@ -615,7 +613,6 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   resetCardIcon: {
-    fontSize: 44,
     marginBottom: 12,
   },
   resetCardTitle: {

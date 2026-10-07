@@ -3,10 +3,10 @@ import { Park, Ride } from '../types';
 // Canonical list of selectable parks. These ids are referenced by settings,
 // sessions, ride data, and saved games throughout the app.
 export const PARKS: Park[] = [
-  { id: 'wdw-mk', name: 'Magic Kingdom', shortName: 'MK', icon: '🏰', theme: 'disney' },
-  { id: 'wdw-hs', name: 'Hollywood Studios', shortName: 'HS', icon: '🎬', theme: 'disney' },
-  { id: 'wdw-ep', name: 'EPCOT', shortName: 'EP', icon: '🌐', theme: 'disney' },
-  { id: 'wdw-ak', name: 'Animal Kingdom', shortName: 'AK', icon: '🌳', theme: 'disney' },
+  { id: 'wdw-mk', name: 'Magic Kingdom', shortName: 'MK', icon: 'park-mk', theme: 'disney' },
+  { id: 'wdw-hs', name: 'Hollywood Studios', shortName: 'HS', icon: 'park-hs', theme: 'disney' },
+  { id: 'wdw-ep', name: 'EPCOT', shortName: 'EP', icon: 'park-ep', theme: 'disney' },
+  { id: 'wdw-ak', name: 'Animal Kingdom', shortName: 'AK', icon: 'park-ak', theme: 'disney' },
 ];
 
 // Master attraction catalog. The store turns these into ride tasks at runtime

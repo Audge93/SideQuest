@@ -15,21 +15,22 @@ import Slider from '@react-native-community/slider';
 import { useGameStore } from '../store/gameStore';
 import { CategoryToggles } from '../types';
 import { RIDES } from '../data/parks';
+import GameIcon, { IconName } from '../components/icons/GameIcon';
 import { COLORS, RADII } from '../theme/theme';
 
 // Metadata used to render the category toggle list without duplicating label
 // and icon markup for every individual row in the settings UI.
-const CATEGORY_INFO: { key: keyof CategoryToggles; label: string; icon: string }[] = [
-  { key: 'find', label: 'Find', icon: '🔍' },
-  { key: 'photo', label: 'Photo Challenges', icon: '📸' },
-  { key: 'trivia', label: 'Trivia', icon: '🧠' },
-  { key: 'act', label: 'Act', icon: '🎬' },
-  { key: 'ride', label: 'Ride-Based', icon: '🎢' },
-  { key: 'treat', label: 'Treat', icon: '🍦' },
-  { key: 'pins', label: 'Pin Trading', icon: '📌' },
-  { key: 'meet', label: 'Character Meet & Greet', icon: '🎭' },
-  { key: 'explore', label: 'Exploration', icon: '🗺️' },
-  { key: 'seek', label: 'Seek', icon: '🎯' },
+const CATEGORY_INFO: { key: keyof CategoryToggles; label: string }[] = [
+  { key: 'find', label: 'Find' },
+  { key: 'photo', label: 'Photo Challenges' },
+  { key: 'trivia', label: 'Trivia' },
+  { key: 'act', label: 'Act' },
+  { key: 'ride', label: 'Ride-Based' },
+  { key: 'treat', label: 'Treat' },
+  { key: 'pins', label: 'Pin Trading' },
+  { key: 'meet', label: 'Character Meet & Greet' },
+  { key: 'explore', label: 'Exploration' },
+  { key: 'seek', label: 'Seek' },
 ];
 
 export default function SettingsScreen() {
@@ -116,9 +117,9 @@ export default function SettingsScreen() {
 
         {/* Category toggles let the player opt entire task families in or out. */}
         <SectionCard title="TASK CATEGORIES">
-          {CATEGORY_INFO.map(({ key, label, icon }) => (
+          {CATEGORY_INFO.map(({ key, label }) => (
             <View key={key}>
-              <SettingRow label={`${icon}  ${label}`}>
+              <SettingRow icon={key as IconName} label={label}>
                 <Switch
                   value={settings.categoryToggles[key]}
                   onValueChange={v => updateCategoryToggle(key, v)}
@@ -176,11 +177,12 @@ export default function SettingsScreen() {
             {(['light', 'dark', 'system'] as const).map(mode => (
               <TouchableOpacity
                 key={mode}
-                style={[styles.themeChip, settings.darkMode === mode && styles.themeChipSelected]}
+                style={[styles.themeChip, styles.iconRow, settings.darkMode === mode && styles.themeChipSelected]}
                 onPress={() => updateSettings({ darkMode: mode })}
               >
+                <GameIcon name={mode === 'light' ? 'sun' : mode === 'dark' ? 'moon' : 'gear'} size={22} />
                 <Text style={[styles.themeChipText, settings.darkMode === mode && styles.themeChipTextSelected]}>
-                  {mode === 'light' ? '☀️' : mode === 'dark' ? '🌙' : '⚙️'} {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -190,7 +192,7 @@ export default function SettingsScreen() {
         {/* Preference toggles for feedback systems that can be respected across
             future interactions, animations, and reward moments. */}
         <SectionCard title="SOUND & HAPTICS">
-          <SettingRow label="🔊  Sound Effects">
+          <SettingRow icon="speaker" label="Sound Effects">
             <Switch
               value={settings.soundEnabled}
               onValueChange={v => updateSettings({ soundEnabled: v })}
@@ -198,7 +200,7 @@ export default function SettingsScreen() {
               thumbColor="#fff"
             />
           </SettingRow>
-          <SettingRow label="📳  Haptic Feedback">
+          <SettingRow icon="vibrate" label="Haptic Feedback">
             <Switch
               value={settings.hapticsEnabled}
               onValueChange={v => updateSettings({ hapticsEnabled: v })}
@@ -211,14 +213,15 @@ export default function SettingsScreen() {
         {session && (
           <SectionCard title="HELP">
             <TouchableOpacity
-              style={styles.showTipsBtn}
+              style={[styles.showTipsBtn, styles.iconRow]}
               onPress={() => {
                 triggerTips();
                 navigation.goBack();
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.showTipsBtnText}>💡  Show Tips</Text>
+              <GameIcon name="bulb" size={24} />
+              <Text style={styles.showTipsBtnText}>Show Tips</Text>
             </TouchableOpacity>
           </SectionCard>
         )}
@@ -239,10 +242,12 @@ function SectionCard({ title, children }: { title: string; children: React.React
 }
 
 function SettingRow({
+  icon,
   label,
   description,
   children,
 }: {
+  icon?: IconName;
   label: string;
   description?: string;
   children: React.ReactNode;
@@ -251,6 +256,7 @@ function SettingRow({
     <View style={styles.settingRow}>
       {/* Left side is descriptive copy; right side is the interactive control
           passed in by the caller, such as a Switch. */}
+      {icon && <GameIcon name={icon} size={30} style={styles.settingIcon} />}
       <View style={styles.settingLabelContainer}>
         <Text style={styles.settingLabel}>{label}</Text>
         {description && <Text style={styles.settingDescription}>{description}</Text>}
@@ -261,6 +267,15 @@ function SettingRow({
 }
 
 const styles = StyleSheet.create({
+  iconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  settingIcon: {
+    marginRight: 10,
+  },
   safe: {
     flex: 1,
     backgroundColor: COLORS.bg,

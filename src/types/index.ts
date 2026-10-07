@@ -5,6 +5,8 @@
  */
 
 // Distinguishes hand-card tasks from challenge-board tasks.
+import type { IconName } from '../components/icons/iconData';
+
 export type TaskSize = 'small' | 'big';
 // Difficulty controls both task feel and the points assigned to it.
 export type Difficulty = 'easy' | 'medium' | 'hard';
@@ -68,7 +70,7 @@ export interface Park {
   id: string;
   name: string;
   shortName: string;
-  icon: string;
+  icon: IconName;
   theme: 'disney';
 }
 
@@ -80,7 +82,6 @@ export interface Badge {
   id: string;
   name: string;
   description: string;
-  icon: string;
   tier: BadgeTier;
   earned: boolean;
   earnedAt?: number;
