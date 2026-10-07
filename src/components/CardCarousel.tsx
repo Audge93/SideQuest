@@ -19,12 +19,15 @@ import {
   Pressable,
   Alert,
   Animated,
+  Easing,
   NativeSyntheticEvent,
   NativeScrollEvent,
   Image,
 } from 'react-native';
 import { Task } from '../types';
 import { COLORS, SHADOWS, CATEGORY_COLORS, CATEGORY_ICONS, CATEGORY_ICON_IMAGES } from '../theme/theme';
+import CardBurst, { BurstVariant } from './CardBurst';
+import { haptic } from '../utils/haptics';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const sw = SCREEN_W / 390;
@@ -40,27 +43,90 @@ const INACTIVE_SCALE = 0.9;
 // Labels shown beside each multiple-choice answer in the trivia modal.
 const CHOICE_LETTERS = ['A', 'B', 'C', 'D'];
 
-// ── Animated task card with pop/complete effects ─────────────
+type ExitKind = 'complete' | 'discard';
+
+const toDeg = (v: Animated.AnimatedInterpolation<number> | Animated.Value) =>
+  v.interpolate({ inputRange: [-360, 360], outputRange: ['-360deg', '360deg'] });
+
+// ── Animated task card: deals in on mount, punches/shatters or tosses on exit ──
 function TaskCard({
   task,
   canDiscard,
+  dealDelay,
+  exitKind,
+  onExited,
   onComplete,
   onDiscard,
   onTriviaPress,
 }: {
   task: Task;
   canDiscard: boolean;
+  dealDelay: number;
+  exitKind: ExitKind | null;
+  onExited: () => void;
   onComplete: () => void;
   onDiscard: () => void;
   onTriviaPress: () => void;
 }) {
   const color = CATEGORY_COLORS[task.category] ?? '#888';
-  const icon = CATEGORY_ICONS[task.category] ?? '';
   const isTrivia = task.category === 'trivia' && task.triviaChoices && task.triviaAnswer != null;
+  const busy = exitKind !== null;
 
-  // Animation values
-  const popAnim = useRef(new Animated.Value(1)).current;
-  const completeAnim = useRef(new Animated.Value(1)).current;
+  const deal = useRef(new Animated.Value(0)).current;
+  const exitScale = useRef(new Animated.Value(1)).current;
+  const exitRotate = useRef(new Animated.Value(0)).current;
+  const exitY = useRef(new Animated.Value(0)).current;
+  const exitX = useRef(new Animated.Value(0)).current;
+  const exitOpacity = useRef(new Animated.Value(1)).current;
+  const flash = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.delay(dealDelay),
+      Animated.spring(deal, { toValue: 1, friction: 6, tension: 60, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  useEffect(() => {
+    if (exitKind === 'complete') {
+      // Anticipation squash → overshoot punch with white flash → collapse into the burst.
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(exitScale, { toValue: 0.92, duration: 70, useNativeDriver: true }),
+          Animated.timing(exitRotate, { toValue: -3, duration: 70, useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(exitScale, { toValue: 1.13, duration: 120, easing: Easing.out(Easing.back(3)), useNativeDriver: true }),
+          Animated.timing(exitRotate, { toValue: 4, duration: 120, useNativeDriver: true }),
+          Animated.timing(flash, { toValue: 0.9, duration: 120, useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(exitScale, { toValue: 0, duration: 200, easing: Easing.in(Easing.back(2)), useNativeDriver: true }),
+          Animated.timing(exitRotate, { toValue: 16, duration: 200, useNativeDriver: true }),
+          Animated.timing(exitOpacity, { toValue: 0, duration: 200, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+        ]),
+      ]).start(onExited);
+    } else if (exitKind === 'discard') {
+      // Small lift, then toss the card off the bottom with a spin.
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(exitY, { toValue: -14, duration: 90, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(exitRotate, { toValue: 3, duration: 90, useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(exitY, { toValue: 260, duration: 340, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+          Animated.timing(exitX, { toValue: -40, duration: 340, useNativeDriver: true }),
+          Animated.timing(exitRotate, { toValue: -22, duration: 340, useNativeDriver: true }),
+          Animated.timing(exitScale, { toValue: 0.85, duration: 340, useNativeDriver: true }),
+          Animated.timing(exitOpacity, { toValue: 0, duration: 340, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+        ]),
+      ]).start(onExited);
+    } else {
+      for (const v of [exitRotate, exitY, exitX, flash]) v.setValue(0);
+      exitScale.setValue(1);
+      exitOpacity.setValue(1);
+    }
+  }, [exitKind]);
 
   const flavorText =
     task.flavorText ??
@@ -72,54 +138,8 @@ function TaskCard({
       ? 'Spot it to earn points'
       : 'Complete this task to earn points');
 
-  // Pop the card away before notifying the parent so the replacement feels
-  // physically tied to the discard action.
-  const handleDiscard = () => {
-    // Pop animation: scale up then shrink to 0
-    Animated.sequence([
-      Animated.timing(popAnim, {
-        toValue: 1.15,
-        duration: 120,
-        useNativeDriver: true,
-      }),
-      Animated.timing(popAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      popAnim.setValue(1);
-      onDiscard();
-    });
-  };
-
-  // Quick celebratory pulse before the card disappears from the hand.
-  const handleComplete = () => {
-    // Celebrate: pulse up then settle
-    Animated.sequence([
-      Animated.timing(completeAnim, {
-        toValue: 1.08,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.timing(completeAnim, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(completeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      completeAnim.setValue(1);
-      popAnim.setValue(1);
-      onComplete();
-    });
-  };
-
-  const animatedScale = Animated.multiply(popAnim, completeAnim);
+  const handleDiscard = busy ? () => {} : onDiscard;
+  const handleComplete = busy ? () => {} : onComplete;
 
   return (
     <Animated.View
@@ -127,7 +147,18 @@ function TaskCard({
         styles.card,
         {
           borderColor: color,
-          transform: [{ scale: animatedScale }],
+          opacity: Animated.multiply(
+            deal.interpolate({ inputRange: [0, 0.25, 1], outputRange: [0, 1, 1] }),
+            exitOpacity,
+          ),
+          transform: [
+            { perspective: 900 },
+            { translateY: Animated.add(deal.interpolate({ inputRange: [0, 1], outputRange: [70, 0] }), exitY) },
+            { translateX: exitX },
+            { rotateY: deal.interpolate({ inputRange: [0, 1], outputRange: ['-95deg', '0deg'] }) },
+            { rotate: toDeg(exitRotate) },
+            { scale: Animated.multiply(deal.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }), exitScale) },
+          ],
         },
       ]}
     >
@@ -155,7 +186,7 @@ function TaskCard({
         <View style={styles.cardActions}>
           <TouchableOpacity
             style={[styles.cardActionBtn, styles.completeBtn]}
-            onPress={onTriviaPress}
+            onPress={busy ? undefined : onTriviaPress}
             activeOpacity={0.8}
           >
             <Text style={styles.completeBtnText}>Answer</Text>
@@ -224,6 +255,7 @@ function TaskCard({
           </TouchableOpacity>
         </View>
       )}
+      <Animated.View pointerEvents="none" style={[styles.flash, { opacity: flash }]} />
     </Animated.View>
   );
 }
@@ -328,15 +360,52 @@ function TriviaModal({
   );
 }
 
+// ── Open slot shown while the player drafts a replacement ────
+function OpenSlot() {
+  const pulse = useRef(new Animated.Value(0)).current;
+  const appear = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(appear, { toValue: 1, duration: 260, useNativeDriver: true }).start();
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+  return (
+    <Animated.View
+      style={[
+        styles.openSlot,
+        {
+          opacity: Animated.multiply(appear, pulse.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] })),
+          transform: [{ scale: appear.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }],
+        },
+      ]}
+    >
+      <Text style={styles.openSlotStar}>✦</Text>
+      <Text style={styles.openSlotText}>Choosing your next quest…</Text>
+    </Animated.View>
+  );
+}
+
+const OPEN_SLOT_ID = '__open_slot__';
+type HandItem = Task | { id: typeof OPEN_SLOT_ID };
+const isOpenSlot = (item: HandItem): item is { id: typeof OPEN_SLOT_ID } => item.id === OPEN_SLOT_ID;
+
 // ── Main Carousel ────────────────────────────────────────────
 export default function CardCarousel({
   cards,
+  openSlotIndex,
   onComplete,
   onDiscard,
   onTriviaAnswer,
   discardsRemaining,
 }: {
   cards: Task[];
+  openSlotIndex: number | null;
   onComplete: (id: string) => void;
   onDiscard: (id: string) => void;
   discardsRemaining: number;
@@ -344,16 +413,76 @@ export default function CardCarousel({
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [triviaTask, setTriviaTask] = useState<Task | null>(null);
+  const [exiting, setExiting] = useState<{ id: string; kind: ExitKind } | null>(null);
+  const [bursts, setBursts] = useState<
+    { key: number; color: string; variant: BurstVariant; points: number; delay: number; offsetX: number }[]
+  >([]);
+  const afterExitRef = useRef<(() => void) | null>(null);
+  const burstKeyRef = useRef(0);
   const flatListRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
+  const shake = useRef(new Animated.Value(0)).current;
+
+  const items: HandItem[] = [...cards];
+  if (openSlotIndex != null) items.splice(Math.min(openSlotIndex, items.length), 0, { id: OPEN_SLOT_ID });
+
+  // Opening hand staggers its deal; cards added later deal in immediately.
+  const initialIdsRef = useRef(new Set(cards.map(c => c.id)));
+  const prevIdsRef = useRef(cards.map(c => c.id));
 
   useEffect(() => {
-    if (cards.length === 0) {
+    const prev = new Set(prevIdsRef.current);
+    prevIdsRef.current = cards.map(c => c.id);
+    if (prev.size === 0) return;
+    const newIndex = cards.findIndex(c => !prev.has(c.id));
+    if (newIndex === -1) return;
+    setActiveIndex(newIndex);
+    requestAnimationFrame(() => {
+      flatListRef.current?.scrollToOffset({ offset: newIndex * SNAP_INTERVAL, animated: true });
+    });
+  }, [cards]);
+
+  const beginExit = (task: Task, kind: ExitKind, after: () => void) => {
+    if (exiting) return;
+    const index = items.findIndex(c => c.id === task.id);
+    afterExitRef.current = after;
+    setExiting({ id: task.id, kind });
+    haptic(kind === 'complete' ? 'success' : 'thud');
+    const delay = kind === 'complete' ? 190 : 120;
+    if (kind === 'complete') {
+      Animated.sequence([
+        Animated.delay(delay),
+        ...[7, -6, 4, -2, 0].map(x => Animated.timing(shake, { toValue: x, duration: 45, useNativeDriver: true })),
+      ]).start();
+    }
+    const key = ++burstKeyRef.current;
+    setBursts(b => [
+      ...b,
+      {
+        key,
+        color: CATEGORY_COLORS[task.category] ?? '#888',
+        variant: kind,
+        points: task.points,
+        delay,
+        offsetX: (index - activeIndex) * SNAP_INTERVAL,
+      },
+    ]);
+  };
+
+  const handleExited = () => {
+    const after = afterExitRef.current;
+    afterExitRef.current = null;
+    setExiting(null);
+    after?.();
+  };
+
+  useEffect(() => {
+    if (items.length === 0) {
       setActiveIndex(0);
       return;
     }
-    if (activeIndex > cards.length - 1) {
-      const nextIndex = cards.length - 1;
+    if (activeIndex > items.length - 1) {
+      const nextIndex = items.length - 1;
       setActiveIndex(nextIndex);
       requestAnimationFrame(() => {
         flatListRef.current?.scrollToOffset({
@@ -362,80 +491,103 @@ export default function CardCarousel({
         });
       });
     }
-  }, [activeIndex, cards.length]);
+  }, [activeIndex, items.length]);
 
   // Track active card on every scroll frame (auto-select centered card)
   const handleScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetX = e.nativeEvent.contentOffset.x;
       const idx = Math.round(offsetX / SNAP_INTERVAL);
-      const clamped = Math.max(0, Math.min(idx, cards.length - 1));
+      const clamped = Math.max(0, Math.min(idx, items.length - 1));
       if (clamped !== activeIndex) setActiveIndex(clamped);
     },
-    [activeIndex, cards.length]
+    [activeIndex, items.length]
   );
 
   return (
     <View style={styles.container}>
-      <Animated.FlatList
-        ref={flatListRef}
-        data={cards}
-        keyExtractor={(item: Task) => item.id}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={SNAP_INTERVAL}
-        decelerationRate="fast"
-        bounces={false}
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          {
-            useNativeDriver: true,
-            listener: handleScroll,
-          }
-        )}
-        scrollEventThrottle={16}
-        renderItem={({ item, index }: { item: Task; index: number }) => {
-          const inputRange = [
-            (index - 1) * SNAP_INTERVAL,
-            index * SNAP_INTERVAL,
-            (index + 1) * SNAP_INTERVAL,
-          ];
-          const scale = scrollX.interpolate({
-            inputRange,
-            outputRange: [INACTIVE_SCALE, ACTIVE_SCALE, INACTIVE_SCALE],
-            extrapolate: 'clamp',
-          });
-          const translateY = scrollX.interpolate({
-            inputRange,
-            outputRange: [12, -8, 12],
-            extrapolate: 'clamp',
-          });
-          return (
-            <Animated.View
-              style={{
-                width: CARD_WIDTH,
-                marginHorizontal: CARD_GAP / 2,
-                transform: [{ translateY }, { scale }],
-              }}
-            >
-              <TaskCard
-                task={item}
-                canDiscard={discardsRemaining > 0}
-                onComplete={() => onComplete(item.id)}
-                onDiscard={() => onDiscard(item.id)}
-                onTriviaPress={() => setTriviaTask(item)}
-              />
-            </Animated.View>
-          );
-        }}
-      />
+      <Animated.View style={[styles.listWrap, { transform: [{ translateX: shake }] }]}>
+        <Animated.FlatList
+          ref={flatListRef}
+          data={items}
+          keyExtractor={(item: HandItem) => item.id}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={SNAP_INTERVAL}
+          decelerationRate="fast"
+          bounces={false}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+            {
+              useNativeDriver: true,
+              listener: handleScroll,
+            }
+          )}
+          scrollEventThrottle={16}
+          renderItem={({ item, index }: { item: HandItem; index: number }) => {
+            const inputRange = [
+              (index - 1) * SNAP_INTERVAL,
+              index * SNAP_INTERVAL,
+              (index + 1) * SNAP_INTERVAL,
+            ];
+            const scale = scrollX.interpolate({
+              inputRange,
+              outputRange: [INACTIVE_SCALE, ACTIVE_SCALE, INACTIVE_SCALE],
+              extrapolate: 'clamp',
+            });
+            const translateY = scrollX.interpolate({
+              inputRange,
+              outputRange: [12, -8, 12],
+              extrapolate: 'clamp',
+            });
+            return (
+              <Animated.View
+                style={{
+                  width: CARD_WIDTH,
+                  marginHorizontal: CARD_GAP / 2,
+                  transform: [{ translateY }, { scale }],
+                }}
+              >
+                {isOpenSlot(item) ? (
+                  <OpenSlot />
+                ) : (
+                  <TaskCard
+                    task={item}
+                    canDiscard={discardsRemaining > 0}
+                    dealDelay={initialIdsRef.current.has(item.id) ? 150 + index * 90 : 0}
+                    exitKind={exiting?.id === item.id ? exiting.kind : null}
+                    onExited={handleExited}
+                    onComplete={() => beginExit(item, 'complete', () => onComplete(item.id))}
+                    onDiscard={() => beginExit(item, 'discard', () => onDiscard(item.id))}
+                    onTriviaPress={() => setTriviaTask(item)}
+                  />
+                )}
+              </Animated.View>
+            );
+          }}
+        />
+        {bursts.map(b => (
+          <CardBurst
+            key={b.key}
+            color={b.color}
+            variant={b.variant}
+            points={b.points}
+            delay={b.delay}
+            offsetX={b.offsetX}
+            onDone={() => setBursts(list => list.filter(x => x.key !== b.key))}
+          />
+        ))}
+      </Animated.View>
 
       {/* Dot indicators */}
       <View style={styles.dots}>
-        {cards.map((_, i) => (
-          <View key={i} style={[styles.dot, i === activeIndex && styles.dotActive]} />
+        {items.map((item, i) => (
+          <View
+            key={item.id}
+            style={[styles.dot, isOpenSlot(item) && styles.dotOpen, i === activeIndex && styles.dotActive]}
+          />
         ))}
       </View>
 
@@ -444,13 +596,13 @@ export default function CardCarousel({
         <TriviaModal
           task={triviaTask}
           onTriviaAnswer={(correct) => {
-            if (onTriviaAnswer) {
-              onTriviaAnswer(triviaTask.id, correct);
-            } else {
-              if (correct) onComplete(triviaTask.id);
-              else onDiscard(triviaTask.id);
-            }
+            const task = triviaTask;
             setTriviaTask(null);
+            beginExit(task, correct ? 'complete' : 'discard', () => {
+              if (onTriviaAnswer) onTriviaAnswer(task.id, correct);
+              else if (correct) onComplete(task.id);
+              else onDiscard(task.id);
+            });
           }}
           onClose={() => setTriviaTask(null)}
         />
@@ -584,6 +736,33 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceSecondary,
     borderColor: COLORS.borderLight,
     opacity: 0.45,
+  },
+  flash: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#FFFFFF',
+  },
+  listWrap: {
+    overflow: 'visible',
+  },
+  openSlot: {
+    minHeight: Math.round(316 * sh),
+    borderRadius: Math.round(16 * sw),
+    borderWidth: 2.5,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(255, 212, 92, 0.85)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  openSlotStar: {
+    color: '#FFD45C',
+    fontSize: Math.round(34 * sw),
+  },
+  openSlotText: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: Math.round(14 * sw),
+    fontWeight: '800',
   },
 
   // ── Trivia Modal ───────────────────────────────────────────
@@ -726,6 +905,9 @@ const styles = StyleSheet.create({
     height: Math.round(5 * sw),
     borderRadius: Math.round(3 * sw),
     backgroundColor: COLORS.borderMedium,
+  },
+  dotOpen: {
+    backgroundColor: '#FFD45C',
   },
   dotActive: {
     backgroundColor: COLORS.green,

@@ -105,6 +105,13 @@ export interface Session {
   hand: Task[];
   challengeTasks: Task[];
   completedTasks: Task[];
+  // Pending pick-one-of-three offer that refills the hand slot a closed card left open.
+  draft?: Draft | null;
+}
+
+export interface Draft {
+  options: Task[];
+  slotIndex: number;
 }
 
 export interface CategoryToggles {

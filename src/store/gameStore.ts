@@ -8,7 +8,7 @@
 
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Task, Session, Settings, Player, Badge, BadgeTier, CategoryToggles, ParkThemeTag, SaveSlot, MAX_SAVE_SLOTS } from '../types';
+import { Task, Session, Settings, Player, Badge, BadgeTier, CategoryToggles, ParkThemeTag, SaveSlot, Draft, MAX_SAVE_SLOTS } from '../types';
 import { SMALL_TASKS, BIG_TASKS, RIDE_ACTIVITY_TASKS, generateRideTasks } from '../data/tasks';
 import { TRIVIA_TASKS } from '../data/trivia';
 import { RIDES, PARKS } from '../data/parks';
@@ -148,6 +148,7 @@ interface GameState {
   discardTask: (taskId: string) => void;
   swapChallengeTask: (taskId: string) => void;
   answerTrivia: (taskId: string, correct: boolean) => void;
+  chooseDraftCard: (taskId: string) => void;
   clearNewBadges: () => void;
   resetAllData: () => void;
   triggerTips: () => void;
@@ -267,31 +268,49 @@ function replaceInArray(arr: Task[], taskId: string, replacement: Task | undefin
   return arr.map(t => (t.id === taskId ? replacement : t));
 }
 
-/** Picks a random replacement task from the pool that isn't in any exclusion list.
- *  If the pool is exhausted (all tasks completed), recycles by only avoiding
- *  cards currently in hand so the game can continue indefinitely. */
-function pickReplacement(pool: Task[], exclude: Task[], alsoExclude?: Task[], handAfterRemoval?: Task[]): Task | undefined {
+const DRAFT_SIZE = 3;
+
+/**
+ * Picks up to DRAFT_SIZE distinct options for the player to choose from,
+ * preferring different categories so the choice feels meaningful.
+ */
+function pickDraftOptions(pool: Task[], exclude: Task[], handAfterRemoval: Task[]): Task[] {
   const excludeIds = new Set(exclude.map(t => t.id));
-  if (alsoExclude) {
-    for (const t of alsoExclude) excludeIds.add(t.id);
-  }
-  const triviaInHand = handAfterRemoval ? handAfterRemoval.filter(t => t.category === 'trivia').length : 0;
-  let available = pool.filter(t => !excludeIds.has(t.id));
-  if (triviaInHand >= MAX_TRIVIA_IN_HAND) {
-    available = available.filter(t => t.category !== 'trivia');
+  const handIds = new Set(handAfterRemoval.map(t => t.id));
+  const triviaFull = handAfterRemoval.filter(t => t.category === 'trivia').length >= MAX_TRIVIA_IN_HAND;
+  const eligible = (t: Task) => !(triviaFull && t.category === 'trivia');
+
+  let available = pool.filter(t => !excludeIds.has(t.id) && eligible(t));
+  if (available.length < DRAFT_SIZE) {
+    // Pool nearly exhausted — recycle completed tasks, only avoid what's in hand.
+    const seen = new Set(available.map(t => t.id));
+    const recycled = pool.filter(t => !handIds.has(t.id) && !seen.has(t.id) && eligible(t));
+    available = [...available, ...recycled];
   }
 
-  // Pool exhausted — recycle completed tasks, only avoid what's currently in hand
-  if (available.length === 0) {
-    const handIds = new Set((handAfterRemoval ?? []).map(t => t.id));
-    available = pool.filter(t => !handIds.has(t.id));
-    if (triviaInHand >= MAX_TRIVIA_IN_HAND) {
-      available = available.filter(t => t.category !== 'trivia');
-    }
+  const shuffled = shuffle(available);
+  const picked: Task[] = [];
+  const usedCategories = new Set<string>();
+  for (const t of shuffled) {
+    if (picked.length >= DRAFT_SIZE) break;
+    if (usedCategories.has(t.category)) continue;
+    picked.push(t);
+    usedCategories.add(t.category);
   }
+  for (const t of shuffled) {
+    if (picked.length >= DRAFT_SIZE) break;
+    if (!picked.includes(t)) picked.push(t);
+  }
+  return picked;
+}
 
-  if (available.length === 0) return undefined;
-  return available[Math.floor(Math.random() * available.length)];
+/** Removes a hand card and prepares a draft to refill its slot. */
+function openHandSlot(session: Session, settings: Settings, taskId: string): { hand: Task[]; draft: Draft | null } {
+  const slotIndex = session.hand.findIndex(t => t.id === taskId);
+  const hand = session.hand.filter(t => t.id !== taskId);
+  const { small } = buildTaskPools(settings);
+  const options = pickDraftOptions(small, [...session.hand, ...session.completedTasks], hand);
+  return { hand, draft: options.length > 0 ? { options, slotIndex } : null };
 }
 
 /**
@@ -676,6 +695,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       parkIds: allParkIds,
       hand,
       challengeTasks,
+      draft: null,
       // Keep: completedTasks, sessionScore, currentStreak, totalCompletions, discardsRemaining
     };
 
@@ -694,6 +714,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     let task: Task | undefined;
     let newHand = [...session.hand];
     let newChallengeTasks = [...session.challengeTasks];
+    let newDraft = session.draft ?? null;
 
     // Challenge tasks and hand cards draw replacements from different source pools.
     if (isChallenge) {
@@ -705,10 +726,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     } else {
       task = session.hand.find(t => t.id === taskId);
       if (!task) return;
-      const { small } = buildTaskPools(settings);
-      const handAfterRemoval = newHand.filter(t => t.id !== taskId);
-      const replacement = pickReplacement(small, newHand, session.completedTasks, handAfterRemoval);
-      newHand = replaceInArray(newHand, taskId, replacement);
+      ({ hand: newHand, draft: newDraft } = openHandSlot(session, settings, taskId));
     }
 
     // Every completion extends the streak and may trigger streak-based rewards.
@@ -736,6 +754,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       hand: newHand,
       challengeTasks: newChallengeTasks,
       completedTasks: [...session.completedTasks, task],
+      draft: newDraft,
     };
 
     // Check badges using the active save slot's badge state (per-game, not lifetime)
@@ -788,16 +807,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     const task = session.hand.find(t => t.id === taskId);
     if (!task) return;
 
-    const { small } = buildTaskPools(settings);
-    const handAfterRemoval = session.hand.filter(t => t.id !== taskId);
-    const replacement = pickReplacement(small, session.hand, session.completedTasks, handAfterRemoval);
-    const newHand = replaceInArray(session.hand, taskId, replacement);
+    const { hand, draft } = openHandSlot(session, settings, taskId);
 
     const updatedSession: Session = {
       ...session,
       currentStreak: 0,
       discardsRemaining: session.discardsRemaining - 1,
-      hand: newHand,
+      hand,
+      draft,
     };
 
     set({ session: updatedSession });
@@ -837,20 +854,32 @@ export const useGameStore = create<GameState>((set, get) => ({
       const task = session.hand.find(t => t.id === taskId);
       if (!task) return;
 
-      const { small } = buildTaskPools(settings);
-      const handAfterRemoval = session.hand.filter(t => t.id !== taskId);
-      const replacement = pickReplacement(small, session.hand, session.completedTasks, handAfterRemoval);
-      const newHand = replaceInArray(session.hand, taskId, replacement);
+      const { hand, draft } = openHandSlot(session, settings, taskId);
 
       const updatedSession: Session = {
         ...session,
         currentStreak: 0,
-        hand: newHand,
+        hand,
+        draft,
       };
 
       set({ session: updatedSession });
       get().saveToStorage();
     }
+  },
+
+  /** Puts the chosen draft option into the hand slot that was opened */
+  chooseDraftCard: (taskId) => {
+    const { session } = get();
+    if (!session?.draft) return;
+    const chosen = session.draft.options.find(t => t.id === taskId);
+    if (!chosen) return;
+
+    const hand = [...session.hand];
+    hand.splice(Math.min(session.draft.slotIndex, hand.length), 0, chosen);
+
+    set({ session: { ...session, hand, draft: null } });
+    get().saveToStorage();
   },
 
   clearNewBadges: () => {

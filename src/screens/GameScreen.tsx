@@ -32,6 +32,7 @@ import { Badge, Task } from '../types';
 import Confetti from '../components/Confetti';
 import BadgeUnlockPopup from '../components/BadgeUnlockPopup';
 import CardCarousel from '../components/CardCarousel';
+import DraftPicker from '../components/DraftPicker';
 import { useGameStore } from '../store/gameStore';
 import { PARKS } from '../data/parks';
 import { CATEGORY_COLORS, CATEGORY_ICONS, CATEGORY_ICON_IMAGES, COLORS, SHADOWS, RADII } from '../theme/theme';
@@ -97,6 +98,7 @@ export default function GameScreen() {
     discardTask,
     swapChallengeTask,
     answerTrivia,
+    chooseDraftCard,
     newlyEarnedBadges,
     clearNewBadges,
     autoSave,
@@ -105,8 +107,9 @@ export default function GameScreen() {
     clearPendingTips,
   } = useGameStore();
 
-  const [showSmallConfetti, setShowSmallConfetti] = useState(false);
   const [showBigFirework, setShowBigFirework] = useState(false);
+  const [showDraft, setShowDraft] = useState(false);
+  const draft = session?.draft ?? null;
   const [expandedChallenge, setExpandedChallenge] = useState<Task | null>(null);
   const [showParkModal, setShowParkModal] = useState(false);
   const [selectedResortId, setSelectedResortId] = useState<string>(RESORTS[0].id);
@@ -188,11 +191,21 @@ export default function GameScreen() {
   }, [newlyEarnedBadges]);
 
   useEffect(() => {
-    if (badgeQueue.length > 0 && !activeBadge) {
+    if (badgeQueue.length > 0 && !activeBadge && !draft) {
       setActiveBadge(badgeQueue[0]);
       setBadgeQueue(prev => prev.slice(1));
     }
-  }, [activeBadge, badgeQueue]);
+  }, [activeBadge, badgeQueue, draft]);
+
+  // Let the card burst and score pop play before the draft takes over the screen.
+  useEffect(() => {
+    if (!draft) {
+      setShowDraft(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowDraft(true), 900);
+    return () => clearTimeout(timer);
+  }, [draft]);
 
   const handleBadgeDismiss = useCallback(() => {
     setActiveBadge(null);
@@ -225,7 +238,6 @@ export default function GameScreen() {
 
   const handleCompleteSmall = (id: string) => {
     completeTask(id, false);
-    setShowSmallConfetti(true);
   };
 
   const handleCompleteBig = (id: string) => {
@@ -299,6 +311,7 @@ export default function GameScreen() {
             <View style={styles.carouselShell}>
               <CardCarousel
                 cards={session.hand}
+                openSlotIndex={draft?.slotIndex ?? null}
                 onComplete={handleCompleteSmall}
                 onDiscard={id => discardTask(id)}
                 onTriviaAnswer={(id, correct) => answerTrivia(id, correct)}
@@ -308,8 +321,8 @@ export default function GameScreen() {
           </View>
         </View>
 
-        {showSmallConfetti && (
-          <Confetti type="small" onDone={() => setShowSmallConfetti(false)} />
+        {showDraft && draft && (
+          <DraftPicker key={draft.options.map(t => t.id).join('|')} options={draft.options} onChoose={chooseDraftCard} />
         )}
 
         {showBigFirework && (
