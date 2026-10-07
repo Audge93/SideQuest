@@ -23,6 +23,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
 import { Badge, BadgeTier, SaveSlot } from '../types';
 import { COLORS, SHADOWS, RADII } from '../theme/theme';
+import { PARKS } from '../data/parks';
 import GameIcon, { badgeIconName } from '../components/icons/GameIcon';
 
 const TIER_COLORS: Record<BadgeTier, string> = {
@@ -105,7 +106,7 @@ export default function ProfileScreen() {
 
   const slotBadges = displaySlot?.badges ?? [];
   const earnedBadges = slotBadges.filter(b => b.earned);
-  const visitedParks = displaySlot?.visitedParks ?? [];
+  const visitedParks = (displaySlot?.visitedParks ?? []).filter(id => PARKS.some(p => p.id === id));
 
   // Build category counts from slot's stored completions + any live session tasks
   const combinedCounts: Record<string, number> = { ...(displaySlot?.categoryCompletions || {}) };
@@ -215,7 +216,7 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.scoreDivider} />
             <View style={styles.scoreItem}>
-              <Text style={styles.scoreValue}>{visitedParks.length}</Text>
+              <Text testID="parks-visited" style={styles.scoreValue}>{visitedParks.length}</Text>
               <Text style={styles.scoreLabel}>Parks Visited</Text>
             </View>
           </View>

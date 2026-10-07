@@ -166,6 +166,7 @@ export default function HomeScreen() {
           {/* Top-right nav icons */}
           <View style={styles.topNav}>
             <TouchableOpacity
+              testID="home-profile-btn"
               style={styles.topNavBtn}
               onPress={() => navigation.navigate('Profile')}
               activeOpacity={0.7}

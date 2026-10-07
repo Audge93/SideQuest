@@ -160,3 +160,50 @@ test('the app still starts when the game font is slow or blocked', async ({ page
   await page.goto('/', { waitUntil: 'commit' });
   await expect(byId(page, 'new-game-btn')).toBeVisible({ timeout: 8000 });
 });
+
+const savedState = (page: Page) =>
+  page.evaluate(() => JSON.parse(localStorage.getItem('parkquest_state') ?? '{}'));
+
+test('visiting all four parks earns Park Hopper Gold', async ({ page }) => {
+  await startGame(page, 'wdw-mk');
+  for (const park of ['wdw-hs', 'wdw-ep', 'wdw-ak']) {
+    await page.getByText('Park', { exact: true }).click();
+    await byId(page, `switch-park-${park}`).click();
+    await page.getByText('Switch', { exact: true }).click();
+    await expect(byId(page, `switch-park-${park}`)).toBeHidden();
+  }
+  // Badges are awarded when a task is completed.
+  await byId(page, 'challenge-card').first().click();
+  await byId(page, 'challenge-complete-btn').click();
+  await expect
+    .poll(async () => {
+      const slot = (await savedState(page)).saveSlots.find((s: any) => s);
+      return ['hopper-bronze', 'hopper-silver', 'hopper-gold'].map(
+        id => slot.badges.find((b: any) => b.id === id)?.earned ?? false,
+      );
+    })
+    .toEqual([true, true, true]);
+});
+
+test('older saves pick up the new Park Hopper tiers', async ({ page }) => {
+  await startGame(page);
+  // Rewrite the save the way an older build stored it.
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('parkquest_state')!);
+    const slot = state.saveSlots.find((s: any) => s);
+    slot.visitedParks = ['wdw-mk', 'uor-us', 'zoo'];
+    slot.badges = slot.badges.map((b: any) =>
+      b.id === 'hopper-silver' ? { ...b, description: 'Visit 4 parks', icon: '🏰' } : b,
+    );
+    slot.badges.push({ id: 'hopper-platinum', name: 'Park Hopper (Platinum)', description: 'Visit 10 parks', icon: '🏰', tier: 'platinum', earned: false });
+    localStorage.setItem('parkquest_state', JSON.stringify(state));
+  });
+  await page.reload();
+  await byId(page, 'home-profile-btn').click();
+  await expect(byId(page, 'parks-visited')).toHaveText('1');
+  await expect(page.getByText('Visit 3 parks')).toBeVisible();
+  await expect(page.getByText('Visit all 4 Walt Disney World parks')).toBeVisible();
+  await expect(page.getByText('Park Hopper (Platinum)')).toHaveCount(0);
+  await expect(page.getByText('Visit 4 parks')).toHaveCount(0);
+  await snap(page, '10-profile-badges');
+});

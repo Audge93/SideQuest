@@ -76,9 +76,8 @@ const DEFAULT_BADGES: Badge[] = [
   { id: 'score-platinum', name: 'Mythic (Platinum)', description: 'Earn 5,000 lifetime points', tier: 'platinum', earned: false },
   // Park hopper tiers
   { id: 'hopper-bronze', name: 'Park Hopper (Bronze)', description: 'Visit 2 parks', tier: 'bronze', earned: false },
-  { id: 'hopper-silver', name: 'Park Hopper (Silver)', description: 'Visit 4 parks', tier: 'silver', earned: false },
-  { id: 'hopper-gold', name: 'Park Hopper (Gold)', description: 'Visit 6 parks', tier: 'gold', earned: false },
-  { id: 'hopper-platinum', name: 'Park Hopper (Platinum)', description: 'Visit 10 parks', tier: 'platinum', earned: false },
+  { id: 'hopper-silver', name: 'Park Hopper (Silver)', description: 'Visit 3 parks', tier: 'silver', earned: false },
+  { id: 'hopper-gold', name: 'Park Hopper (Gold)', description: 'Visit all 4 Walt Disney World parks', tier: 'gold', earned: false },
   // Completionist tiers
   { id: 'completionist-bronze', name: 'Completionist (Bronze)', description: 'Earn all bronze category badges', tier: 'bronze', earned: false },
   { id: 'completionist-silver', name: 'Completionist (Silver)', description: 'Earn all silver category badges', tier: 'silver', earned: false },
@@ -112,6 +111,15 @@ const DEFAULT_PLAYER: Player = {
   name: 'Player 1',
   color: '#89B4F7',
 };
+
+/** Rebuilds a save's badges from the current definitions, keeping earned progress by id. */
+function syncBadges(saved: Badge[] | undefined): Badge[] {
+  const byId = new Map((saved ?? []).map(b => [b.id, b]));
+  return DEFAULT_BADGES.map(def => {
+    const prev = byId.get(def.id);
+    return { ...def, earned: prev?.earned ?? false, earnedAt: prev?.earnedAt };
+  });
+}
 
 // ─── Store Types ──────────────────────────────────────────────────────────────
 
@@ -405,6 +413,7 @@ function checkBadges(
     }
 
     // Milestone badges
+    const parksVisited = visitedParks.filter(id => PARKS.some(p => p.id === id)).length;
     switch (b.id) {
       case 'first-steps': earned = totalCompletions >= 1; break;
       case 'streak-bronze': earned = currentStreak >= 5; break;
@@ -415,10 +424,9 @@ function checkBadges(
       case 'score-silver': earned = sessionScore >= 500; break;
       case 'score-gold': earned = sessionScore >= 1000; break;
       case 'score-platinum': earned = sessionScore >= 5000; break;
-      case 'hopper-bronze': earned = visitedParks.length >= 2; break;
-      case 'hopper-silver': earned = visitedParks.length >= 4; break;
-      case 'hopper-gold': earned = visitedParks.length >= 6; break;
-      case 'hopper-platinum': earned = visitedParks.length >= 10; break;
+      case 'hopper-bronze': earned = parksVisited >= 2; break;
+      case 'hopper-silver': earned = parksVisited >= 3; break;
+      case 'hopper-gold': earned = parksVisited >= 4; break;
       case 'completionist-bronze': {
         earned = CAT_BASE_IDS.every(id => badges.find(bb => bb.id === `${id}-bronze`)?.earned);
         break;
@@ -935,7 +943,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           const raw = s as any;
           return {
             ...s,
-            badges: raw.badges ?? DEFAULT_BADGES.map((b: Badge) => ({ ...b, earned: false, earnedAt: undefined })),
+            badges: syncBadges(raw.badges),
             categoryCompletions: raw.categoryCompletions ?? {},
             visitedParks: raw.visitedParks ?? (s.session?.parkIds ?? []),
           };
