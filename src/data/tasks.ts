@@ -11,7 +11,6 @@ import { Task, Ride } from '../types';
 
 // ─── Small Tasks ───────────────────────────────────────────────────────────
 // tag: 'disney' = Disney parks only
-// tag: 'universal' = Universal parks only
 // tag: undefined = works at any park
 
 export const SMALL_TASKS: Task[] = [
@@ -53,17 +52,6 @@ export const SMALL_TASKS: Task[] = [
   { id: 'find-h-7', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find a tribute to Walt Disney', points: 15, difficulty: 'hard', tag: 'disney' },
   { id: 'find-h-8', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot a Main Street window dedication', points: 15, difficulty: 'hard', tag: 'disney' },
 
-  // ── Universal-only Find ──
-  { id: 'find-u-e-1', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find someone wearing a Hogwarts robe', points: 5, difficulty: 'easy', tag: 'universal' },
-  { id: 'find-u-e-2', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot a team member with a unique name tag', points: 5, difficulty: 'easy', tag: 'universal' },
-  { id: 'find-u-e-3', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find someone carrying a Butterbeer', points: 5, difficulty: 'easy', tag: 'universal' },
-  { id: 'find-u-e-4', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot someone with a wand from Ollivanders', points: 5, difficulty: 'easy', tag: 'universal' },
-  { id: 'find-u-e-5', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find someone wearing a Universal birthday button', points: 5, difficulty: 'easy', tag: 'universal' },
-  { id: 'find-u-m-1', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find a hidden movie reference in your surroundings', points: 10, difficulty: 'medium', tag: 'universal' },
-  { id: 'find-u-m-2', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot an interactive wand spot in the Wizarding World', points: 10, difficulty: 'medium', tag: 'universal' },
-  { id: 'find-u-h-1', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find a tribute plaque to a Universal film', points: 15, difficulty: 'hard', tag: 'universal' },
-  { id: 'find-u-h-2', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot a hidden detail referencing a retired attraction', points: 15, difficulty: 'hard', tag: 'universal' },
-
   // ══════════════════════════════════════════════════════════════════════════
   // ── Photo 📸 ─────────────────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
@@ -92,11 +80,6 @@ export const SMALL_TASKS: Task[] = [
   // ── Disney-only Photo ──
   { id: 'photo-e-7', size: 'small', category: 'photo', displayCategory: 'Photo', description: "Photo like you're holding the castle", points: 5, difficulty: 'easy', tag: 'disney' },
 
-  // ── Universal-only Photo ──
-  { id: 'photo-u-e-1', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Photo like you\'re casting a spell with a wand', points: 5, difficulty: 'easy', tag: 'universal' },
-  { id: 'photo-u-m-1', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Photo posing with the Universal globe', points: 10, difficulty: 'medium', tag: 'universal' },
-  { id: 'photo-u-m-2', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Take a photo that looks like a movie poster from a Universal film', points: 10, difficulty: 'medium', tag: 'universal' },
-
   // ══════════════════════════════════════════════════════════════════════════
   // ── Act 🎬 (action) ──────────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
@@ -124,44 +107,6 @@ export const SMALL_TASKS: Task[] = [
   // ── Disney-only Act ──
   { id: 'act-e-4', size: 'small', category: 'act', displayCategory: 'Act', description: 'Royal wave for 10 seconds', points: 5, difficulty: 'easy', tag: 'disney' },
   { id: 'act-e-6', size: 'small', category: 'act', displayCategory: 'Act', description: 'March like a toy soldier 15 seconds', points: 5, difficulty: 'easy', tag: 'disney' },
-
-  // ── Universal-only Act ──
-  { id: 'act-u-e-1', size: 'small', category: 'act', displayCategory: 'Act', description: 'Practice your best wizard spell-casting gesture', points: 5, difficulty: 'easy', tag: 'universal' },
-  { id: 'act-u-e-2', size: 'small', category: 'act', displayCategory: 'Act', description: 'Hulk smash pose, hold 5 seconds', points: 5, difficulty: 'easy', tag: 'universal' },
-  { id: 'act-u-m-1', size: 'small', category: 'act', displayCategory: 'Act', description: 'Say "I\'m gonna wreck it!" in your best villain voice', points: 10, difficulty: 'medium', tag: 'universal' },
-  { id: 'act-u-m-2', size: 'small', category: 'act', displayCategory: 'Act', description: 'Walk like a Minion for 30 seconds', points: 10, difficulty: 'medium', tag: 'universal' },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // ── Zoo-only Find 🔍 ─────────────────────────────────────────────────────
-  // ══════════════════════════════════════════════════════════════════════════
-  { id: 'find-z-e-1', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot an animal hiding or camouflaged in its habitat', points: 5, difficulty: 'easy', tag: 'zoo' },
-  { id: 'find-z-e-2', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find an animal that is sleeping or resting', points: 5, difficulty: 'easy', tag: 'zoo' },
-  { id: 'find-z-e-3', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot an animal currently eating or foraging', points: 5, difficulty: 'easy', tag: 'zoo' },
-  { id: 'find-z-e-4', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find a sign explaining an animal conservation story', points: 5, difficulty: 'easy', tag: 'zoo' },
-  { id: 'find-z-e-5', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot an animal with stripes, spots, or bold markings', points: 5, difficulty: 'easy', tag: 'zoo' },
-  { id: 'find-z-m-1', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find an animal from a continent different from the last one you visited', points: 10, difficulty: 'medium', tag: 'zoo' },
-  { id: 'find-z-m-2', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot an animal interacting with enrichment or a toy', points: 10, difficulty: 'medium', tag: 'zoo' },
-  { id: 'find-z-m-3', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find a bird that cannot fly in the zoo', points: 10, difficulty: 'medium', tag: 'zoo' },
-  { id: 'find-z-m-4', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot an animal looking directly at you', points: 10, difficulty: 'medium', tag: 'zoo' },
-  { id: 'find-z-h-1', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot 3 different animal behaviors in one habitat (eating, playing, grooming)', points: 15, difficulty: 'hard', tag: 'zoo' },
-  { id: 'find-z-h-2', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find an animal listed as endangered on its exhibit sign', points: 15, difficulty: 'hard', tag: 'zoo' },
-  { id: 'find-z-h-3', size: 'small', category: 'find', displayCategory: 'Find', description: 'Locate a nocturnal animal that is active during your visit', points: 15, difficulty: 'hard', tag: 'zoo' },
-
-  // ── Zoo-only Photo 📸 ─────────────────────────────────────────────────────
-  { id: 'photo-z-e-1', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Photo mimicking the pose of the nearest animal', points: 5, difficulty: 'easy', tag: 'zoo' },
-  { id: 'photo-z-e-2', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Selfie with your favorite animal exhibit in the background', points: 5, difficulty: 'easy', tag: 'zoo' },
-  { id: 'photo-z-e-3', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Group photo where everyone makes an animal face', points: 5, difficulty: 'easy', tag: 'zoo' },
-  { id: 'photo-z-m-1', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Photo framed to look like a wildlife documentary shot', points: 10, difficulty: 'medium', tag: 'zoo' },
-  { id: 'photo-z-m-2', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Recreate an animal behavior using your group', points: 10, difficulty: 'medium', tag: 'zoo' },
-  { id: 'photo-z-h-1', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Photo that tells a conservation story using only zoo props and signs', points: 15, difficulty: 'hard', tag: 'zoo' },
-
-  // ── Zoo-only Act 🎬 ───────────────────────────────────────────────────────
-  { id: 'act-z-e-1', size: 'small', category: 'act', displayCategory: 'Act', description: 'Walk like your favorite zoo animal for 20 seconds', points: 5, difficulty: 'easy', tag: 'zoo' },
-  { id: 'act-z-e-2', size: 'small', category: 'act', displayCategory: 'Act', description: 'Make the sound of the last animal you saw', points: 5, difficulty: 'easy', tag: 'zoo' },
-  { id: 'act-z-e-3', size: 'small', category: 'act', displayCategory: 'Act', description: 'Freeze like a statue when a zoo worker passes', points: 5, difficulty: 'easy', tag: 'zoo' },
-  { id: 'act-z-m-1', size: 'small', category: 'act', displayCategory: 'Act', description: 'Narrate the nearest animal in David Attenborough style for 30 seconds', points: 10, difficulty: 'medium', tag: 'zoo' },
-  { id: 'act-z-m-2', size: 'small', category: 'act', displayCategory: 'Act', description: 'Act out an animal stalking its prey in slow motion', points: 10, difficulty: 'medium', tag: 'zoo' },
-  { id: 'act-z-h-1', size: 'small', category: 'act', displayCategory: 'Act', description: 'Give a 45-second wildlife ranger speech about the nearest animal', points: 15, difficulty: 'hard', tag: 'zoo' },
 ];
 
 // ─── Big Tasks ──────────────────────────────────────────────────────────────
@@ -182,12 +127,6 @@ export const BIG_TASKS: Task[] = [
   { id: 'treat-e-1', size: 'big', category: 'treat', displayCategory: 'Treat', description: 'Try a classic Disney treat like a churro or turkey leg', points: 25, difficulty: 'easy', tag: 'disney' },
   { id: 'treat-m-2', size: 'big', category: 'treat', displayCategory: 'Treat', description: 'Try an off-menu order or cast member recommendation', points: 50, difficulty: 'medium', tag: 'disney' },
 
-  // ── Universal-only Treat ──
-  { id: 'treat-u-e-1', size: 'big', category: 'treat', displayCategory: 'Treat', description: 'Try a frozen or warm Butterbeer', points: 25, difficulty: 'easy', tag: 'universal' },
-  { id: 'treat-u-e-2', size: 'big', category: 'treat', displayCategory: 'Treat', description: 'Get a snack from a themed IP restaurant', points: 25, difficulty: 'easy', tag: 'universal' },
-  { id: 'treat-u-m-1', size: 'big', category: 'treat', displayCategory: 'Treat', description: 'Try a team member recommendation at any restaurant', points: 50, difficulty: 'medium', tag: 'universal' },
-  { id: 'treat-u-m-2', size: 'big', category: 'treat', displayCategory: 'Treat', description: 'Try a themed dessert from the Wizarding World', points: 50, difficulty: 'medium', tag: 'universal' },
-
   // ══════════════════════════════════════════════════════════════════════════
   // ── Pins 📌 (pin) — Disney only ──────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
@@ -196,13 +135,6 @@ export const BIG_TASKS: Task[] = [
   { id: 'pins-e-3', size: 'big', category: 'pins', displayCategory: 'Pins', description: 'Find a pin of your favorite movie character', points: 25, difficulty: 'easy', tag: 'disney' },
   { id: 'pins-m-1', size: 'big', category: 'pins', displayCategory: 'Pins', description: 'Trade 2 pins in one visit', points: 50, difficulty: 'medium', tag: 'disney' },
   { id: 'pins-m-2', size: 'big', category: 'pins', displayCategory: 'Pins', description: 'Spot 3 pins of the same character on different lanyards', points: 50, difficulty: 'medium', tag: 'disney' },
-
-  // ── Universal Collectibles (replaces pins for Universal) ──
-  { id: 'collect-u-e-1', size: 'big', category: 'pins', displayCategory: 'Pins', description: 'Find a wand at Ollivanders that chose you', points: 25, difficulty: 'easy', tag: 'universal' },
-  { id: 'collect-u-e-2', size: 'big', category: 'pins', displayCategory: 'Pins', description: 'Find your favorite themed souvenir in a gift shop', points: 25, difficulty: 'easy', tag: 'universal' },
-  { id: 'collect-u-e-3', size: 'big', category: 'pins', displayCategory: 'Pins', description: 'Find a collectible from your favorite Universal franchise', points: 25, difficulty: 'easy', tag: 'universal' },
-  { id: 'collect-u-m-1', size: 'big', category: 'pins', displayCategory: 'Pins', description: 'Find themed merchandise in 3 different lands', points: 50, difficulty: 'medium', tag: 'universal' },
-  { id: 'collect-u-m-2', size: 'big', category: 'pins', displayCategory: 'Pins', description: 'Spot a rare or limited-edition collectible item', points: 50, difficulty: 'medium', tag: 'universal' },
 
   // ══════════════════════════════════════════════════════════════════════════
   // ── Meet 🎭 (character) ──────────────────────────────────────────────────
@@ -218,11 +150,6 @@ export const BIG_TASKS: Task[] = [
   { id: 'meet-m-1', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Have a conversation with a face character, 3+ exchanges', points: 50, difficulty: 'medium', tag: 'disney' },
   { id: 'meet-m-3', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Get a character autograph', points: 50, difficulty: 'medium', tag: 'disney' },
 
-  // ── Universal-only Meet ──
-  { id: 'meet-u-e-1', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Meet a Marvel superhero', points: 25, difficulty: 'easy', tag: 'universal' },
-  { id: 'meet-u-m-1', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Have a conversation with a Wizarding World character', points: 50, difficulty: 'medium', tag: 'universal' },
-  { id: 'meet-u-m-2', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Get a photo with characters from 2 different franchises', points: 50, difficulty: 'medium', tag: 'universal' },
-
   // ══════════════════════════════════════════════════════════════════════════
   // ── Explore 🗺️ (exploration) ─────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
@@ -236,10 +163,6 @@ export const BIG_TASKS: Task[] = [
   { id: 'explore-m-1', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Explore a new land and find 3 hidden details', points: 50, difficulty: 'medium' },
   { id: 'explore-m-2', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Walk the full park perimeter', points: 50, difficulty: 'medium' },
   { id: 'explore-m-3', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Find 3 water features or fountains', points: 50, difficulty: 'medium' },
-
-  // ── Universal-only Explore ──
-  { id: 'explore-u-e-1', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Find all interactive wand windows in Diagon Alley or Hogsmeade', points: 25, difficulty: 'easy', tag: 'universal' },
-  { id: 'explore-u-m-1', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Ride the Hogwarts Express in both directions', points: 50, difficulty: 'medium', tag: 'universal' },
 
   // ══════════════════════════════════════════════════════════════════════════
   // ── Seek 🎯 (scavenger) ──────────────────────────────────────────────────
@@ -257,46 +180,6 @@ export const BIG_TASKS: Task[] = [
   { id: 'seek-e-3', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Find a Hidden Mickey outside of a ride', points: 25, difficulty: 'easy', tag: 'disney' },
   { id: 'seek-e-5', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Spot 3 types of Disney transportation', points: 25, difficulty: 'easy', tag: 'disney' },
   { id: 'seek-m-3', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Find merchandise featuring a retired attraction', points: 50, difficulty: 'medium', tag: 'disney' },
-
-  // ── Universal-only Seek ──
-  { id: 'seek-u-e-1', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Find a character plush from a Universal franchise', points: 25, difficulty: 'easy', tag: 'universal' },
-  { id: 'seek-u-e-2', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Find an item over $100 in a Universal gift shop', points: 25, difficulty: 'easy', tag: 'universal' },
-  { id: 'seek-u-e-3', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Find a hidden movie prop in a themed queue', points: 25, difficulty: 'easy', tag: 'universal' },
-  { id: 'seek-u-e-4', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Spot a Daily Prophet headline in the Wizarding World', points: 25, difficulty: 'easy', tag: 'universal' },
-  { id: 'seek-u-m-1', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Find themed candy from 3 different franchise shops', points: 50, difficulty: 'medium', tag: 'universal' },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // ── Zoo-only Treat 🍦 ────────────────────────────────────────────────────
-  // ══════════════════════════════════════════════════════════════════════════
-  { id: 'treat-z-e-1', size: 'big', category: 'treat', displayCategory: 'Treat', description: "Get a snack from the zoo's main concession area", points: 25, difficulty: 'easy', tag: 'zoo' },
-  { id: 'treat-z-e-2', size: 'big', category: 'treat', displayCategory: 'Treat', description: "Try a zoo-branded or animal-themed treat", points: 25, difficulty: 'easy', tag: 'zoo' },
-  { id: 'treat-z-m-1', size: 'big', category: 'treat', displayCategory: 'Treat', description: 'Get snacks from 2 different food spots in the zoo', points: 50, difficulty: 'medium', tag: 'zoo' },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // ── Zoo-only Meet 🎭 ─────────────────────────────────────────────────────
-  // ══════════════════════════════════════════════════════════════════════════
-  { id: 'meet-z-e-1', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Watch an animal feeding or training demonstration', points: 25, difficulty: 'easy', tag: 'zoo' },
-  { id: 'meet-z-e-2', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Observe an animal up close at the viewing glass', points: 25, difficulty: 'easy', tag: 'zoo' },
-  { id: 'meet-z-e-3', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Spot 3 different species in one habitat area', points: 25, difficulty: 'easy', tag: 'zoo' },
-  { id: 'meet-z-m-1', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Watch an animal interacting with a zookeeper', points: 50, difficulty: 'medium', tag: 'zoo' },
-  { id: 'meet-z-m-2', size: 'big', category: 'meet', displayCategory: 'Meet', description: 'Observe two animals from different species in the same space', points: 50, difficulty: 'medium', tag: 'zoo' },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // ── Zoo-only Explore 🗺️ ──────────────────────────────────────────────────
-  // ══════════════════════════════════════════════════════════════════════════
-  { id: 'explore-z-e-1', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Walk through an entire habitat section without skipping a single exhibit', points: 25, difficulty: 'easy', tag: 'zoo' },
-  { id: 'explore-z-e-2', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Find a quiet, off-the-beaten-path exhibit most visitors walk past', points: 25, difficulty: 'easy', tag: 'zoo' },
-  { id: 'explore-z-m-1', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Read every informational sign in one complete habitat area', points: 50, difficulty: 'medium', tag: 'zoo' },
-  { id: 'explore-z-m-2', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Walk the full zoo loop or perimeter path', points: 50, difficulty: 'medium', tag: 'zoo' },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // ── Zoo-only Seek 🎯 ─────────────────────────────────────────────────────
-  // ══════════════════════════════════════════════════════════════════════════
-  { id: 'seek-z-e-1', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Spot at least one animal from each of 4 different continents', points: 25, difficulty: 'easy', tag: 'zoo' },
-  { id: 'seek-z-e-2', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Find both a reptile and an amphibian during your visit', points: 25, difficulty: 'easy', tag: 'zoo' },
-  { id: 'seek-z-e-3', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Spot an animal doing something funny or unexpected', points: 25, difficulty: 'easy', tag: 'zoo' },
-  { id: 'seek-z-m-1', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Find 5 animals whose exhibit signs mention conservation or endangered status', points: 50, difficulty: 'medium', tag: 'zoo' },
-  { id: 'seek-z-m-2', size: 'big', category: 'seek', displayCategory: 'Seek', description: 'Find animals representing 3 different diet types (carnivore, herbivore, omnivore)', points: 50, difficulty: 'medium', tag: 'zoo' },
 ];
 
 // ─── Ride Activity Tasks ────────────────────────────────────────────────────
@@ -333,31 +216,6 @@ export const RIDE_ACTIVITY_TASKS: Task[] = [
   { id: 'rideact-safari-ak-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Spot 10 different animals on Kilimanjaro Safaris', points: 50, difficulty: 'medium', rideId: 'wdw-ak-kilimanjaro-safaris', parkId: 'wdw-ak', heightRequirement: 0, tag: 'disney' },
   { id: 'rideact-everest-ak-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Keep your hands up through the backwards section of Expedition Everest', points: 50, difficulty: 'medium', rideId: 'wdw-ak-expedition-everest', parkId: 'wdw-ak', heightRequirement: 44, tag: 'disney' },
   { id: 'rideact-kali-ak-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Correctly predict which seat gets the most wet on Kali River Rapids', points: 25, difficulty: 'easy', rideId: 'wdw-ak-kali-river-rapids', parkId: 'wdw-ak', heightRequirement: 38, tag: 'disney' },
-
-  // ── Disneyland ─────────────────────────────────────────────────────────────
-  { id: 'rideact-indy-dl-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Count every skull you spot in the Indiana Jones Adventure queue', points: 50, difficulty: 'medium', rideId: 'dl-dl-indiana-jones-adventure', parkId: 'dl-dl', heightRequirement: 46, tag: 'disney' },
-  { id: 'rideact-buzz-dl-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Score higher than 100,000 on Buzz Lightyear Astro Blasters', points: 75, difficulty: 'hard', rideId: 'dl-dl-buzz-lightyear-astro-blasters', parkId: 'dl-dl', heightRequirement: 0, tag: 'disney' },
-  { id: 'rideact-pirates-dl-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Count every time you spot Captain Jack Sparrow on Pirates of the Caribbean', points: 50, difficulty: 'medium', rideId: 'dl-dl-pirates-of-the-caribbean', parkId: 'dl-dl', heightRequirement: 0, tag: 'disney' },
-
-  // ── Disney California Adventure ────────────────────────────────────────────
-  { id: 'rideact-webslinger-dca-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Score higher than 80,000 on WEB SLINGERS: A Spider-Man Adventure', points: 75, difficulty: 'hard', rideId: 'dl-dca-web-slingers-a-spider-man-adventure', parkId: 'dl-dca', heightRequirement: 0, tag: 'disney' },
-  { id: 'rideact-tsm-dca-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Score higher than 100,000 on Toy Story Midway Mania!', points: 75, difficulty: 'hard', rideId: 'dl-dca-toy-story-midway-mania', parkId: 'dl-dca', heightRequirement: 0, tag: 'disney' },
-  { id: 'rideact-rsr-dca-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Win your race car heat on Radiator Springs Racers', points: 50, difficulty: 'medium', rideId: 'dl-dca-radiator-springs-racers', parkId: 'dl-dca', heightRequirement: 40, tag: 'disney' },
-
-  // ── Universal Studios Florida ──────────────────────────────────────────────
-  { id: 'rideact-mib-usf-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Score higher than 100,000 on MEN IN BLACK: Alien Attack', points: 75, difficulty: 'hard', rideId: 'uor-us-men-in-black-alien-attack', parkId: 'uor-us', heightRequirement: 42, tag: 'universal' },
-  { id: 'rideact-mib-usf-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Hit the spinning target on MEN IN BLACK: Alien Attack', points: 50, difficulty: 'medium', rideId: 'uor-us-men-in-black-alien-attack', parkId: 'uor-us', heightRequirement: 42, tag: 'universal' },
-
-  // ── Islands of Adventure ───────────────────────────────────────────────────
-  { id: 'rideact-spidey-ioa-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Count every villain on The Amazing Adventures of Spider-Man', points: 50, difficulty: 'medium', rideId: 'uor-ioa-amazing-adventures-of-spider-man', parkId: 'uor-ioa', heightRequirement: 40, tag: 'universal' },
-
-  // ── Epic Universe ──────────────────────────────────────────────────────────
-  { id: 'rideact-mariokart-eu-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Score higher than 5,000 points on Mario Kart: Bowser's Challenge", points: 50, difficulty: 'medium', rideId: 'uor-eu-mario-kart-bowsers-challenge', parkId: 'uor-eu', heightRequirement: 40, tag: 'universal' },
-  { id: 'rideact-mariokart-eu-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Beat Bowser's score on Mario Kart: Bowser's Challenge", points: 75, difficulty: 'hard', rideId: 'uor-eu-mario-kart-bowsers-challenge', parkId: 'uor-eu', heightRequirement: 40, tag: 'universal' },
-
-  // ── Universal Studios Hollywood ────────────────────────────────────────────
-  { id: 'rideact-mariokart-ush-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Score higher than 5,000 points on Mario Kart: Bowser's Challenge", points: 50, difficulty: 'medium', rideId: 'ush-us-mario-kart-bowsers-challenge', parkId: 'ush-us', heightRequirement: 40, tag: 'universal' },
-  { id: 'rideact-mariokart-ush-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Beat Bowser's score on Mario Kart: Bowser's Challenge", points: 75, difficulty: 'hard', rideId: 'ush-us-mario-kart-bowsers-challenge', parkId: 'ush-us', heightRequirement: 40, tag: 'universal' },
 ];
 
 // ─── Ride Task Generator ────────────────────────────────────────────────────

@@ -4,11 +4,11 @@
  * Displays the Side Quest logo, player welcome card, and Start/Continue
  * game buttons. When "New Game" is tapped, a two-page modal walks the
  * player through setup:
- *   Page 1 — Player/team name, resort & park selection
- *   Page 2 — Pin trading toggle (Disney parks only) & height filter
+ *   Page 1 — Player/team name & Walt Disney World park selection
+ *   Page 2 — Pin trading toggle & height filter
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -37,7 +37,7 @@ import { useGameStore } from '../store/gameStore';
 // CategoryToggles type used indirectly via updateCategoryToggle
 import { SaveSlot } from '../types';
 import { PARKS } from '../data/parks';
-import { COLORS, SHADOWS, RADII } from '../theme/theme';
+import { COLORS, FONTS, INK, TABLE } from '../theme/theme';
 
 // ─── Relative time helper ──────────────────────────────────────────────────
 
@@ -51,27 +51,6 @@ function timeAgo(timestamp: number): string {
   const days = Math.floor(hours / 24);
   return `${days} day${days > 1 ? 's' : ''} ago`;
 }
-
-// ─── Resort → Park mapping ──────────────────────────────────────────────────
-
-interface Resort {
-  id: string;
-  label: string;
-  icon: string;
-  parkIds: string[];
-}
-
-const RESORTS: Resort[] = [
-  { id: 'wdw', label: 'Walt Disney World', icon: '🏰', parkIds: ['wdw-mk', 'wdw-hs', 'wdw-ep', 'wdw-ak'] },
-  { id: 'dl', label: 'Disneyland Resort', icon: '🎠', parkIds: ['dl-dl', 'dl-dca'] },
-  { id: 'uor', label: 'Universal Orlando', icon: '🌍', parkIds: ['uor-us', 'uor-ioa', 'uor-eu'] },
-  { id: 'ush', label: 'Universal Hollywood', icon: '🎬', parkIds: ['ush-us'] },
-  { id: 'custom', label: 'Any Park', icon: '🎪', parkIds: ['custom'] },
-  { id: 'zoo', label: 'Any Zoo', icon: '🦁', parkIds: ['zoo'] },
-];
-
-// Disney resort IDs — used to conditionally show pin trading toggle
-const DISNEY_RESORT_IDS = ['wdw', 'dl'];
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -101,64 +80,15 @@ export default function HomeScreen() {
   const [gameNameInput, setGameNameInput] = useState('');
   const [nameInput, setNameInput] = useState(player.name);
 
-  // ─── Resort / park selection (now lives inside the modal) ───────────────
   const selectedParkId = settings.parkIds?.[0];
-  const currentResort = RESORTS.find(r => r.parkIds.includes(selectedParkId || ''));
-  const [selectedResortId, setSelectedResortId] = useState<string | null>(currentResort?.id ?? null);
-
-  // When resort changes, auto-select if only one park
-  useEffect(() => {
-    if (selectedResortId) {
-      const resort = RESORTS.find(r => r.id === selectedResortId);
-      if (resort && resort.parkIds.length === 1) {
-        updateSettings({ parkIds: [resort.parkIds[0]] });
-      }
-    }
-  }, [selectedResortId]);
-
-  const selectedResort = RESORTS.find(r => r.id === selectedResortId);
   const selectedPark = PARKS.find(p => p.id === selectedParkId);
-  const parkIsInResort = selectedResort?.parkIds.includes(selectedParkId || '');
-
-  const [resortDropdownOpen, setResortDropdownOpen] = useState(false);
-  const [parkDropdownOpen, setParkDropdownOpen] = useState(false);
+  const canAdvance = !!selectedPark;
 
   const animateLayout = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
 
-  // Derived helpers
-  const isDisneyResort = DISNEY_RESORT_IDS.includes(selectedResortId || '');
-  const isZooResort = selectedResortId === 'zoo';
-  const canAdvance = !!selectedParkId && !!parkIsInResort;
-
   // ─── Handlers ───────────────────────────────────────────────────────────
-
-  const handleSelectResort = (resortId: string) => {
-    animateLayout();
-    setSelectedResortId(resortId);
-    setResortDropdownOpen(false);
-    // Clear park selection if switching resort
-    const resort = RESORTS.find(r => r.id === resortId);
-    if (resort && !resort.parkIds.includes(selectedParkId || '')) {
-      if (resort.parkIds.length === 1) {
-        updateSettings({ parkIds: [resort.parkIds[0]] });
-      } else {
-        updateSettings({ parkIds: [] });
-        // Auto-open park dropdown for multi-park resorts
-        setTimeout(() => {
-          animateLayout();
-          setParkDropdownOpen(true);
-        }, 300);
-      }
-    }
-  };
-
-  const handleSelectPark = (parkId: string) => {
-    animateLayout();
-    updateSettings({ parkIds: [parkId] });
-    setParkDropdownOpen(false);
-  };
 
   const handleOpenNewGame = () => {
     if (allSlotsFull) {
@@ -168,8 +98,6 @@ export default function HomeScreen() {
     setNameInput(player.name);
     setGameNameInput('');
     setModalPage(1);
-    setResortDropdownOpen(false);
-    setParkDropdownOpen(false);
     setShowNewGameModal(true);
   };
 
@@ -180,11 +108,7 @@ export default function HomeScreen() {
       return;
     }
     if (!canAdvance) {
-      Alert.alert('Select a Park', 'Please pick a resort and park before continuing.');
-      return;
-    }
-    if (isZooResort) {
-      handleConfirmStart();
+      Alert.alert('Select a Park', 'Please pick a park before continuing.');
       return;
     }
     animateLayout();
@@ -283,6 +207,7 @@ export default function HomeScreen() {
           <View style={styles.actions}>
             {activeSaves.length > 0 && (
               <TouchableOpacity
+                testID="continue-game-btn"
                 style={styles.continueBtn}
                 onPress={() => setShowContinueModal(true)}
               >
@@ -290,6 +215,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             )}
             <TouchableOpacity
+              testID="new-game-btn"
               style={styles.startBtn}
               onPress={handleOpenNewGame}
             >
@@ -391,10 +317,10 @@ export default function HomeScreen() {
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>New Game</Text>
             <Text style={styles.modalSubtitle}>
-              {isZooResort ? 'Step 1 of 1' : modalPage === 1 ? 'Step 1 of 2' : 'Step 2 of 2'}
+              {modalPage === 1 ? 'Step 1 of 2' : 'Step 2 of 2'}
             </Text>
 
-            {/* ── PAGE 1: Name + Resort/Park ── */}
+            {/* ── PAGE 1: Name + Park ── */}
             {modalPage === 1 && (
               <View>
                 {/* Welcome tooltip */}
@@ -413,7 +339,7 @@ export default function HomeScreen() {
                   value={nameInput}
                   onChangeText={setNameInput}
                   placeholder="Enter your name..."
-                  placeholderTextColor={COLORS.textLight}
+                  placeholderTextColor="rgba(42, 30, 63, 0.4)"
                   maxLength={24}
                   autoCapitalize="words"
                   selectionColor={COLORS.green}
@@ -428,101 +354,35 @@ export default function HomeScreen() {
                   placeholder={
                     selectedPark
                       ? `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date().getMonth()]} ${new Date().getDate()} – ${selectedPark.name}`
-                      : 'e.g. Disney Trip, Universal Day…'
+                      : 'e.g. Magic Kingdom Day…'
                   }
-                  placeholderTextColor={COLORS.textLight}
+                  placeholderTextColor="rgba(42, 30, 63, 0.4)"
                   maxLength={30}
                   autoCapitalize="words"
                   selectionColor={COLORS.green}
                 />
 
-                {/* Resort Dropdown */}
-                <Text style={styles.modalFieldLabel}>RESORT</Text>
-                <TouchableOpacity
-                  style={styles.modalDropdown}
-                  onPress={() => { animateLayout(); setResortDropdownOpen(v => !v); setParkDropdownOpen(false); }}
-                  activeOpacity={0.7}
-                >
-                  {selectedResort ? (
-                    <View style={styles.dropdownSelected}>
-                      <Text style={styles.dropdownSelectedIcon}>{selectedResort.icon}</Text>
-                      <Text style={styles.modalDropdownText}>{selectedResort.label}</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.dropdownPlaceholder}>Choose a resort...</Text>
-                  )}
-                  <Text style={styles.dropdownArrow}>{resortDropdownOpen ? '▲' : '▼'}</Text>
-                </TouchableOpacity>
-                {resortDropdownOpen && (
-                  <View style={styles.modalDropdownList}>
-                    {RESORTS.map((resort, i) => {
-                      const isSelected = selectedResortId === resort.id;
-                      return (
-                        <TouchableOpacity
-                          key={resort.id}
-                          style={[
-                            styles.dropdownItem,
-                            isSelected && styles.dropdownItemSelected,
-                            i < RESORTS.length - 1 && styles.dropdownItemBorder,
-                          ]}
-                          onPress={() => handleSelectResort(resort.id)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.dropdownItemIcon}>{resort.icon}</Text>
-                          <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
-                            {resort.label}
-                          </Text>
-                          {isSelected && <Text style={styles.dropdownCheck}>✓</Text>}
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                )}
-
-                {/* Park Dropdown (only if resort has multiple parks) */}
-                {selectedResort && selectedResort.parkIds.length > 1 && (
-                  <View style={{ marginTop: 12 }}>
-                    <Text style={styles.modalFieldLabel}>PARK</Text>
-                    <TouchableOpacity
-                      style={styles.modalDropdown}
-                      onPress={() => { animateLayout(); setParkDropdownOpen(v => !v); setResortDropdownOpen(false); }}
-                      activeOpacity={0.7}
-                    >
-                      {selectedPark && parkIsInResort ? (
-                        <Text style={styles.modalDropdownText}>{selectedPark.name}</Text>
-                      ) : (
-                        <Text style={styles.dropdownPlaceholder}>Choose a park...</Text>
-                      )}
-                      <Text style={styles.dropdownArrow}>{parkDropdownOpen ? '▲' : '▼'}</Text>
-                    </TouchableOpacity>
-                    {parkDropdownOpen && (
-                      <View style={styles.modalDropdownList}>
-                        {selectedResort.parkIds.map((parkId, i) => {
-                          const park = PARKS.find(p => p.id === parkId);
-                          if (!park) return null;
-                          const isSelected = selectedParkId === parkId;
-                          return (
-                            <TouchableOpacity
-                              key={parkId}
-                              style={[
-                                styles.dropdownItem,
-                                isSelected && styles.dropdownItemSelected,
-                                i < selectedResort.parkIds.length - 1 && styles.dropdownItemBorder,
-                              ]}
-                              onPress={() => handleSelectPark(parkId)}
-                              activeOpacity={0.7}
-                            >
-                              <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
-                                {park.name}
-                              </Text>
-                              {isSelected && <Text style={styles.dropdownCheck}>✓</Text>}
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    )}
-                  </View>
-                )}
+                {/* Park picker — Walt Disney World only for now */}
+                <Text style={styles.modalFieldLabel}>WALT DISNEY WORLD PARK</Text>
+                <View style={styles.parkGrid}>
+                  {PARKS.map(park => {
+                    const isSelected = park.id === selectedParkId;
+                    return (
+                      <TouchableOpacity
+                        key={park.id}
+                        testID={`park-option-${park.id}`}
+                        style={[styles.parkTile, isSelected && styles.parkTileSelected]}
+                        onPress={() => updateSettings({ parkIds: [park.id] })}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.parkTileIcon}>{park.icon}</Text>
+                        <Text style={[styles.parkTileName, isSelected && styles.parkTileNameSelected]} numberOfLines={2}>
+                          {park.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
 
                 {/* Page 1 Buttons: Back (dismiss) / Next */}
                 <View style={styles.modalActions}>
@@ -531,11 +391,12 @@ export default function HomeScreen() {
                       <Text style={styles.modalBackBtnText}>Back</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
+                      testID="new-game-next-btn"
                       style={[styles.modalNextBtn, !canAdvance && styles.modalBtnDisabled]}
                       onPress={handleModalNext}
                       disabled={!canAdvance}
                     >
-                      <Text style={styles.modalNextBtnText}>{isZooResort ? 'Start Game' : 'Next'}</Text>
+                      <Text style={styles.modalNextBtnText}>Next</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -547,9 +408,8 @@ export default function HomeScreen() {
               <View>
                 <View style={styles.modalDivider} />
 
-                {/* Pin Trading Toggle — only for Disney parks */}
-                {isDisneyResort && (
-                  <>
+                {/* Pin Trading Toggle */}
+                <>
                     <View style={styles.toggleRow}>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.toggleLabel}>📌  Pin Trading Tasks</Text>
@@ -564,12 +424,10 @@ export default function HomeScreen() {
                       />
                     </View>
                     <View style={styles.modalDivider} />
-                  </>
-                )}
+                </>
 
-                {/* Height Filter — not applicable for zoos (no rides) */}
-                {!isZooResort && (
-                  <>
+                {/* Height Filter */}
+                <>
                     <View style={styles.toggleRow}>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.toggleLabel}>🎢  Filter by height</Text>
@@ -609,8 +467,7 @@ export default function HomeScreen() {
                         </View>
                       </View>
                     )}
-                  </>
-                )}
+                </>
 
                 {/* Page 2 Buttons: Back / Start Game */}
                 <View style={styles.modalActions}>
@@ -618,7 +475,7 @@ export default function HomeScreen() {
                     <TouchableOpacity style={styles.modalBackBtn} onPress={handleModalBack}>
                       <Text style={styles.modalBackBtnText}>Back</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.modalStartBtn} onPress={handleConfirmStart}>
+                    <TouchableOpacity testID="start-game-btn" style={styles.modalStartBtn} onPress={handleConfirmStart}>
                       <Text style={styles.modalStartBtnText}>Start Game</Text>
                     </TouchableOpacity>
                   </View>
@@ -635,6 +492,33 @@ export default function HomeScreen() {
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+const PANEL_BORDER = {
+  borderWidth: 3,
+  borderBottomWidth: 7,
+  borderColor: INK,
+};
+
+const chunkyButton = (face: string, edge: string) => ({
+  backgroundColor: face,
+  borderRadius: 16,
+  borderWidth: 2.5,
+  borderBottomWidth: 7,
+  borderColor: INK,
+  borderBottomColor: edge,
+  paddingVertical: 14,
+  alignItems: 'center' as const,
+});
+
+const displayLabel = {
+  fontFamily: FONTS.display,
+  color: '#FFFFFF',
+  fontSize: 22,
+  letterSpacing: 0.6,
+  textShadowColor: 'rgba(42, 30, 63, 0.55)',
+  textShadowOffset: { width: 0, height: 2 },
+  textShadowRadius: 0,
+};
 
 const styles = StyleSheet.create({
   backgroundImage: {
@@ -661,11 +545,14 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   logoSide: {
-    fontSize: 38,
-    fontWeight: '900',
-    color: '#B8A9D4',
+    fontFamily: FONTS.display,
+    fontSize: 46,
+    color: '#FFFFFF',
     letterSpacing: 12,
     textAlign: 'center',
+    textShadowColor: INK,
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 0,
   },
   logoDivider: {
     flexDirection: 'row',
@@ -675,45 +562,49 @@ const styles = StyleSheet.create({
   },
   logoDividerLine: {
     flex: 1,
-    height: 2,
-    backgroundColor: '#D4C4EE',
-    borderRadius: 1,
+    height: 3,
+    backgroundColor: TABLE.gold,
+    borderRadius: 2,
   },
   logoDividerIcon: {
     fontSize: 20,
     marginHorizontal: 10,
-    color: '#C8A4F0',
+    color: TABLE.gold,
   },
   logoQuest: {
-    fontSize: 44,
-    fontWeight: '900',
-    color: '#9B7FD4',
+    fontFamily: FONTS.display,
+    fontSize: 56,
+    color: TABLE.gold,
     letterSpacing: 6,
     textAlign: 'center',
+    textShadowColor: INK,
+    textShadowOffset: { width: 0, height: 5 },
+    textShadowRadius: 0,
   },
   subtitle: {
-    color: COLORS.textMuted,
-    fontSize: 13,
+    fontFamily: FONTS.display,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 15,
     marginTop: 4,
-    letterSpacing: 1,
-    fontWeight: '500',
+    letterSpacing: 1.5,
+    textShadowColor: INK,
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 0,
   },
 
   // Welcome
   welcomeCard: {
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderRadius: RADII.panel,
+    backgroundColor: TABLE.panel,
+    borderRadius: 18,
     padding: 16,
     marginBottom: 24,
-    borderWidth: 1,
-    borderColor: COLORS.borderPanel,
-    ...SHADOWS.card,
+    ...PANEL_BORDER,
   },
   welcomeText: {
-    color: COLORS.textDark,
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontFamily: FONTS.display,
+    color: '#FFFFFF',
+    fontSize: 20,
+    textAlign: 'center',
   },
   lifetimeRow: {
     flexDirection: 'row',
@@ -721,11 +612,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   lifetimeLabel: {
-    color: COLORS.textMuted,
+    color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 12,
   },
   lifetimeScore: {
-    color: COLORS.green,
+    color: TABLE.gold,
     fontWeight: '800',
     fontSize: 16,
   },
@@ -733,57 +624,95 @@ const styles = StyleSheet.create({
   // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(14, 9, 28, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: 20,
   },
   modalCard: {
     width: '100%',
-    maxWidth: 380,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
-    ...SHADOWS.card,
+    maxWidth: 400,
+    backgroundColor: TABLE.panel,
+    borderRadius: 22,
+    padding: 22,
+    ...PANEL_BORDER,
   },
   modalTitle: {
-    color: COLORS.textDark,
-    fontSize: 24,
-    fontWeight: '900',
+    fontFamily: FONTS.display,
+    color: '#FFFFFF',
+    fontSize: 30,
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
+    textShadowColor: INK,
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 0,
   },
   modalSubtitle: {
-    color: COLORS.textMuted,
+    fontFamily: FONTS.display,
+    color: TABLE.gold,
     fontSize: 14,
-    fontWeight: '500',
+    letterSpacing: 1.5,
     textAlign: 'center',
     marginBottom: 4,
   },
+  parkGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  parkTile: {
+    width: '47%',
+    flexGrow: 1,
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+    borderWidth: 2.5,
+    borderBottomWidth: 5,
+    borderColor: INK,
+    backgroundColor: TABLE.panelLight,
+  },
+  parkTileSelected: {
+    borderColor: TABLE.gold,
+    backgroundColor: '#FFF8EC',
+  },
+  parkTileIcon: {
+    fontSize: 28,
+  },
+  parkTileName: {
+    fontFamily: FONTS.display,
+    fontSize: 16,
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  parkTileNameSelected: {
+    color: INK,
+  },
   modalFieldLabel: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 2,
+    fontFamily: FONTS.display,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 13,
+    letterSpacing: 1.5,
     alignSelf: 'flex-start',
     marginBottom: 8,
   },
   modalNameInput: {
     width: '100%',
-    backgroundColor: COLORS.bg,
+    backgroundColor: '#FFF8EC',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     fontSize: 17,
-    fontWeight: '700',
-    color: COLORS.textDark,
-    borderWidth: 1.5,
-    borderColor: COLORS.borderMedium,
-    marginBottom: 20,
+    fontWeight: '800',
+    color: INK,
+    borderWidth: 2.5,
+    borderColor: INK,
+    marginBottom: 16,
   },
   modalDivider: {
-    height: 1,
-    backgroundColor: COLORS.borderLight,
+    height: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     marginVertical: 12,
     width: '100%',
   },
@@ -797,135 +726,30 @@ const styles = StyleSheet.create({
   },
   modalBackBtn: {
     flex: 1,
-    backgroundColor: COLORS.bg,
-    borderRadius: RADII.button,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: COLORS.borderMedium,
+    ...chunkyButton('#5B5375', '#3E3756'),
   },
   modalBackBtnText: {
-    color: COLORS.textBody,
-    fontWeight: '700',
-    fontSize: 17,
-    letterSpacing: 0.5,
+    ...displayLabel,
+    fontSize: 20,
   },
   modalNextBtn: {
-    flex: 1,
-    backgroundColor: COLORS.green,
-    borderRadius: RADII.button,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderBottomWidth: 4,
-    borderBottomColor: COLORS.greenDark,
-    ...SHADOWS.button,
+    flex: 1.4,
+    ...chunkyButton('#3DBE6E', '#23864A'),
   },
   modalNextBtnText: {
-    color: COLORS.white,
-    fontWeight: '900',
-    fontSize: 17,
-    letterSpacing: 0.5,
+    ...displayLabel,
+    fontSize: 20,
   },
   modalStartBtn: {
-    flex: 1,
-    backgroundColor: COLORS.green,
-    borderRadius: RADII.button,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderBottomWidth: 4,
-    borderBottomColor: COLORS.greenDark,
-    ...SHADOWS.button,
+    flex: 1.4,
+    ...chunkyButton('#3DBE6E', '#23864A'),
   },
   modalStartBtnText: {
-    color: COLORS.white,
-    fontWeight: '900',
-    fontSize: 17,
-    letterSpacing: 0.5,
+    ...displayLabel,
+    fontSize: 20,
   },
   modalBtnDisabled: {
-    opacity: 0.45,
-  },
-
-  // Modal Dropdowns
-  modalDropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: COLORS.bg,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderWidth: 1.5,
-    borderColor: COLORS.borderMedium,
-  },
-  modalDropdownText: {
-    color: COLORS.textDark,
-    fontSize: 15,
-    fontWeight: '700',
-    flex: 1,
-  },
-  modalDropdownList: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: COLORS.borderMedium,
-    overflow: 'hidden',
-    ...SHADOWS.card,
-  },
-
-  // Shared dropdown items (used in modal)
-  dropdownSelected: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  dropdownSelectedIcon: {
-    fontSize: 20,
-    marginRight: 10,
-  },
-  dropdownPlaceholder: {
-    color: COLORS.textMuted,
-    fontSize: 15,
-    fontWeight: '500',
-    flex: 1,
-  },
-  dropdownArrow: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    marginLeft: 8,
-  },
-  dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-  },
-  dropdownItemSelected: {
-    backgroundColor: 'rgba(120,212,160,0.12)',
-  },
-  dropdownItemBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.borderLight,
-  },
-  dropdownItemIcon: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  dropdownItemText: {
-    color: COLORS.textBody,
-    fontSize: 15,
-    fontWeight: '500',
-    flex: 1,
-  },
-  dropdownItemTextSelected: {
-    color: COLORS.greenDark,
-    fontWeight: '700',
-  },
-  dropdownCheck: {
-    color: COLORS.green,
-    fontSize: 16,
-    fontWeight: '900',
+    opacity: 0.5,
   },
 
   // Toggle rows
@@ -933,22 +757,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.borderLight,
+    paddingVertical: 10,
   },
   toggleLabel: {
-    color: COLORS.textBody,
-    fontSize: 14,
-    fontWeight: '500',
+    fontFamily: FONTS.display,
+    color: '#FFFFFF',
+    fontSize: 17,
   },
   toggleDesc: {
-    color: COLORS.textMuted,
-    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 12,
+    fontWeight: '700',
     marginTop: 2,
   },
   toggleSwitch: {
-    transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }],
+    transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }],
   },
 
   // Height slider
@@ -964,14 +787,14 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   heightValue: {
-    color: COLORS.textDark,
-    fontSize: 28,
-    fontWeight: '900',
+    fontFamily: FONTS.display,
+    color: TABLE.gold,
+    fontSize: 32,
   },
   heightFeet: {
-    color: COLORS.textMuted,
+    color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   slider: {
     width: '100%',
@@ -983,63 +806,50 @@ const styles = StyleSheet.create({
     marginTop: -8,
   },
   sliderLabel: {
-    color: COLORS.textMuted,
+    color: 'rgba(255, 255, 255, 0.5)',
     fontSize: 11,
+    fontWeight: '700',
   },
 
   // Tooltip
   tooltip: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(155,127,212,0.10)',
+    backgroundColor: TABLE.panelLight,
     borderRadius: 12,
     padding: 12,
     marginTop: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(155,127,212,0.25)',
+    borderWidth: 2,
+    borderColor: INK,
     alignItems: 'flex-start',
   },
   tooltipText: {
     flex: 1,
-    color: COLORS.textBody,
-    fontSize: 12,
-    lineHeight: 18,
-    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '700',
   },
 
   // Actions
   actions: {
-    gap: 12,
+    gap: 14,
     marginTop: 8,
   },
   startBtn: {
-    backgroundColor: COLORS.green,
-    borderRadius: RADII.button,
-    paddingVertical: 18,
-    alignItems: 'center',
-    borderBottomWidth: 4,
-    borderBottomColor: COLORS.greenDark,
-    ...SHADOWS.button,
+    ...chunkyButton('#3DBE6E', '#23864A'),
+    paddingVertical: 16,
   },
   startBtnText: {
-    color: COLORS.white,
-    fontWeight: '900',
-    fontSize: 18,
-    letterSpacing: 0.5,
+    ...displayLabel,
+    fontSize: 26,
   },
   continueBtn: {
-    backgroundColor: COLORS.blue,
-    borderRadius: RADII.button,
-    borderBottomWidth: 4,
-    borderBottomColor: COLORS.blueDark,
+    ...chunkyButton('#3B82F6', '#2257B3'),
     paddingVertical: 16,
-    alignItems: 'center',
-    ...SHADOWS.button,
   },
   continueBtnText: {
-    color: COLORS.white,
-    fontWeight: '900',
-    fontSize: 18,
-    letterSpacing: 0.5,
+    ...displayLabel,
+    fontSize: 26,
   },
 
   // Top nav icons
@@ -1050,15 +860,15 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   topNavBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.75)',
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: TABLE.panel,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.borderPanel,
-    ...SHADOWS.card,
+    borderWidth: 2.5,
+    borderBottomWidth: 5,
+    borderColor: INK,
   },
   topNavIcon: {
     fontSize: 18,
@@ -1067,11 +877,17 @@ const styles = StyleSheet.create({
   // Continue Game modal — save slot picker
   continueSlotCard: {
     paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: TABLE.panelLight,
+    borderRadius: 14,
+    borderWidth: 2.5,
+    borderColor: INK,
+    marginTop: 4,
   },
   continueSlotName: {
-    color: COLORS.textDark,
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: FONTS.display,
+    color: '#FFFFFF',
+    fontSize: 19,
     marginBottom: 4,
   },
   continueSlotDetails: {
@@ -1081,14 +897,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   continueSlotMeta: {
-    color: COLORS.textMuted,
+    color: TABLE.gold,
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '800',
   },
   continueSlotTime: {
-    color: COLORS.textMuted,
+    color: 'rgba(255, 255, 255, 0.55)',
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   slotButtonRow: {
     flexDirection: 'row',
@@ -1096,30 +912,28 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   selectSlotBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: COLORS.green,
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.greenDark,
+    ...chunkyButton('#3DBE6E', '#23864A'),
+    borderRadius: 12,
+    borderBottomWidth: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 18,
   },
   selectSlotBtnText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '800',
+    ...displayLabel,
+    fontSize: 16,
   },
   deleteSlotBtn: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: 'rgba(240,144,144,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(240,144,144,0.3)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(226, 80, 79, 0.15)',
+    borderWidth: 2,
+    borderColor: 'rgba(226, 80, 79, 0.6)',
   },
   deleteSlotBtnText: {
-    color: COLORS.red,
+    color: '#FF8A8A',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   deleteConfirmRow: {
     flexDirection: 'row',
@@ -1128,16 +942,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   deleteConfirmText: {
-    color: COLORS.textBody,
+    color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     flex: 1,
   },
   deleteConfirmYes: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: COLORS.red,
+    borderRadius: 10,
+    backgroundColor: '#E2504F',
+    borderWidth: 2,
+    borderColor: INK,
   },
   deleteConfirmYesText: {
     color: '#fff',
@@ -1147,13 +963,13 @@ const styles = StyleSheet.create({
   deleteConfirmNo: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: COLORS.bg,
-    borderWidth: 1,
-    borderColor: COLORS.borderMedium,
+    borderRadius: 10,
+    backgroundColor: TABLE.panelLight,
+    borderWidth: 2,
+    borderColor: INK,
   },
   deleteConfirmNoText: {
-    color: COLORS.textBody,
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
   },

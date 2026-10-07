@@ -8,7 +8,7 @@
 
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Task, Session, Settings, Player, Badge, BadgeTier, CategoryToggles, ParkThemeTag, SaveSlot, Draft, MAX_SAVE_SLOTS } from '../types';
+import { Task, Session, Settings, Player, Badge, BadgeTier, CategoryToggles, SaveSlot, Draft, MAX_SAVE_SLOTS } from '../types';
 import { SMALL_TASKS, BIG_TASKS, RIDE_ACTIVITY_TASKS, generateRideTasks } from '../data/tasks';
 import { TRIVIA_TASKS } from '../data/trivia';
 import { RIDES, PARKS } from '../data/parks';
@@ -166,41 +166,22 @@ interface GameState {
 
 /**
  * Builds shuffled pools of small (hand) and big (challenge) tasks based on
- * the player's settings — filters by enabled categories, park theme tags,
+ * the player's settings — filters by enabled categories, selected park,
  * and optionally by rider height requirements.
  */
 function buildTaskPools(settings: Settings): { small: Task[]; big: Task[] } {
   const { categoryToggles, parkIds, heightFilterEnabled, minHeightInches } = settings;
 
-  // Determine which park themes are active (disney, universal, zoo, or any combo)
-  const activeThemes = new Set<ParkThemeTag>();
-  for (const pid of parkIds) {
-    const park = PARKS.find(p => p.id === pid);
-    if (!park || park.theme === 'custom') {
-      // "Any Park" / custom → include theme park content
-      activeThemes.add('disney');
-      activeThemes.add('universal');
-    } else if (park.theme === 'zoo') {
-      activeThemes.add('zoo');
-    } else {
-      activeThemes.add(park.theme as ParkThemeTag);
-    }
-  }
-
-  // Theme filter: only include tasks that match the active park themes (or have no tag)
-  const matchesTheme = (t: Task) => !t.tag || activeThemes.has(t.tag);
-
   // Small pool: find, photo, act from SMALL_TASKS + trivia from TRIVIA_TASKS
   const enabledSmallCategories = (['find', 'photo', 'act'] as const).filter(c => categoryToggles[c]);
-  let small: Task[] = SMALL_TASKS.filter(t => enabledSmallCategories.includes(t.category as any) && matchesTheme(t));
+  let small: Task[] = SMALL_TASKS.filter(t => enabledSmallCategories.includes(t.category as any));
   if (categoryToggles.trivia) {
-    const filteredTrivia = TRIVIA_TASKS.filter(matchesTheme);
-    small = [...small, ...filteredTrivia];
+    small = [...small, ...TRIVIA_TASKS];
   }
 
   // Big pool: treat, pins, meet, explore, seek from BIG_TASKS + ride tasks
   const enabledBigCategories = (['treat', 'pins', 'meet', 'explore', 'seek'] as const).filter(c => categoryToggles[c]);
-  let big: Task[] = BIG_TASKS.filter(t => enabledBigCategories.includes(t.category as any) && matchesTheme(t));
+  let big: Task[] = BIG_TASKS.filter(t => enabledBigCategories.includes(t.category as any));
 
   if (categoryToggles.ride) {
     const parkRides = RIDES.filter(r => parkIds.includes(r.parkId));
@@ -213,8 +194,7 @@ function buildTaskPools(settings: Settings): { small: Task[]; big: Task[] } {
     // selected park and the player's height setting, same as generated ride tasks.
     const rideActivityTasks = RIDE_ACTIVITY_TASKS.filter(t => {
       if (!parkIds.includes(t.parkId!)) return false;
-      if (heightFilterEnabled && t.heightRequirement! > minHeightInches) return false;
-      return matchesTheme(t);
+      return !(heightFilterEnabled && t.heightRequirement! > minHeightInches);
     });
     big = [...big, ...rideActivityTasks];
   }
@@ -980,9 +960,12 @@ export const useGameStore = create<GameState>((set, get) => ({
             delete (migratedToggles as any)[oldKey];
           }
         }
+        // Drop parks that are no longer offered (e.g. from older multi-resort builds).
+        const validParkIds = ((saved.settings?.parkIds ?? []) as string[]).filter(id => PARKS.some(p => p.id === id));
         const migratedSettings: Settings = {
           ...DEFAULT_SETTINGS,
           ...saved.settings,
+          parkIds: validParkIds.length > 0 ? validParkIds : DEFAULT_SETTINGS.parkIds,
           categoryToggles: { ...DEFAULT_SETTINGS.categoryToggles, ...migratedToggles },
         };
 

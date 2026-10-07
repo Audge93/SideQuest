@@ -1,34 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  Pressable,
-  TouchableOpacity,
-  Animated,
-  Easing,
-  Dimensions,
-  Image,
-} from 'react-native';
+import { View, Text, StyleSheet, Modal, Pressable, Animated, Easing, Dimensions } from 'react-native';
 import { Task } from '../types';
-import { COLORS, CATEGORY_COLORS, CATEGORY_ICON_IMAGES } from '../theme/theme';
+import { CATEGORY_FRAME_COLORS, FONTS, INK, RARITY, TABLE } from '../theme/theme';
 import { haptic } from '../utils/haptics';
+import CardFace, { CARD_ASPECT } from './CardFace';
+import GameButton from './GameButton';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-const sw = SCREEN_W / 390;
 
-const GAP = Math.round(10 * sw);
+const GAP = 10;
 const CARD_W = Math.round(Math.min((Math.min(SCREEN_W, 480) - 32 - GAP * 2) / 3, 140));
-const CARD_H = Math.round(CARD_W * 1.5);
+const CARD_H = Math.round(CARD_W * CARD_ASPECT);
+
 // Spread from -1 (left) to 1 (right) so the fan stays symmetric for 1–3 cards.
 function fanPosition(index: number, count: number) {
   return count <= 1 ? 0 : (index / (count - 1)) * 2 - 1;
 }
-const GOLD = '#FFD45C';
-const INK = '#2D2140';
-
-const DIFFICULTY_LABEL: Record<string, string> = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
 
 function DraftCard({
   task,
@@ -49,7 +36,6 @@ function DraftCard({
   chosen: boolean;
   onPress: () => void;
 }) {
-  const color = CATEGORY_COLORS[task.category] ?? '#888';
   const deal = useRef(new Animated.Value(0)).current;
   const sway = useRef(new Animated.Value(0)).current;
   const lift = useRef(new Animated.Value(0)).current;
@@ -86,7 +72,8 @@ function DraftCard({
 
   const fan = fanPosition(index, count);
   const baseRot = fan * 6;
-  const baseLift = Math.abs(fan) * 8;
+  const baseLift = Math.abs(fan) * 10;
+
   const rotate = Animated.add(
     sway.interpolate({ inputRange: [0, 1], outputRange: [baseRot - 1.5, baseRot + 1.5] }),
     lift.interpolate({ inputRange: [0, 1], outputRange: [0, -baseRot] }),
@@ -98,23 +85,21 @@ function DraftCard({
       sway.interpolate({ inputRange: [0, 1], outputRange: [-3, 3] }),
     ),
     Animated.add(
-      lift.interpolate({ inputRange: [0, 1], outputRange: [0, -22] }),
+      lift.interpolate({ inputRange: [0, 1], outputRange: [0, -24] }),
       exit.interpolate({ inputRange: [0, 1], outputRange: [0, chosen ? SCREEN_H * 0.55 : -40] }),
     ),
   );
 
   const scale = Animated.multiply(
-    lift.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] }),
+    lift.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] }),
     exit.interpolate({ inputRange: [0, 1], outputRange: [1, chosen ? 0.75 : 0.6] }),
   );
 
   return (
-    <Pressable onPress={onPress} disabled={leaving}>
+    <Pressable testID="draft-option" onPress={onPress} disabled={leaving}>
       <Animated.View
         style={[
-          styles.card,
           {
-            borderColor: selected ? GOLD : INK,
             opacity: Animated.multiply(
               deal.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0, 1, 1] }),
               exit.interpolate({ inputRange: [0, 0.8, 1], outputRange: [1, chosen ? 1 : 0, 0] }),
@@ -127,23 +112,11 @@ function DraftCard({
               { scale },
             ],
           },
-          selected && styles.cardSelected,
+          selected && styles.cardGlow,
           dimmed && !leaving && styles.cardDimmed,
         ]}
       >
-        <View style={[styles.cardHeader, { backgroundColor: color }]}>
-          <Text style={styles.cardHeaderText} numberOfLines={1}>{task.displayCategory}</Text>
-        </View>
-        <View style={styles.cardBody}>
-          <View style={[styles.iconOuter, { backgroundColor: color }]}>
-            <Image source={CATEGORY_ICON_IMAGES[task.category]} style={styles.iconImage} resizeMode="contain" />
-          </View>
-          <Text style={styles.cardDesc} numberOfLines={4}>{task.description}</Text>
-        </View>
-        <View style={[styles.ptsBar, { backgroundColor: color }]}>
-          <Text style={styles.ptsText}>{task.points}</Text>
-          <Text style={styles.ptsLabel}>pts</Text>
-        </View>
+        <CardFace task={task} width={CARD_W} descriptionLines={4} highlighted={selected} />
       </Animated.View>
     </Pressable>
   );
@@ -164,7 +137,6 @@ export default function DraftPicker({ options, onChoose }: { options: Task[]; on
   }, [selectedId]);
 
   const selected = options.find(t => t.id === selectedId) ?? null;
-  const selectedColor = selected ? CATEGORY_COLORS[selected.category] ?? '#888' : GOLD;
 
   const handleSelect = (id: string) => {
     if (leaving) return;
@@ -191,7 +163,9 @@ export default function DraftPicker({ options, onChoose }: { options: Task[]; on
             transform: [{ translateY: intro.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
           }}
         >
-          <Text style={styles.kicker}>A SLOT OPENED UP</Text>
+          <View style={styles.kickerPill}>
+            <Text style={styles.kicker}>A SLOT OPENED UP</Text>
+          </View>
           <Text style={styles.title}>Choose Your Next Quest</Text>
           <Text style={styles.subtitle}>Pick 1 of {options.length}</Text>
         </Animated.View>
@@ -224,22 +198,24 @@ export default function DraftPicker({ options, onChoose }: { options: Task[]; on
         >
           {selected && (
             <>
-              <View style={[styles.panelTag, { backgroundColor: selectedColor }]}>
-                <Text style={styles.panelTagText}>
-                  {selected.displayCategory} · {DIFFICULTY_LABEL[selected.difficulty]} · {selected.points} pts
-                </Text>
+              <View style={styles.tagRow}>
+                <View style={[styles.tag, { backgroundColor: CATEGORY_FRAME_COLORS[selected.category] }]}>
+                  <Text style={styles.tagText}>{selected.displayCategory}</Text>
+                </View>
+                <View style={[styles.tag, { backgroundColor: RARITY[selected.difficulty].color }]}>
+                  <Text style={styles.tagText}>{RARITY[selected.difficulty].label}</Text>
+                </View>
+                <View style={[styles.tag, { backgroundColor: TABLE.gold }]}>
+                  <Text style={styles.tagText}>{selected.points} pts</Text>
+                </View>
               </View>
               <Text style={styles.panelDesc}>{selected.description}</Text>
-              <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm} activeOpacity={0.85} disabled={leaving}>
-                <Text style={styles.confirmText}>Add to Hand</Text>
-              </TouchableOpacity>
+              <GameButton testID="add-to-hand" label="Add to Hand" tone="green" size="lg" onPress={handleConfirm} disabled={leaving} style={styles.confirm} />
             </>
           )}
         </Animated.View>
 
-        {!selected && (
-          <Animated.Text style={[styles.hint, { opacity: intro }]}>Tap a card to inspect it</Animated.Text>
-        )}
+        {!selected && <Animated.Text style={[styles.hint, { opacity: intro }]}>Tap a card to inspect it</Animated.Text>}
       </View>
     </Modal>
   );
@@ -248,7 +224,7 @@ export default function DraftPicker({ options, onChoose }: { options: Task[]; on
 const styles = StyleSheet.create({
   scrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(22, 14, 42, 0.86)',
+    backgroundColor: 'rgba(14, 9, 28, 0.9)',
   },
   content: {
     flex: 1,
@@ -256,161 +232,98 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
   },
+  kickerPill: {
+    backgroundColor: TABLE.panel,
+    borderWidth: 2,
+    borderColor: INK,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 3,
+    marginBottom: 8,
+  },
   kicker: {
-    color: GOLD,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 3,
-    marginBottom: 6,
+    fontFamily: FONTS.display,
+    color: TABLE.gold,
+    fontSize: 13,
+    letterSpacing: 2,
   },
   title: {
-    color: COLORS.white,
-    fontSize: Math.round(26 * Math.min(sw, 1.2)),
-    fontWeight: '900',
+    fontFamily: FONTS.display,
+    color: '#FFFFFF',
+    fontSize: 30,
     textAlign: 'center',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 0, height: 3 },
+    textShadowColor: INK,
+    textShadowOffset: { width: 0, height: 4 },
     textShadowRadius: 0,
   },
   subtitle: {
     color: 'rgba(255,255,255,0.65)',
     fontSize: 14,
-    fontWeight: '700',
-    marginTop: 4,
+    fontWeight: '800',
+    marginTop: 2,
   },
   row: {
     flexDirection: 'row',
     gap: GAP,
-    marginTop: 34,
-    marginBottom: 22,
-    height: CARD_H + 40,
+    marginTop: 30,
+    marginBottom: 18,
+    height: CARD_H + 44,
     alignItems: 'center',
   },
-  card: {
-    width: CARD_W,
-    height: CARD_H,
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 14,
-    borderWidth: 3,
-    borderBottomWidth: 6,
-    overflow: 'hidden',
-  },
-  cardSelected: {
-    shadowColor: GOLD,
+  cardGlow: {
+    shadowColor: TABLE.gold,
     shadowOpacity: 0.9,
-    shadowRadius: 16,
+    shadowRadius: 18,
     shadowOffset: { width: 0, height: 0 },
     elevation: 12,
   },
   cardDimmed: {
-    opacity: 0.55,
-  },
-  cardHeader: {
-    paddingVertical: 5,
-    alignItems: 'center',
-  },
-  cardHeaderText: {
-    color: COLORS.white,
-    fontWeight: '900',
-    fontSize: 13,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  cardBody: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 7,
-    gap: 6,
-  },
-  iconOuter: {
-    width: Math.round(CARD_W * 0.38),
-    height: Math.round(CARD_W * 0.38),
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  iconImage: {
-    width: Math.round(CARD_W * 0.31),
-    height: Math.round(CARD_W * 0.31),
-  },
-  cardDesc: {
-    color: COLORS.textDark,
-    fontSize: 11,
-    lineHeight: 14,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  ptsBar: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'center',
-    gap: 3,
-    paddingVertical: 4,
-  },
-  ptsText: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: '900',
-    textShadowColor: 'rgba(0,0,0,0.25)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 0,
-  },
-  ptsLabel: {
-    color: COLORS.white,
-    fontSize: 11,
-    fontWeight: '800',
+    opacity: 0.5,
   },
   panel: {
     width: '100%',
     maxWidth: 420,
-    minHeight: 150,
+    minHeight: 160,
     alignItems: 'center',
     gap: 10,
   },
-  panelTag: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+  tagRow: {
+    flexDirection: 'row',
+    gap: 6,
   },
-  panelTagText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+  tag: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: INK,
+  },
+  tagText: {
+    fontFamily: FONTS.display,
+    color: '#FFFFFF',
+    fontSize: 14,
+    textShadowColor: INK,
+    textShadowOffset: { width: 0, height: 1.5 },
+    textShadowRadius: 0,
   },
   panelDesc: {
-    color: COLORS.white,
+    color: '#FFFFFF',
     fontSize: 18,
     lineHeight: 24,
     fontWeight: '800',
     textAlign: 'center',
   },
-  confirmBtn: {
+  confirm: {
+    flexGrow: 0,
+    alignSelf: 'stretch',
+    marginHorizontal: 40,
     marginTop: 4,
-    backgroundColor: COLORS.green,
-    borderRadius: 14,
-    borderWidth: 3,
-    borderColor: INK,
-    borderBottomWidth: 6,
-    paddingVertical: 12,
-    paddingHorizontal: 36,
-  },
-  confirmText: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-    textShadowColor: 'rgba(0,0,0,0.25)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 0,
   },
   hint: {
     position: 'absolute',
-    bottom: '18%',
+    bottom: '16%',
     color: 'rgba(255,255,255,0.55)',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

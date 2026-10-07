@@ -10,6 +10,7 @@ import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, View } from 'react-native';
 import { enableScreens } from 'react-native-screens';
+import { useFonts, LilitaOne_400Regular } from '@expo-google-fonts/lilita-one';
 import AppNavigator from './src/navigation/AppNavigator';
 import SplashAnimation from './src/components/SplashAnimation';
 import { useGameStore } from './src/store/gameStore';
@@ -24,6 +25,7 @@ enableScreens();
 function AppLoader() {
   const loadFromStorage = useGameStore(s => s.loadFromStorage);
   const [showSplash, setShowSplash] = useState(true);
+  const [fontsLoaded, fontError] = useFonts({ LilitaOne_400Regular });
 
   // Load persisted game state on mount
   useEffect(() => {
@@ -32,7 +34,7 @@ function AppLoader() {
 
   return (
     <View style={styles.root}>
-      <AppNavigator />
+      {(fontsLoaded || fontError) && <AppNavigator />}
       {/* Splash animation overlay — unmounts after animation completes */}
       {showSplash && <SplashAnimation onFinish={() => setShowSplash(false)} />}
     </View>

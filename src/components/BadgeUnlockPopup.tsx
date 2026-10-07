@@ -18,7 +18,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Badge, BadgeTier } from '../types';
-import { COLORS, SHADOWS, RADII } from '../theme/theme';
+import { COLORS, FONTS, INK, SHADOWS, TABLE } from '../theme/theme';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const sw = SCREEN_W / 390;
@@ -403,15 +403,16 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(14, 9, 28, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   card: {
     width: Math.round(300 * sw),
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: TABLE.panel,
     borderRadius: Math.round(24 * sw),
     borderWidth: 3,
+    borderBottomWidth: 7,
     paddingTop: Math.round(28 * sh),
     paddingBottom: Math.round(24 * sh),
     paddingHorizontal: Math.round(24 * sw),
@@ -419,9 +420,12 @@ const styles = StyleSheet.create({
     ...SHADOWS.cardActive,
   },
   unlockTitle: {
-    fontSize: Math.round(18 * sw),
-    fontWeight: '900',
-    color: COLORS.textDark,
+    fontFamily: FONTS.display,
+    fontSize: Math.round(22 * sw),
+    color: TABLE.gold,
+    textShadowColor: INK,
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 0,
     textAlign: 'center',
     marginBottom: Math.round(18 * sh),
     letterSpacing: 0.5,
@@ -444,7 +448,7 @@ const styles = StyleSheet.create({
     width: Math.round(88 * sw),
     height: Math.round(88 * sw),
     borderRadius: Math.round(44 * sw),
-    backgroundColor: COLORS.white,
+    backgroundColor: '#FFF8EC',
     borderWidth: 4,
     alignItems: 'center',
     justifyContent: 'center',
@@ -463,21 +467,25 @@ const styles = StyleSheet.create({
     marginBottom: Math.round(8 * sh),
   },
   tierPillText: {
+    fontFamily: FONTS.display,
     color: COLORS.white,
-    fontWeight: '900',
-    fontSize: Math.round(11 * sw),
+    fontSize: Math.round(13 * sw),
     letterSpacing: 2,
   },
   badgeName: {
-    fontSize: Math.round(20 * sw),
-    fontWeight: '900',
-    color: COLORS.textDark,
+    fontFamily: FONTS.display,
+    fontSize: Math.round(26 * sw),
+    color: COLORS.white,
+    textShadowColor: INK,
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 0,
     textAlign: 'center',
     marginBottom: Math.round(6 * sh),
   },
   badgeDesc: {
-    fontSize: Math.round(13 * sw),
-    color: COLORS.textMuted,
+    fontSize: Math.round(14 * sw),
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
     lineHeight: Math.round(18 * sw),
     marginBottom: Math.round(8 * sh),
@@ -490,7 +498,7 @@ const styles = StyleSheet.create({
   completedTrack: {
     width: '80%',
     height: Math.round(8 * sh),
-    backgroundColor: COLORS.borderLight,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: Math.round(6 * sh),
@@ -501,22 +509,26 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   completedText: {
-    fontWeight: '900',
+    fontFamily: FONTS.display,
     fontSize: Math.round(13 * sw),
     letterSpacing: 0.5,
   },
   dismissBtn: {
-    backgroundColor: COLORS.green,
+    backgroundColor: '#3DBE6E',
     borderRadius: Math.round(14 * sw),
-    paddingVertical: Math.round(12 * sh),
+    paddingVertical: Math.round(10 * sh),
     paddingHorizontal: Math.round(40 * sw),
-    borderBottomWidth: 4,
-    ...SHADOWS.button,
+    borderWidth: 2.5,
+    borderColor: INK,
+    borderBottomWidth: 7,
   },
   dismissBtnText: {
+    fontFamily: FONTS.display,
     color: COLORS.white,
-    fontWeight: '900',
-    fontSize: Math.round(16 * sw),
+    fontSize: Math.round(22 * sw),
+    textShadowColor: 'rgba(42, 30, 63, 0.55)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 0,
     letterSpacing: 0.5,
   },
 });

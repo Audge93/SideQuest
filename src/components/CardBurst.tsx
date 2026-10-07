@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
+import { FONTS, INK as THEME_INK, TABLE } from '../theme/theme';
 
 export type BurstVariant = 'complete' | 'discard';
 
-const GOLD = '#FFD45C';
-const INK = '#2D2140';
+const GOLD = TABLE.gold;
+const INK = THEME_INK;
 
 interface Particle {
   angle: number;
@@ -166,7 +167,7 @@ function Flash({ delay }: { delay: number }) {
   );
 }
 
-function ScorePop({ points, color, delay }: { points: number; color: string; delay: number }) {
+function ScorePop({ label, chipColor, delay, offsetY = 0, small }: { label: string; chipColor: string; delay: number; offsetY?: number; small?: boolean }) {
   const pop = useRef(new Animated.Value(0)).current;
   const rise = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -188,15 +189,15 @@ function ScorePop({ points, color, delay }: { points: number; color: string; del
             rise.interpolate({ inputRange: [0, 0.75, 1], outputRange: [1, 1, 0] }),
           ),
           transform: [
-            { translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [0, -90] }) },
+            { translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [offsetY, offsetY - 90] }) },
             { scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] }) },
             { rotate: pop.interpolate({ inputRange: [0, 1], outputRange: ['-14deg', '-4deg'] }) },
           ],
         },
       ]}
     >
-      <View style={[styles.scoreChip, { backgroundColor: color }]}>
-        <Text style={styles.scoreText}>+{points}</Text>
+      <View style={[styles.scoreChip, { backgroundColor: chipColor }]}>
+        <Text style={[styles.scoreText, small && styles.scoreTextSmall]}>{label}</Text>
       </View>
     </Animated.View>
   );
@@ -206,12 +207,13 @@ interface Props {
   color: string;
   variant: BurstVariant;
   points?: number;
+  bonus?: number;
   delay?: number;
   offsetX?: number;
   onDone: () => void;
 }
 
-export default function CardBurst({ color, variant, points, delay = 0, offsetX = 0, onDone }: Props) {
+export default function CardBurst({ color, variant, points, bonus = 0, delay = 0, offsetX = 0, onDone }: Props) {
   const isComplete = variant === 'complete';
   const particles = useMemo(() => (isComplete ? makeShards(color, 26) : makeDust(color, 16)), []);
 
@@ -231,7 +233,10 @@ export default function CardBurst({ color, variant, points, delay = 0, offsetX =
           <ShardView key={i} p={p} delay={delay} gravity={isComplete ? 40 : 60} outlined={isComplete} />
         ))}
         {isComplete && Array.from({ length: 9 }, (_, i) => <Sparkle key={i} index={i} count={9} delay={delay} />)}
-        {isComplete && points != null && <ScorePop points={points} color={color} delay={delay} />}
+        {isComplete && points != null && <ScorePop label={`+${points}`} chipColor={TABLE.chipBlue} delay={delay} />}
+        {isComplete && bonus > 0 && (
+          <ScorePop label={`STREAK +${bonus}`} chipColor={TABLE.multRed} delay={delay + 260} offsetY={52} small />
+        )}
       </View>
     </View>
   );
@@ -280,8 +285,8 @@ const styles = StyleSheet.create({
   },
   scoreWrap: {
     position: 'absolute',
-    width: 160,
-    marginLeft: -80,
+    width: 220,
+    marginLeft: -110,
     marginTop: -34,
     alignItems: 'center',
   },
@@ -293,10 +298,13 @@ const styles = StyleSheet.create({
     borderColor: INK,
     borderBottomWidth: 6,
   },
+  scoreTextSmall: {
+    fontSize: 22,
+  },
   scoreText: {
+    fontFamily: FONTS.display,
     color: '#FFFFFF',
-    fontSize: 38,
-    fontWeight: '900',
+    fontSize: 40,
     letterSpacing: 1,
     textShadowColor: INK,
     textShadowOffset: { width: 0, height: 3 },

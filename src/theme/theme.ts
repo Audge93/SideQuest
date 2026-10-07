@@ -66,6 +66,46 @@ export const CATEGORY_COLORS: Record<string, string> = {
   seek: COLORS.catScavenger,
 };
 
+// ── Card-game look ──────────────────────────────────────────
+// Display face for titles, numbers and buttons; body copy stays in the system font.
+export const FONTS = {
+  display: 'LilitaOne_400Regular',
+};
+
+// Dark outline used on cards, chips and buttons, plus the "table" behind them.
+export const INK = '#2A1E3F';
+export const TABLE = {
+  felt: '#1B1430',
+  panel: '#2E2348',
+  panelLight: '#3C2F5C',
+  gold: '#FFD45C',
+  goldDark: '#C9971C',
+  chipBlue: '#3B82F6',
+  multRed: '#EF4444',
+};
+
+// Saturated frame colors so cards stay vivid on the dark table; pastel
+// CATEGORY_COLORS remain for card art backgrounds.
+export const CATEGORY_FRAME_COLORS: Record<string, string> = {
+  find: '#3D7BE0',
+  photo: '#1F9E68',
+  trivia: '#D9A514',
+  act: '#7B5FE0',
+  ride: '#E0484F',
+  treat: '#E57A2E',
+  pins: '#D97A06',
+  meet: '#D9479B',
+  explore: '#1F9DB3',
+  seek: '#5FA32A',
+};
+
+// Difficulty reads like card rarity.
+export const RARITY = {
+  easy: { label: 'Common', color: '#B8C0CC' },
+  medium: { label: 'Rare', color: '#4C8DFF' },
+  hard: { label: 'Epic', color: '#B054FF' },
+} as const;
+
 // Short user-facing labels for each category.
 export const CATEGORY_LABELS: Record<string, string> = {
   find: 'Find',
