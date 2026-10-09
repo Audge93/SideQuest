@@ -219,3 +219,36 @@ state().refreshBadges(); assert.ok(state().saveSlots[0].badges.every(b=>b.earned
 const snapshot=gameBadgeStats(state().saveSlots[0],state().session);
 assert.equal(badgeProgress(blankBadges.find(b=>b.id==='completionist-platinum'),snapshot,state().saveSlots[0].badges).current,10);
 console.log('Badges passed: every category/score/streak threshold, completionist tiers, per-game counts, no double counting, minigame unlocks, and exactly-once awards.');
+
+// A browser/tab can close before the 30-second timer. Every card action must
+// update the save slot that Continue Game actually loads, immediately.
+store.setState({session:null,activeSlotId:null,saveSlots:[null,null,null],newlyEarnedBadges:[]});
+state().startSession('Immediate saves');
+function assertImmediateResume() {
+  const expected = JSON.parse(JSON.stringify(state().session));
+  const active = state().saveSlots.find(s => s?.id === state().activeSlotId);
+  assert.deepEqual(active.session, expected);
+  state().loadSlot(active.id);
+  assert.deepEqual(state().session, expected);
+}
+function finishDraft() {
+  const draft = state().session.draft;
+  assert.ok(draft);
+  const chosen = draft.options[0];
+  state().chooseDraftCard(chosen.id);
+  assertImmediateResume();
+  assert.equal(state().session.hand[draft.slotIndex].id, chosen.id);
+  assert.equal(state().session.hand.length, 5);
+  assert.equal(state().session.draft, null);
+}
+state().completeTask(state().session.hand[0].id, false);
+assertImmediateResume(); finishDraft();
+state().discardTask(state().session.hand[0].id);
+assertImmediateResume(); finishDraft();
+state().answerTrivia(state().session.hand[0].id, false);
+assertImmediateResume(); finishDraft();
+state().completeTask(state().session.challengeTasks[0].id, true);
+assertImmediateResume();
+state().swapChallengeTask(state().session.challengeTasks[0].id);
+assertImmediateResume();
+console.log('Immediate saves passed: completion, discard, wrong trivia, replacement choice, and challenge completion/swap survive resuming without waiting for the timer.');

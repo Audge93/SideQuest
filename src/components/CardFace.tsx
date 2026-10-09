@@ -51,7 +51,7 @@ export default function CardFace({ task, width, variant = 'full', descriptionLin
   // Small previews have less room than the full reading view. Reserve the
   // ribbon, padding, and rarity footer before deciding how many lines fit.
   const previewLineHeight = Math.max(13, Math.round(22 * s));
-  const fittedLines = Math.min(descriptionLines, Math.max(1, Math.floor((height - artHeight - 72 * s - 8) / previewLineHeight)));
+  const fittedLines = Math.min(descriptionLines, Math.max(1, Math.floor((height - artHeight - Math.max(40, 72 * s) - 8) / previewLineHeight)));
   const gem = Math.max(30, Math.round((compact ? 64 : 58) * s));
   const showCoinLabel = gem >= 40;
   const border = Math.max(2, Math.round(3 * s));

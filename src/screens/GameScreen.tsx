@@ -278,7 +278,7 @@ export default function GameScreen() {
             <View style={styles.handArea} onLayout={e => setHandHeight(e.nativeEvent.layout.height)}>
               {handHeight > 0 && (
             <CardCarousel
-              cardWidth={readingScale > 1 ? Math.min(handCardWidth(handHeight), 110) : handCardWidth(handHeight)}
+              cardWidth={readingScale > 1 ? Math.min(handCardWidth(handHeight, readingScale), 110) : handCardWidth(handHeight)}
               cards={session.hand}
               openSlotIndex={draft?.slotIndex ?? null}
               currentStreak={session.currentStreak}
@@ -315,7 +315,7 @@ export default function GameScreen() {
         <View style={styles.navShell}>
           <View testID="game-nav-bar" style={styles.navBar}>
             <NavItem icon="cards" label="Game" active />
-            <NavItem icon="park-mk" label="Park" onPress={openParkModal} />
+            <NavItem icon={currentPark?.icon ?? 'park-mk'} label="Park" onPress={openParkModal} />
             <NavItem icon="gear" label="Settings" onPress={() => navigation.navigate('Settings')} />
             <NavItem icon="profile" label="Profile" onPress={() => navigation.navigate('Profile')} />
           </View>
@@ -475,23 +475,31 @@ function ScoreHud({
 
   const { display, bump } = useCountUp(score);
   const streakPips = streak % 5;
+  const { scale: readingScale } = useReadingPreferences();
+  const scoreTextWidth = (SCREEN_W - SIDE_PAD * 2 - 16) * 1.5 / 3.5 - 18;
+  const scoreFontSize = Math.min(34 * readingScale, Math.floor(scoreTextWidth / (Math.max(3, String(display).length) * 0.68)));
 
   return (
     <View style={styles.hud}>
       <View style={styles.hudRow}>
-        <View style={[styles.hudCell, styles.hudSide]}>
+        <View testID="streak-stat" accessible accessibilityLabel={`Streak: ${streak}. ${5 - streakPips} more consecutive completions to the next 10-point bonus.`} style={[styles.hudCell, styles.hudSide]}>
           <Text style={styles.hudLabel}>STREAK</Text>
           <View style={styles.hudValueRow}>
             <GameIcon name="flame" size={20} />
-            <Text style={styles.hudValue}>{streak}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55} style={[styles.hudValue, { flexShrink: 1 }]}>{streak}</Text>
           </View>
           <View style={styles.pips}>
             {Array.from({ length: 5 }, (_, i) => (
-              <View key={i} style={[styles.pip, i < streakPips && styles.pipOn]} />
+              <View testID={`streak-pip-${i}`} key={i} style={[styles.pip, { backgroundColor: dark ? '#625373' : '#CBC2D5' }, i < streakPips && styles.pipOn]} />
             ))}
           </View>
         </View>
         <Animated.View
+          testID="score-stat"
+          accessible
+          accessibilityLabel={`Score: ${score} points`}
+          accessibilityLiveRegion="polite"
+          aria-live="polite"
           style={[
             styles.hudCell,
             styles.hudScore,
@@ -499,13 +507,13 @@ function ScoreHud({
           ]}
         >
           <Text style={[styles.hudLabel, styles.hudScoreLabel]}>SCORE</Text>
-          <Text testID="score-value" style={styles.hudScoreValue}>{display}</Text>
+          <Text testID="score-value" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.45} style={[styles.hudScoreValue, { fontSize: scoreFontSize, width: '100%', textAlign: 'center', paddingHorizontal: 6 }]}>{display}</Text>
         </Animated.View>
-        <View style={[styles.hudCell, styles.hudSide]}>
+        <View testID="completed-stat" accessible accessibilityLabel={`${completed} quests completed`} style={[styles.hudCell, styles.hudSide]}>
           <Text style={styles.hudLabel}>DONE</Text>
           <View style={styles.hudValueRow}>
             <GameIcon name="check" size={20} />
-            <Text style={styles.hudValue}>{completed}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.55} style={[styles.hudValue, { flexShrink: 1 }]}>{completed}</Text>
           </View>
           <Text style={styles.hudSub}>quests</Text>
         </View>
@@ -534,7 +542,7 @@ function NavItem({
       <View style={[styles.navIconWrap, active && styles.navIconWrapActive]}>
         <GameIcon name={icon} size={28} style={!active && styles.navIconIdle} />
       </View>
-      <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.navLabel, { maxWidth: '100%' }, active && styles.navLabelActive]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -605,7 +613,7 @@ function ChallengeDetailModal({
               style={styles.panelPrimary}
             />
           </View>
-          <TouchableOpacity onPress={onClose} style={styles.textBtn}>
+          <TouchableOpacity testID="challenge-close-btn" accessibilityRole="button" onPress={onClose} style={[styles.textBtn, { minHeight: 44, minWidth: 44, justifyContent: 'center' }]}>
             <Text style={styles.textBtnLabel}>Close</Text>
           </TouchableOpacity>
         </Pressable>
@@ -709,6 +717,8 @@ const BASE_STYLES = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
+    maxWidth: '100%',
+    paddingHorizontal: 4,
   },
   hudValue: {
     fontFamily: FONTS.display,

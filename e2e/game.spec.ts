@@ -696,14 +696,62 @@ test('completing a hand card scores points, then drafts a replacement into the s
   await page.waitForTimeout(50);
   await page.screenshot({ path: `test-results/screens/${test.info().project.name}/03-complete-burst.png` });
   await expect(byId(page, 'open-slot')).toBeVisible();
+  await expect(byId(page, 'complete-btn')).toBeDisabled();
+  await expect(byId(page, 'discard-btn')).toBeDisabled();
   await expect.poll(() => score(page)).toBe(points);
 
   await expect(byId(page, 'draft-option')).toHaveCount(3);
   await page.waitForTimeout(800);
   await snap(page, '04-draft');
+  const pending = (await savedState(page)).session;
+  await page.reload();
+  await byId(page, 'continue-game-btn').click();
+  await byId(page, 'save-select-0').click();
+  await expect(byId(page, 'draft-option')).toHaveCount(3);
+  expect((await savedState(page)).session.draft).toEqual(pending.draft);
+  expect(await score(page)).toBe(points);
   await pickFirstDraftOption(page);
+  const resumed = (await savedState(page)).session;
+  expect(resumed.hand).toHaveLength(5);
+  expect(resumed.hand[pending.draft.slotIndex].id).toBe(pending.draft.options[0].id);
+  expect(resumed.sessionScore).toBe(points);
   await page.waitForTimeout(800);
   await snap(page, '05-after-draft');
+});
+
+test('large game totals and exhausted discards remain readable with the largest text', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await startGame(page, 'wdw-ep');
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('parkquest_state')!);
+    const slot = state.saveSlots.find((s: any) => s?.id === state.activeSlotId);
+    for (const settings of [state.settings, slot.settings]) {
+      settings.textSize = 'extra-large'; settings.readableFont = true; settings.darkMode = 'light';
+    }
+    for (const session of [state.session, slot.session]) {
+      session.sessionScore = 123456; session.currentStreak = 124; session.discardsRemaining = 0;
+    }
+    slot.badges = slot.badges.map((b: any) => ({ ...b, earned: true }));
+    localStorage.setItem('parkquest_state', JSON.stringify(state));
+  });
+  await page.reload(); await byId(page, 'continue-game-btn').click(); await byId(page, 'save-select-0').click();
+  await expect(byId(page, 'score-stat')).toHaveAttribute('aria-label', 'Score: 123456 points');
+  await expect(byId(page, 'streak-stat')).toHaveAttribute('aria-label', /Streak: 124.*1 more/);
+  await expect(byId(page, 'discard-btn')).toBeDisabled();
+  await expect(byId(page, 'discard-btn')).toContainText('0 left');
+  await expect(byId(page, 'hand-position')).toHaveCount(0);
+  await expect(byId(page, 'game-help-btn')).toHaveCount(0);
+  const action = await byId(page, 'complete-btn').boundingBox();
+  const nav = await byId(page, 'game-nav-bar').boundingBox();
+  expect(action!.y + action!.height).toBeLessThanOrEqual(nav!.y);
+  expect(await byId(page, 'score-value').evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  await snap(page, '63-large-game-totals');
+  await focusCompletableCard(page);
+  await page.locator('[data-testid^="hand-select-"][aria-current="true"]').click();
+  await expect(byId(page, 'enlarged-discard-btn')).toBeDisabled();
+  await expect(byId(page, 'enlarged-complete-btn')).toBeEnabled();
+  await byId(page, 'reading-panel-backdrop').click({ position: { x: 4, y: 4 } });
+  expect((await savedState(page)).session.discardsRemaining).toBe(0);
 });
 
 test('discarding spends a discard and also offers a draft', async ({ page }) => {

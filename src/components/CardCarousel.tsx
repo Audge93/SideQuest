@@ -44,8 +44,9 @@ const CARD_GAP = 14;
 const HAND_CHROME = 150;
 
 // Largest hand card that fits the space the hand has been given.
-export function handCardWidth(availableHeight: number) {
-  return Math.round(Math.max(90, Math.min(SCREEN_W * 0.66, 270, (availableHeight - HAND_CHROME) / CARD_ASPECT)));
+export function handCardWidth(availableHeight: number, readingScale = 1) {
+  const chrome = HAND_CHROME + (readingScale - 1) * 100;
+  return Math.round(Math.max(readingScale > 1 ? 72 : 90, Math.min(SCREEN_W * 0.66, 270, (availableHeight - chrome) / CARD_ASPECT)));
 }
 const INACTIVE_SCALE = 0.88;
 const FAN_TILT = 7;
@@ -405,7 +406,7 @@ export default function CardCarousel({
   const activeItem = items[Math.min(activeIndex, items.length - 1)];
   const activeTask = activeItem && !isOpenSlot(activeItem) ? activeItem : null;
   const isTrivia = !!activeTask && activeTask.category === 'trivia' && !!activeTask.triviaChoices;
-  const busy = exiting !== null || !activeTask;
+  const busy = exiting !== null || openSlotIndex != null || !activeTask;
 
   // Opening hand staggers its deal; cards added later deal in immediately.
   const initialIdsRef = useRef(new Set(cards.map(c => c.id)));
@@ -500,7 +501,7 @@ export default function CardCarousel({
       const clamped = Math.max(0, Math.min(idx, items.length - 1));
       if (clamped !== activeIndex) setActiveIndex(clamped);
     },
-    [activeIndex, items.length]
+    [activeIndex, items.length, SNAP_INTERVAL]
   );
 
   const focusCard = (index: number) => {

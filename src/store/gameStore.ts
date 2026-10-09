@@ -697,7 +697,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     set({ session: updatedSession });
     get().refreshBadges();
-    get().saveToStorage();
+    get().autoSave();
   },
 
   /** Discards a hand card — resets streak, draws replacement, costs 1 discard pip */
@@ -721,7 +721,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     };
 
     set({ session: updatedSession });
-    get().saveToStorage();
+    get().autoSave();
   },
 
   /** Swaps a challenge task for a new one — costs 25 points from session score */
@@ -741,7 +741,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     };
 
     set({ session: updatedSession });
-    get().saveToStorage();
+    get().autoSave();
   },
 
   /** Handles trivia answer — correct = complete task, wrong = replace card + reset streak */
@@ -848,7 +848,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       };
 
       set({ session: updatedSession });
-      get().saveToStorage();
+      get().autoSave();
     }
   },
 
@@ -863,7 +863,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     hand.splice(Math.min(session.draft.slotIndex, hand.length), 0, chosen);
 
     set({ session: { ...session, hand, draft: null } });
-    get().saveToStorage();
+    get().autoSave();
   },
 
   refreshBadges: () => {
