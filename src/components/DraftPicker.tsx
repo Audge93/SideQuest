@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Modal, Pressable, Animated, Easing, Dimensions } from 'react-native';
 import { Task } from '../types';
@@ -36,6 +37,9 @@ function DraftCard({
   chosen: boolean;
   onPress: () => void;
 }) {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, true, []);
+
   const deal = useRef(new Animated.Value(0)).current;
   const sway = useRef(new Animated.Value(0)).current;
   const lift = useRef(new Animated.Value(0)).current;
@@ -123,6 +127,9 @@ function DraftCard({
 }
 
 export default function DraftPicker({ options, onChoose }: { options: Task[]; onChoose: (taskId: string) => void }) {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, true, []);
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
   const intro = useRef(new Animated.Value(0)).current;
@@ -221,7 +228,7 @@ export default function DraftPicker({ options, onChoose }: { options: Task[]; on
   );
 }
 
-const styles = StyleSheet.create({
+const BASE_STYLES = StyleSheet.create({
   scrim: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(14, 9, 28, 0.9)',

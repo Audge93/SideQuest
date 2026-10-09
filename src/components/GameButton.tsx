@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Text, StyleSheet, Pressable, Animated, ViewStyle, StyleProp } from 'react-native';
 import { FONTS, INK } from '../theme/theme';
+import { playSound } from '../utils/sounds';
 
 const TONES = {
   green: { face: '#3DBE6E', edge: '#23864A' },
@@ -14,6 +15,7 @@ export type ButtonTone = keyof typeof TONES;
 
 interface Props {
   label: string;
+  multiline?: boolean;
   sublabel?: string;
   tone?: ButtonTone;
   onPress?: () => void;
@@ -23,7 +25,7 @@ interface Props {
   testID?: string;
 }
 
-export default function GameButton({ label, sublabel, tone = 'green', onPress, disabled, size = 'md', style, testID }: Props) {
+export default function GameButton({ multiline, label, sublabel, tone = 'green', onPress, disabled, size = 'md', style, testID }: Props) {
   const press = useRef(new Animated.Value(0)).current;
   const colors = disabled ? TONES.gray : TONES[tone];
   const depth = size === 'lg' ? 6 : 5;
@@ -34,7 +36,8 @@ export default function GameButton({ label, sublabel, tone = 'green', onPress, d
   return (
     <Pressable
       testID={testID}
-      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      onPress={disabled ? undefined : () => { playSound('tap'); onPress?.(); }}
       onPressIn={() => !disabled && animate(1)}
       onPressOut={() => animate(0)}
       accessibilityRole="button"
@@ -57,7 +60,7 @@ export default function GameButton({ label, sublabel, tone = 'green', onPress, d
             },
           ]}
         >
-          <Text style={[styles.label, size === 'lg' && styles.labelLg, disabled && styles.dimmed]} numberOfLines={1}>
+          <Text style={[styles.label, size === 'lg' && styles.labelLg, disabled && styles.dimmed]} numberOfLines={multiline ? undefined : 1}>
             {label}
           </Text>
           {sublabel ? <Text style={[styles.sublabel, disabled && styles.dimmed]}>{sublabel}</Text> : null}

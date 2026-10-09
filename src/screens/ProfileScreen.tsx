@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 /**
  * ProfileScreen.tsx — Player profile and badge collection
  *
@@ -65,6 +66,9 @@ function getCategoryForBadge(badgeId: string): string | null {
 }
 
 export default function ProfileScreen() {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, false, []);
+
   const navigation = useNavigation<any>();
   const { player, session, saveSlots, activeSlotId, updatePlayerName, renameActiveSlot, deleteSlot } = useGameStore();
   const [editingName, setEditingName] = useState(false);
@@ -129,7 +133,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={dark ? "light-content" : "dark-content"} />
       <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
         {/* Header row: back on left, main menu on right when in-game */}
         <View style={styles.headerRow}>
@@ -317,6 +321,9 @@ function BadgeTile({
   tierColor: string;
   categoryCounts: Record<string, number>;
 }) {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, false, []);
+
   const earned = badge.earned;
   const category = getCategoryForBadge(badge.id);
   const threshold = getThreshold(badge);
@@ -366,11 +373,14 @@ function BadgeTile({
 }
 
 function SectionHeader({ title }: { title: string }) {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, false, []);
+
   // Small reusable heading used between major profile sections.
   return <Text style={styles.sectionHeader}>{title}</Text>;
 }
 
-const styles = StyleSheet.create({
+const BASE_STYLES = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg },
   container: { flex: 1 },
   scroll: { padding: 16, paddingBottom: 80 },

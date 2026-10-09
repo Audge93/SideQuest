@@ -1,10 +1,12 @@
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useGameStore } from '../store/gameStore';
+import { playSound } from './sounds';
 
 type HapticKind = 'tap' | 'select' | 'success' | 'thud';
 
 export function haptic(kind: HapticKind) {
+  playSound(kind);
   if (Platform.OS === 'web' || !useGameStore.getState().settings.hapticsEnabled) return;
   switch (kind) {
     case 'tap':

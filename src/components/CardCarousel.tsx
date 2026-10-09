@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 /**
  * CardCarousel.tsx — The player's hand
  *
@@ -21,6 +22,7 @@ import {
   Easing,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  ScrollView,
 } from 'react-native';
 import { Task } from '../types';
 import { CATEGORY_FRAME_COLORS, FONTS, INK, TABLE } from '../theme/theme';
@@ -29,6 +31,7 @@ import CardFace, { CARD_ASPECT } from './CardFace';
 import GameButton from './GameButton';
 import GameIcon from './icons/GameIcon';
 import { haptic } from '../utils/haptics';
+import { correctTriviaAnswers, requiredTriviaAnswers, isTriviaSelectionCorrect } from '../utils/trivia';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -64,6 +67,9 @@ function TaskCard({
   exitKind: ExitKind | null;
   onExited: () => void;
 }) {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, true, ['choiceTextLight']);
+
   const deal = useRef(new Animated.Value(0)).current;
   const exitScale = useRef(new Animated.Value(1)).current;
   const exitRotate = useRef(new Animated.Value(0)).current;
@@ -147,27 +153,58 @@ function TriviaModal({
   task,
   onTriviaAnswer,
   onClose,
+  passed = false,
+  fiftyFiftyUses,
+  eliminatedChoices,
+  onFiftyFifty,
 }: {
   task: Task;
   onTriviaAnswer: (correct: boolean) => void;
   onClose: () => void;
+  passed?: boolean;
+  fiftyFiftyUses: number;
+  eliminatedChoices: number[];
+  onFiftyFifty: () => void;
 }) {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, true, ['choiceTextLight']);
+
   const color = CATEGORY_FRAME_COLORS[task.category] ?? '#888';
-  const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
-  const answered = selectedChoice !== null;
-  const correct = selectedChoice === task.triviaAnswer;
+  const [selectedChoices, setSelectedChoices] = useState<number[]>([]);
+  const [answered, setAnswered] = useState(passed);
+  const answers = correctTriviaAnswers(task);
+  const required = requiredTriviaAnswers(task);
+  const multiple = required > 1;
+  const correct = !passed && isTriviaSelectionCorrect(task, selectedChoices);
+  const submittedRef = useRef(false);
+
+  const finish = () => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    onTriviaAnswer(correct);
+  };
+
+  const reveal = (choices: number[]) => {
+    setSelectedChoices(choices);
+    setAnswered(true);
+    haptic(isTriviaSelectionCorrect(task, choices) ? 'success' : 'thud');
+  };
 
   const handleChoicePress = (index: number) => {
     if (answered) return;
-    setSelectedChoice(index);
-    haptic(index === task.triviaAnswer ? 'success' : 'thud');
-    setTimeout(() => onTriviaAnswer(index === task.triviaAnswer), 1200);
+    if (!multiple) {
+      reveal([index]);
+      return;
+    }
+    setSelectedChoices(choices => choices.includes(index)
+      ? choices.filter(i => i !== index) : [...choices, index]);
   };
 
   return (
-    <Modal transparent animationType="fade" visible onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={answered ? undefined : onClose}>
-        <Pressable style={styles.triviaPanel} onPress={e => e.stopPropagation()}>
+    <Modal transparent animationType="fade" visible onRequestClose={answered ? finish : onClose}>
+      <View style={styles.overlay}>
+        <View testID="trivia-panel" style={[styles.triviaPanel, { maxHeight: '92%' }]}>
+          <ScrollView contentContainerStyle={{ gap: 14 }} style={{ flexShrink: 1 }}>
           <View style={styles.triviaHeader}>
             <View style={[styles.triviaRibbon, { backgroundColor: color }]}>
               <Text style={styles.triviaRibbonText}>TRIVIA</Text>
@@ -177,53 +214,88 @@ function TriviaModal({
             </View>
           </View>
           <Text style={styles.triviaQuestion}>{task.description}</Text>
+          <Text style={styles.triviaLaterText}>
+            {answered ? (answers.length > 1 ? 'Correct answers are highlighted below.' : 'The correct answer is highlighted below.')
+              : multiple ? `Select ${required} answers, then submit.` : 'Choose one answer.'}
+          </Text>
 
           <View style={styles.triviaChoices}>
             {task.triviaChoices!.map((choice, i) => {
-              const isAnswer = i === task.triviaAnswer;
-              const state = !answered ? 'idle' : isAnswer ? 'right' : i === selectedChoice ? 'wrong' : 'dim';
+              const isAnswer = answers.includes(i);
+              const selected = selectedChoices.includes(i);
+              const eliminated = !answered && eliminatedChoices.includes(i);
+              const state = !answered ? 'idle' : isAnswer ? 'right' : selected ? 'wrong' : 'dim';
               return (
                 <TouchableOpacity
                   key={i}
                   testID={`trivia-choice-${i}`}
                   style={[
                     styles.triviaChoice,
+                    !answered && selected && { borderColor: TABLE.gold, backgroundColor: '#FFE6A0' },
                     state === 'right' && styles.choiceRight,
                     state === 'wrong' && styles.choiceWrong,
                     state === 'dim' && styles.choiceDim,
+                    eliminated && { opacity: 0.35 },
                   ]}
                   onPress={() => handleChoicePress(i)}
                   activeOpacity={0.8}
-                  disabled={answered}
+                  disabled={answered || eliminated}
+                  accessibilityRole={multiple ? 'checkbox' : 'button'}
+                  accessibilityState={{ checked: selected, disabled: answered || eliminated }}
                 >
                   <View style={[styles.choiceLetter, { backgroundColor: color }]}>
                     <Text style={styles.choiceLetterText}>{CHOICE_LETTERS[i]}</Text>
                   </View>
-                  <Text style={[styles.choiceText, (state === 'right' || state === 'wrong') && styles.choiceTextLight]}>
+                  <Text style={[styles.choiceText, (state === 'right' || state === 'wrong') && styles.choiceTextLight, !answered && selected && { color: INK }]}>
                     {choice}
                   </Text>
+                  {eliminated && <Text style={{ color: INK, fontSize: 12, fontWeight: '700' }}>Removed</Text>}
+                  {answered && (isAnswer || selected) && (
+                    <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 12 }}>
+                      {isAnswer ? 'Correct' : 'Your pick'}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               );
             })}
           </View>
 
           {answered ? (
-            <Text style={[styles.triviaResult, { color: correct ? '#5BE08F' : '#FF8A8A' }]}>
-              {correct ? `Correct! +${task.points}` : 'Not quite!'}
+            <Text testID="trivia-result" style={[styles.triviaResult, { color: passed ? (dark ? TABLE.gold : '#836211') : correct ? (dark ? '#5BE08F' : '#237B48') : (dark ? '#FF8A8A' : '#B62828') }]}>
+              {passed ? 'Passed — here’s the answer' : correct ? `Correct! +${task.points}` : 'Not quite!'}
             </Text>
+          ) : null}
+          {answered && task.triviaExplanation ? <Text testID="trivia-explanation" style={styles.triviaLaterText}>{task.triviaExplanation}</Text> : null}
+          </ScrollView>
+          {answered ? (
+            <GameButton testID="trivia-dismiss-btn" label="Dismiss" tone="blue" onPress={finish} style={{ flexGrow: 0 }} />
           ) : (
-            <TouchableOpacity onPress={onClose} style={styles.triviaLater}>
-              <Text style={styles.triviaLaterText}>Not now</Text>
-            </TouchableOpacity>
+            <View style={{ gap: 10 }}>
+              {task.triviaChoices?.length === 4 && answers.length === 1 && (
+                <>
+                  <GameButton testID="trivia-fifty-fifty-btn" label={eliminatedChoices.length ? '50/50 used' : `50/50 (${fiftyFiftyUses} left)`}
+                    tone="blue" disabled={fiftyFiftyUses <= 0 || eliminatedChoices.length > 0} onPress={onFiftyFifty} style={{ flexGrow: 0 }} />
+                  <Text style={styles.triviaLaterText}>Earn 1 every 5 completed cards. Hold up to 3.</Text>
+                </>
+              )}
+              {multiple && <GameButton testID="trivia-submit-btn" label="Submit answers" tone="gold"
+                disabled={selectedChoices.length !== required} onPress={() => reveal(selectedChoices)} style={{ flexGrow: 0 }} />}
+              <TouchableOpacity testID="trivia-not-now-btn" onPress={onClose} style={styles.triviaLater}>
+                <Text style={styles.triviaLaterText}>Not now</Text>
+              </TouchableOpacity>
+            </View>
           )}
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
 
 // ── Open slot shown while the player drafts a replacement ────
 function OpenSlot({ height }: { height: number }) {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, true, ['choiceTextLight']);
+
   const pulse = useRef(new Animated.Value(0)).current;
   const appear = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -269,6 +341,9 @@ export default function CardCarousel({
   onDiscard,
   onTriviaAnswer,
   discardsRemaining,
+  fiftyFiftyUses,
+  triviaEliminatedChoices,
+  onFiftyFifty,
 }: {
   cardWidth: number;
   cards: Task[];
@@ -277,12 +352,19 @@ export default function CardCarousel({
   onComplete: (id: string) => void;
   onDiscard: (id: string) => void;
   discardsRemaining: number;
+  fiftyFiftyUses: number;
+  triviaEliminatedChoices: Record<string, number[]>;
+  onFiftyFifty: (id: string) => void;
   onTriviaAnswer: (id: string, correct: boolean) => void;
 }) {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, true, ['choiceTextLight']);
+
   const SNAP_INTERVAL = cardWidth + CARD_GAP;
   const sidePadding = Math.round((SCREEN_W - cardWidth) / 2) - CARD_GAP / 2;
   const [activeIndex, setActiveIndex] = useState(0);
   const [triviaTask, setTriviaTask] = useState<Task | null>(null);
+  const [triviaPassed, setTriviaPassed] = useState(false);
   const [exiting, setExiting] = useState<{ id: string; kind: ExitKind } | null>(null);
   const [bursts, setBursts] = useState<
     { key: number; color: string; variant: BurstVariant; points: number; bonus: number; delay: number; offsetX: number }[]
@@ -356,6 +438,7 @@ export default function CardCarousel({
   const handleComplete = () => {
     if (!activeTask || busy) return;
     if (isTrivia) {
+      setTriviaPassed(false);
       setTriviaTask(activeTask);
       return;
     }
@@ -364,6 +447,11 @@ export default function CardCarousel({
 
   const handleDiscard = () => {
     if (!activeTask || busy || discardsRemaining <= 0) return;
+    if (isTrivia) {
+      setTriviaPassed(true);
+      setTriviaTask(activeTask);
+      return;
+    }
     beginExit(activeTask, 'discard', () => onDiscard(activeTask.id));
   };
 
@@ -472,7 +560,7 @@ export default function CardCarousel({
       <View style={styles.actionBar}>
         <GameButton
           testID="discard-btn"
-          label="Discard"
+          label={isTrivia ? 'Pass' : 'Discard'}
           sublabel={`${discardsRemaining} left`}
           tone="red"
           disabled={busy || discardsRemaining <= 0}
@@ -492,11 +580,20 @@ export default function CardCarousel({
 
       {triviaTask && (
         <TriviaModal
+          key={triviaTask.id + String(triviaPassed)}
           task={triviaTask}
+          passed={triviaPassed}
+          fiftyFiftyUses={fiftyFiftyUses}
+          eliminatedChoices={triviaEliminatedChoices[triviaTask.id] ?? []}
+          onFiftyFifty={() => onFiftyFifty(triviaTask.id)}
           onTriviaAnswer={correct => {
             const task = triviaTask;
             setTriviaTask(null);
-            beginExit(task, correct ? 'complete' : 'discard', () => onTriviaAnswer(task.id, correct));
+            if (triviaPassed) {
+              beginExit(task, 'discard', () => onDiscard(task.id));
+            } else {
+              beginExit(task, correct ? 'complete' : 'discard', () => onTriviaAnswer(task.id, correct));
+            }
           }}
           onClose={() => setTriviaTask(null)}
         />
@@ -505,7 +602,7 @@ export default function CardCarousel({
   );
 }
 
-const styles = StyleSheet.create({
+const BASE_STYLES = StyleSheet.create({
   container: {
     overflow: 'visible',
   },

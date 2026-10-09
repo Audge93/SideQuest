@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 /**
  * BadgeUnlockPopup.tsx — Animated badge earned celebration overlay
  *
@@ -71,6 +72,9 @@ interface Props {
 }
 
 export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, true, []);
+
   const tierColor = TIER_COLORS[badge.tier];
   const tierGlow = TIER_GLOW[badge.tier];
 
@@ -406,7 +410,7 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const BASE_STYLES = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(14, 9, 28, 0.8)',

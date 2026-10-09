@@ -1,3 +1,5 @@
+import { playSound } from '../utils/sounds';
+import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 import React, { useState } from 'react';
 import {
   View,
@@ -9,12 +11,13 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  Modal,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Slider from '@react-native-community/slider';
 import { useGameStore } from '../store/gameStore';
 import { CategoryToggles } from '../types';
-import { RIDES } from '../data/parks';
 import GameIcon, { IconName } from '../components/icons/GameIcon';
 import { COLORS, RADII } from '../theme/theme';
 
@@ -34,22 +37,20 @@ const CATEGORY_INFO: { key: keyof CategoryToggles; label: string }[] = [
 ];
 
 export default function SettingsScreen() {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, false, []);
+
   const navigation = useNavigation<any>();
-  const { settings, updateSettings, updateCategoryToggle, toggleRide, session, triggerTips } = useGameStore();
+  const { settings, updateSettings, updateCategoryToggle, session, triggerTips } = useGameStore();
 
   const handleReturnToMenu = () => {
     navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
   };
-  const [showRideDrilldown, setShowRideDrilldown] = useState(false);
-
-  // The ride drilldown is scoped to the currently selected park so the player
-  // only sees attractions relevant to their active game context.
-  const parkId = settings.parkIds?.[0];
-  const parkRides = RIDES.filter(r => r.parkId === parkId);
+  const [showAbout, setShowAbout] = useState(false);
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView testID="settings-screen" style={styles.safe}>
+      <StatusBar barStyle={dark ? "light-content" : "dark-content"} />
       <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
         {/* Header row: back on left, return-to-menu on right when in-game */}
         <View style={styles.headerRow}>
@@ -71,16 +72,22 @@ export default function SettingsScreen() {
           )}
         </View>
         <Text style={styles.pageTitle}>Settings</Text>
+        <SectionCard title="ABOUT SIDE QUEST">
+          <TouchableOpacity testID="about-btn" accessibilityRole="button"
+            style={styles.showTipsBtn} onPress={() => setShowAbout(true)}>
+            <Text style={styles.showTipsBtnText}>About & Credits</Text>
+          </TouchableOpacity>
+        </SectionCard>
 
         {/* Height filtering changes which ride tasks are allowed to appear when
             the store builds the ride task pool for the session. */}
         <SectionCard title="HEIGHT FILTER">
           <SettingRow
-            label="Enable Height Filtering"
-            description="Hides rides taller than your shortest rider"
+            label="Filter rides by height"
+            description="New ride cards match your shortest rider’s height."
           >
             <Switch
-              value={settings.heightFilterEnabled}
+              testID="height-filter-switch" accessibilityLabel="Filter rides by height" value={settings.heightFilterEnabled}
               onValueChange={v => updateSettings({ heightFilterEnabled: v })}
               trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
               thumbColor="#fff"
@@ -89,7 +96,7 @@ export default function SettingsScreen() {
           {settings.heightFilterEnabled && (
             <View style={styles.sliderSection}>
               <View style={styles.sliderSign}>
-                <Text style={styles.sliderSignTitle}>YOU MUST BE THIS TALL</Text>
+                <Text style={styles.sliderSignTitle}>SHORTEST RIDER HEIGHT</Text>
                 <Text style={styles.sliderSignArrow}>↕</Text>
                 <Text style={styles.sliderHeightValue}>{settings.minHeightInches}"</Text>
                 <Text style={styles.sliderSignSubtitle}>
@@ -97,7 +104,7 @@ export default function SettingsScreen() {
                 </Text>
               </View>
               <Slider
-                style={styles.slider}
+                testID="height-slider" accessibilityLabel="Shortest rider height in inches" style={styles.slider}
                 minimumValue={32}
                 maximumValue={54}
                 step={1}
@@ -111,61 +118,46 @@ export default function SettingsScreen() {
                 <Text style={styles.sliderLabel}>32"</Text>
                 <Text style={styles.sliderLabel}>54"</Text>
               </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
+                <TouchableOpacity testID="height-decrease-btn" accessibilityRole="button" accessibilityLabel="Decrease rider height by one inch"
+                  disabled={settings.minHeightInches <= 32} style={styles.showTipsBtn}
+                  onPress={() => updateSettings({ minHeightInches: Math.max(32, settings.minHeightInches - 1) })}>
+                  <Text style={styles.showTipsBtnText}>− 1 inch</Text>
+                </TouchableOpacity>
+                <TouchableOpacity testID="height-increase-btn" accessibilityRole="button" accessibilityLabel="Increase rider height by one inch"
+                  disabled={settings.minHeightInches >= 54} style={styles.showTipsBtn}
+                  onPress={() => updateSettings({ minHeightInches: Math.min(54, settings.minHeightInches + 1) })}>
+                  <Text style={styles.showTipsBtnText}>+ 1 inch</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </SectionCard>
 
         {/* Category toggles let the player opt entire task families in or out. */}
         <SectionCard title="TASK CATEGORIES">
+          <Text style={styles.sectionDescription}>Choose the cards you want to draw. Changes apply to new cards; cards already dealt stay in your game. Keep at least one hand category and one challenge category enabled.</Text>
           {CATEGORY_INFO.map(({ key, label }) => (
             <View key={key}>
               <SettingRow icon={key as IconName} label={label}>
                 <Switch
-                  value={settings.categoryToggles[key]}
-                  onValueChange={v => updateCategoryToggle(key, v)}
+                  disabled={settings.categoryToggles[key] && (['find','photo','trivia','act'].includes(key)
+                    ? ['find','photo','trivia','act'] : ['ride','treat','pins','meet','explore','seek'])
+                    .filter(c => settings.categoryToggles[c as keyof CategoryToggles]).length === 1}
+                  testID={`category-switch-${key}`} accessibilityLabel={label} value={settings.categoryToggles[key]}
+                  onValueChange={v => {
+                    const group: (keyof CategoryToggles)[] = ['find','photo','trivia','act'].includes(key)
+                      ? ['find','photo','trivia','act'] : ['ride','treat','pins','meet','explore','seek'];
+                    if (!v && !group.some(c => c !== key && settings.categoryToggles[c])) {
+                      Alert.alert('Keep one category enabled', 'Your hand and challenge board each need at least one category.');
+                      return;
+                    }
+                    updateCategoryToggle(key, v);
+                  }}
                   trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
                   thumbColor="#fff"
                 />
               </SettingRow>
-              {/* Ride tasks get a second level of control: once the ride
-                  category is enabled, the player can optionally disable
-                  individual attractions from the ride pool. */}
-              {key === 'ride' && settings.categoryToggles.ride && (
-                <TouchableOpacity
-                  style={styles.drilldownToggle}
-                  onPress={() => setShowRideDrilldown(v => !v)}
-                >
-                  <Text style={styles.drilldownToggleText}>
-                    {showRideDrilldown ? '▲ Hide' : '▼ Show'} Individual Rides
-                  </Text>
-                </TouchableOpacity>
-              )}
-              {key === 'ride' && showRideDrilldown && settings.categoryToggles.ride && (
-                <View style={styles.rideDrilldown}>
-                  {parkRides.length === 0 ? (
-                    <Text style={styles.noRidesText}>No rides available for this park.</Text>
-                  ) : (
-                    parkRides.map(ride => (
-                      <View key={ride.id} style={styles.rideRow}>
-                        <View style={styles.rideInfo}>
-                          <Text style={styles.rideName}>{ride.name}</Text>
-                          <Text style={styles.rideMeta}>
-                            {ride.heightRequirement > 0 ? `${ride.heightRequirement}"+ ` : 'Any height · '}
-                            {ride.intensity} · {ride.points} pts
-                          </Text>
-                        </View>
-                        <Switch
-                          value={!settings.disabledRideIds.includes(ride.id)}
-                          onValueChange={v => toggleRide(ride.id, v)}
-                          trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
-                          thumbColor="#fff"
-                          style={styles.rideSwitch}
-                        />
-                      </View>
-                    ))
-                  )}
-                </View>
-              )}
             </View>
           ))}
         </SectionCard>
@@ -177,6 +169,7 @@ export default function SettingsScreen() {
             {(['light', 'dark', 'system'] as const).map(mode => (
               <TouchableOpacity
                 key={mode}
+                testID={`theme-${mode}`} aria-checked={settings.darkMode === mode} accessibilityRole="radio" accessibilityState={{ selected: settings.darkMode === mode, checked: settings.darkMode === mode }}
                 style={[styles.themeChip, styles.iconRow, settings.darkMode === mode && styles.themeChipSelected]}
                 onPress={() => updateSettings({ darkMode: mode })}
               >
@@ -192,27 +185,32 @@ export default function SettingsScreen() {
         {/* Preference toggles for feedback systems that can be respected across
             future interactions, animations, and reward moments. */}
         <SectionCard title="SOUND & HAPTICS">
-          <SettingRow icon="speaker" label="Sound Effects">
+          <SettingRow icon="speaker" label="Sound Effects" description="Short sounds for answers, cards, and rewards.">
             <Switch
-              value={settings.soundEnabled}
-              onValueChange={v => updateSettings({ soundEnabled: v })}
+              testID="sound-switch" accessibilityLabel="Sound Effects" value={settings.soundEnabled}
+              onValueChange={v => { updateSettings({ soundEnabled: v }); if (v) playSound("select"); }}
               trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
               thumbColor="#fff"
             />
           </SettingRow>
-          <SettingRow icon="vibrate" label="Haptic Feedback">
+          <SettingRow icon="vibrate" label="Haptic Feedback" description="Gentle vibration on supported phones.">
             <Switch
-              value={settings.hapticsEnabled}
+              testID="haptics-switch" accessibilityLabel="Haptic Feedback" value={settings.hapticsEnabled}
               onValueChange={v => updateSettings({ hapticsEnabled: v })}
               trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
               thumbColor="#fff"
             />
           </SettingRow>
+          <TouchableOpacity testID="sound-preview-btn" accessibilityRole="button" accessibilityState={{ disabled: !settings.soundEnabled }}
+            disabled={!settings.soundEnabled} style={[styles.showTipsBtn, !settings.soundEnabled && { opacity: 0.5 }]}
+            onPress={() => playSound('success')}>
+            <Text style={styles.showTipsBtnText}>Preview sound</Text>
+          </TouchableOpacity>
         </SectionCard>
 
         {session && (
           <SectionCard title="HELP">
-            <TouchableOpacity
+            <TouchableOpacity testID="show-tips-btn" accessibilityRole="button"
               style={[styles.showTipsBtn, styles.iconRow]}
               onPress={() => {
                 triggerTips();
@@ -227,11 +225,43 @@ export default function SettingsScreen() {
         )}
 
       </ScrollView>
+      <Modal visible={showAbout} transparent animationType="fade" onRequestClose={() => setShowAbout(false)}>
+        <View style={aboutStyles.overlay}>
+          <View testID="about-panel" style={[aboutStyles.panel, { backgroundColor: COLORS.surface }]}>
+            <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 16 }}>
+              <Text style={styles.pageTitle}>About Side Quest</Text>
+              <Text style={[aboutStyles.body, { color: COLORS.textBody }]}>Made by a Disney-loving person who wants to turn time in the parks into more memories, laughs, and little adventures.</Text>
+              <Text style={[aboutStyles.heading, { color: COLORS.textDark }]}>An independent fan project</Text>
+              <Text style={[aboutStyles.body, { color: COLORS.textBody }]}>Side Quest is not affiliated with, endorsed by, or sponsored by The Walt Disney Company or its subsidiaries. Disney names, characters, and trademarks belong to their respective owners.</Text>
+              <Text style={[aboutStyles.heading, { color: COLORS.textDark }]}>Trivia preservation credit</Text>
+              <Text style={[aboutStyles.body, { color: COLORS.textBody }]}>Thank you to GooglyBlox for preserving and sharing the Play Disney Parks trivia archive. Some trivia in Side Quest comes from that preservation work. Original Play Disney Parks trivia was created by Disney; preservation credit does not imply ownership or Disney endorsement.</Text>
+              <TouchableOpacity testID="about-archive-link" accessibilityRole="link"
+                onPress={() => Linking.openURL('https://archive.notaspider.dev/details/play-disney-parks-cdn').catch(() => Alert.alert('Unable to open link', 'Please try again later.'))}>
+                <Text style={[aboutStyles.link, { color: dark ? COLORS.blue : "#2257B3" }]}>Visit GooglyBlox’s preservation archive</Text>
+              </TouchableOpacity>
+            </ScrollView>
+            <TouchableOpacity testID="about-close-btn" accessibilityRole="button" style={styles.showTipsBtn} onPress={() => setShowAbout(false)}>
+              <Text style={styles.showTipsBtnText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
+const aboutStyles = StyleSheet.create({
+  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: 'rgba(14,9,28,0.85)' },
+  panel: { width: '100%', maxWidth: 420, maxHeight: '90%', padding: 20, gap: 16, borderRadius: 20, backgroundColor: '#FFF8EC' },
+  body: { color: '#302642', fontSize: 16, lineHeight: 23 },
+  heading: { color: '#302642', fontSize: 18, fontWeight: '800' },
+  link: { color: '#2257B3', fontSize: 16, lineHeight: 23, textDecorationLine: 'underline' },
+});
+
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, false, []);
+
   return (
     <View style={styles.sectionCard}>
       {/* Shared wrapper so each settings section uses the same visual structure. */}
@@ -252,6 +282,9 @@ function SettingRow({
   description?: string;
   children: React.ReactNode;
 }) {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, false, []);
+
   return (
     <View style={styles.settingRow}>
       {/* Left side is descriptive copy; right side is the interactive control
@@ -266,7 +299,7 @@ function SettingRow({
   );
 }
 
-const styles = StyleSheet.create({
+const BASE_STYLES = StyleSheet.create({
   iconRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -302,6 +335,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.borderPanel,
   },
+  sectionDescription: { color: COLORS.textBody, fontSize: 14, lineHeight: 21, paddingHorizontal: 16, paddingBottom: 12 },
   sectionTitle: {
     color: COLORS.textMuted,
     fontSize: 10,
@@ -442,7 +476,7 @@ const styles = StyleSheet.create({
   },
   themeChipSelected: {
     borderColor: COLORS.green,
-    backgroundColor: '#E8F8EF',
+    backgroundColor: COLORS.surfaceSecondary,
   },
   themeChipText: {
     color: COLORS.textBody,

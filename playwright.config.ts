@@ -12,6 +12,8 @@ export default defineConfig({
   retries: 0,
   reporter: [['list']],
   use: {
+    // Optional installed-browser fallback; no browser download is needed.
+    channel: process.env.PLAYWRIGHT_CHANNEL || undefined,
     baseURL: `http://localhost:${PORT}`,
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',

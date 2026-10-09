@@ -1,3 +1,4 @@
+import { ARCHIVE_BULK_TRIVIA } from './archiveTrivia';
 import { Task } from '../types';
 
 /**
@@ -43,11 +44,11 @@ const DISNEY_TRIVIA: Task[] = [
   // ── Medium (10 pts) ──
   { id: 'tri-d-m-1', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'How many ghosts reside in the Haunted Mansion?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['666', '999', '1313', '501'], triviaAnswer: 1 },
   { id: 'tri-d-m-2', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What year did Walt Disney World open in Florida?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['1955', '1967', '1971', '1975'], triviaAnswer: 2 },
-  { id: 'tri-d-m-3', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is the name of the mountain in Animal Kingdom?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Thunder Mountain', 'Space Mountain', 'Splash Mountain', 'Expedition Everest'], triviaAnswer: 3 },
+  { id: 'tri-d-m-3', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is the name of the mountain in Animal Kingdom?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Thunder Mountain', 'Space Mountain', "Tiana's Bayou Adventure", 'Expedition Everest'], triviaAnswer: 3 },
   { id: 'tri-d-m-4', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which park has a giant silver sphere as its icon?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Magic Kingdom', 'Hollywood Studios', 'EPCOT', 'Animal Kingdom'], triviaAnswer: 2 },
   { id: 'tri-d-m-5', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: "What speed does Rock 'n' Roller Coaster reach in its launch?", points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['40 mph', '50 mph', '57 mph', '65 mph'], triviaAnswer: 2 },
   { id: 'tri-d-m-6', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which Disney villain has a pet parrot named Iago?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Maleficent', 'Jafar', 'Hades', 'Scar'], triviaAnswer: 1 },
-  { id: 'tri-d-m-7', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is the tallest structure in Magic Kingdom?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Space Mountain', 'Cinderella Castle', 'Splash Mountain', 'Tomorrowland Speedway'], triviaAnswer: 1 },
+  { id: 'tri-d-m-7', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is the tallest structure in Magic Kingdom?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Space Mountain', 'Cinderella Castle', "Tiana's Bayou Adventure", 'Tomorrowland Speedway'], triviaAnswer: 1 },
   { id: 'tri-d-m-8', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'In what land is Pirates of the Caribbean at Magic Kingdom?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Fantasyland', 'Frontierland', 'Adventureland', 'Liberty Square'], triviaAnswer: 2 },
   { id: 'tri-d-m-9', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: "What real country inspired EPCOT's pavilion with a stave church?", points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Sweden', 'Norway', 'Denmark', 'Finland'], triviaAnswer: 1 },
   { id: 'tri-d-m-10', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which attraction takes you through communication and technology history?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Journey Into Imagination', 'Spaceship Earth', 'Mission: SPACE', 'Test Track'], triviaAnswer: 1 },
@@ -59,7 +60,7 @@ const DISNEY_TRIVIA: Task[] = [
   { id: 'tri-d-m-16', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What type of dinosaur is the main animatronic on DINOSAUR?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['T-Rex', 'Carnotaurus', 'Velociraptor', 'Iguanodon'], triviaAnswer: 1 },
   { id: 'tri-d-m-17', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Approximately how many themed resort hotels does WDW operate?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['About 15', 'About 25', 'About 35', 'About 10'], triviaAnswer: 1 },
   { id: 'tri-d-m-18', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: "How many countries are in EPCOT's World Showcase?", points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['9', '10', '11', '13'], triviaAnswer: 2 },
-  { id: 'tri-d-m-19', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What Disney ride was the first to use a flume water system?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Jungle Cruise', 'Pirates of the Caribbean', "it's a small world", 'Splash Mountain'], triviaAnswer: 1 },
+  { id: 'tri-d-m-19', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: "What was Tiana's Bayou Adventure at Magic Kingdom called before it was rethemed?", points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Jungle Cruise', 'Splash Mountain', 'River Country', 'Maelstrom'], triviaAnswer: 1 },
   { id: 'tri-d-m-20', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: "What is the name of the dragon under Disneyland Paris' castle?", points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Maleficent', 'La Taniere du Dragon', 'Figment', 'Mushu'], triviaAnswer: 1 },
   { id: 'tri-d-m-21', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is the name of the Star Wars cantina bar at Disney parks?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ["Mos Eisley", "Oga's Cantina", "Docking Bay 7", "Ronto Roasters"], triviaAnswer: 1 },
   { id: 'tri-d-m-22', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What Disney park land is home to TRON Lightcycle Run?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Fantasyland', 'Tomorrowland', 'Frontierland', 'Adventureland'], triviaAnswer: 1 },
@@ -71,7 +72,7 @@ const DISNEY_TRIVIA: Task[] = [
   { id: 'tri-d-h-2', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which Imagineer designed Pirates of the Caribbean?', points: 15, difficulty: 'hard', tag: 'disney', triviaChoices: ['Marc Davis', 'John Hench', 'Rolly Crump', 'Claude Coats'], triviaAnswer: 0 },
   { id: 'tri-d-h-3', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What was the first audio-animatronic figure built by Disney?', points: 15, difficulty: 'hard', tag: 'disney', triviaChoices: ['Abraham Lincoln', 'Enchanted Tiki Room birds', 'Haunted Mansion ghosts', "Mr. Lincoln at World's Fair"], triviaAnswer: 1 },
   { id: 'tri-d-h-4', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: "What was the opening date of WDW's Magic Kingdom?", points: 15, difficulty: 'hard', tag: 'disney', triviaChoices: ['July 17 1971', 'October 1 1971', 'December 15 1971', 'March 22 1972'], triviaAnswer: 1 },
-  { id: 'tri-d-h-5', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: "What is the fictional town in Tower of Terror's backstory?", points: 15, difficulty: 'hard', tag: 'disney', triviaChoices: ['Sunset Hills', 'Hollywood Tower', 'The Hollywood Tower Hotel', 'Twilight Terrace'], triviaAnswer: 2 },
+  { id: 'tri-d-h-5', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: "What is the name of the hotel in Tower of Terror's backstory?", points: 15, difficulty: 'hard', tag: 'disney', triviaChoices: ['Sunset Hills Hotel', 'Hollywood Grand Hotel', 'The Hollywood Tower Hotel', 'Twilight Terrace Hotel'], triviaAnswer: 2 },
   { id: 'tri-d-h-6', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which attraction originally stood where Frozen Ever After is now?', points: 15, difficulty: 'hard', tag: 'disney', triviaChoices: ['Kitchen Kabaret', 'El Rio del Tiempo', 'Maelstrom', 'Journey Into Imagination'], triviaAnswer: 2 },
   { id: 'tri-d-h-7', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What was the opening day attendance of Disneyland in 1955?', points: 15, difficulty: 'hard', tag: 'disney', triviaChoices: ['About 10000', 'About 28000', 'About 50000', 'About 75000'], triviaAnswer: 1 },
   { id: 'tri-d-h-8', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'How tall is the Expedition Everest mountain structure?', points: 15, difficulty: 'hard', tag: 'disney', triviaChoices: ['150 feet', '199.5 feet', '225 feet', '180 feet'], triviaAnswer: 1 },
@@ -92,7 +93,45 @@ const DISNEY_TRIVIA: Task[] = [
   { id: 'tri-d-h-23', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: "What is Walt Disney's middle name?", points: 15, difficulty: 'hard', tag: 'disney', triviaChoices: ['Edward', 'Elias', 'Eugene', 'Ernest'], triviaAnswer: 1 },
 ];
 
+// Original questions checked against Disney's attraction pages; see docs/trivia-sources.md.
+// These are shared Disney trivia, so players can answer them at any selected park.
+const PARK_TRIVIA: Task[] = [
+  // Magic Kingdom: Jungle Cruise
+  { id: 'tri-mk-jungle-skipper', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What is the boat guide on Jungle Cruise called?', points: 5, difficulty: 'easy', tag: 'disney', triviaChoices: ['Conductor', 'Skipper', 'Flight attendant', 'Ranger'], triviaAnswer: 1 },
+  { id: 'tri-mk-jungle-boat', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'How do guests travel through Jungle Cruise?', points: 5, difficulty: 'easy', tag: 'disney', triviaChoices: ['By train', 'By jeep', 'By boat', 'By cable car'], triviaAnswer: 2 },
+  { id: 'tri-mk-jungle-amazon', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which South American river is represented on Jungle Cruise?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Amazon', 'Seine', 'Thames', 'Danube'], triviaAnswer: 0 },
+  { id: 'tri-mk-jungle-gorillas', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which animals overrun the abandoned Congo camp on Jungle Cruise?', points: 15, difficulty: 'hard', tag: 'disney', triviaChoices: ['Tigers', 'Elephants', 'Crocodiles', 'Gorillas'], triviaAnswer: 3 },
+  // EPCOT: Journey Into Imagination With Figment
+  { id: 'tri-ep-figment-dragon', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What kind of creature is Figment?', points: 5, difficulty: 'easy', tag: 'disney', triviaChoices: ['A dinosaur', 'A dragon', 'A unicorn', 'A griffin'], triviaAnswer: 1 },
+  { id: 'tri-ep-figment-senses', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'How many senses does Journey Into Imagination With Figment explore?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Three', 'Four', 'Five', 'Six'], triviaAnswer: 2 },
+  { id: 'tri-ep-figment-chairman', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Who is the chairman of the Imagination Institute on the Figment ride?', points: 15, difficulty: 'hard', tag: 'disney', triviaChoices: ['Dr. Nigel Channing', 'Dr. Emmett Brown', 'Professor Porter', 'Dr. Facilier'], triviaAnswer: 0 },
+  { id: 'tri-ep-figment-actor', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which actor plays Dr. Nigel Channing on the Figment ride?', points: 15, difficulty: 'hard', tag: 'disney', triviaChoices: ['Dick Van Dyke', 'Robin Williams', 'Steve Martin', 'Eric Idle'], triviaAnswer: 3 },
+  // Hollywood Studios: Toy Story Mania!
+  { id: 'tri-hs-mania-glasses', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What eyewear do guests use to play Toy Story Mania!?', points: 5, difficulty: 'easy', tag: 'disney', triviaChoices: ['Night-vision goggles', '3D glasses', 'Swimming goggles', 'Sunglasses'], triviaAnswer: 1 },
+  { id: 'tri-hs-mania-games', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'How many main carnival games are listed for Toy Story Mania!?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Three', 'Four', 'Five', 'Seven'], triviaAnswer: 2 },
+  { id: 'tri-hs-mania-army', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What do you launch in the Green Army Men game on Toy Story Mania!?', points: 15, difficulty: 'hard', tag: 'disney', triviaChoices: ['Baseballs', 'Rings', 'Eggs', 'Tennis balls'], triviaAnswer: 0 },
+  { id: 'tri-hs-mania-buzz', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'What do you toss at aliens in the Buzz Lightyear game on Toy Story Mania!?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['Beanbags', 'Darts', 'Baseballs', 'Rings'], triviaAnswer: 3 },
+  // Animal Kingdom: Avatar Flight of Passage
+  { id: 'tri-ak-avatar-banshee', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which creature do you ride on Avatar Flight of Passage?', points: 5, difficulty: 'easy', tag: 'disney', triviaChoices: ['A direhorse', 'A mountain banshee', 'A thanator', 'A viperwolf'], triviaAnswer: 1 },
+  { id: 'tri-ak-avatar-pandora', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'Which world do you fly over on Avatar Flight of Passage?', points: 5, difficulty: 'easy', tag: 'disney', triviaChoices: ['Batuu', 'Endor', 'Pandora', 'Xandar'], triviaAnswer: 2 },
+  { id: 'tri-ak-avatar-moon', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'In the Avatar setting, Pandora is what kind of celestial body?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['A moon', 'A star', 'A comet', 'An asteroid'], triviaAnswer: 0 },
+  { id: 'tri-ak-avatar-bond', size: 'small', category: 'trivia', displayCategory: 'Trivia', description: 'For a Na\'vi hunter, bonding with a banshee is described as what?', points: 10, difficulty: 'medium', tag: 'disney', triviaChoices: ['A cooking lesson', 'A royal coronation', 'A trading ceremony', 'A rite of passage'], triviaAnswer: 3 },
+];
+
 // ─── Combined Export ────────────────────────────────────────────────────────
 
-// Merged export consumed by the store before theme filtering is applied.
-export const TRIVIA_TASKS: Task[] = DISNEY_TRIVIA;
+// Pilot imports from the user-supplied Play Disney Parks archive, preserved by GooglyBlox.
+// Choice positions were reordered with their correct-answer indices.
+const ARCHIVE_TRIVIA: Task[] = [
+  { id: 'tri-play-rec094iTASP1duciT', size: 'small', category: 'trivia', displayCategory: 'Trivia',
+    description: 'Which two mouse sweethearts are a Disney couple?', points: 5, difficulty: 'easy', tag: 'disney',
+    triviaChoices: ['Donald Duck', 'Minnie Mouse', 'Clara Cluck', 'Mickey Mouse'], triviaAnswers: [1, 3],
+    triviaExplanation: 'Mickey Mouse and Minnie Mouse are the couple. The archive notes that both appear in Plane Crazy.' },
+  { id: 'tri-play-rec18BGqY9HeKOds5', size: 'small', category: 'trivia', displayCategory: 'Trivia',
+    description: 'Name the star of Plane Crazy and the famous aviator he imitates. Choose both names.', points: 15, difficulty: 'hard', tag: 'disney',
+    triviaChoices: ['Charles Lindbergh', 'Goofy', 'Mickey Mouse', 'Chuck Yeager'], triviaAnswers: [0, 2],
+    triviaExplanation: 'Mickey Mouse imitates Charles Lindbergh in Plane Crazy. This short also includes an early version of Clarabelle Cow.' },
+];
+
+// Merged export consumed by the store when the trivia category is enabled.
+export const TRIVIA_TASKS: Task[] = [...DISNEY_TRIVIA, ...PARK_TRIVIA, ...ARCHIVE_TRIVIA, ...ARCHIVE_BULK_TRIVIA];

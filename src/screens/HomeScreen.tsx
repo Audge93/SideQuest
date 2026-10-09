@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 /**
  * HomeScreen.tsx — Main landing screen
  *
@@ -56,6 +57,9 @@ function timeAgo(timestamp: number): string {
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, true, []);
+
   const navigation = useNavigation<any>();
   const {
     settings,
@@ -161,7 +165,7 @@ export default function HomeScreen() {
       resizeMode="stretch"
     >
       <SafeAreaView style={styles.safe}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle={dark ? "light-content" : "dark-content"} />
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {/* Top-right nav icons */}
           <View style={styles.topNav}>
@@ -539,7 +543,7 @@ const displayLabel = {
   textShadowRadius: 0,
 };
 
-const styles = StyleSheet.create({
+const BASE_STYLES = StyleSheet.create({
   backgroundImage: {
     flex: 1,
     width: SCREEN_W,

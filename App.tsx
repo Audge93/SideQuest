@@ -15,6 +15,7 @@ import { useFonts, FontDisplay } from 'expo-font';
 import AppNavigator from './src/navigation/AppNavigator';
 import SplashAnimation from './src/components/SplashAnimation';
 import { useGameStore } from './src/store/gameStore';
+import { useSoundEffects } from './src/utils/useSoundEffects';
 
 enableScreens();
 
@@ -24,6 +25,7 @@ enableScreens();
  * app is ready underneath when the animation finishes.
  */
 function AppLoader() {
+  useSoundEffects();
   const loadFromStorage = useGameStore(s => s.loadFromStorage);
   const [showSplash, setShowSplash] = useState(true);
   const [fontsLoaded, fontError] = useFonts({

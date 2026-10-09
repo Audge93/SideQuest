@@ -51,6 +51,12 @@ export interface Task {
   triviaChoices?: string[];
   // Zero-based index of the correct trivia choice.
   triviaAnswer?: number;
+  // Accepted correct indices; legacy single-answer cards can keep triviaAnswer.
+  triviaAnswers?: number[];
+  // How many accepted choices must be selected; defaults to all correct indices.
+  triviaRequiredAnswers?: number;
+  // Explanation shown only after answering or passing.
+  triviaExplanation?: string;
   // Theme filter; omitted means the task can appear in any park.
   tag?: ParkThemeTag;
 }
@@ -94,6 +100,7 @@ export interface Player {
   color: string;
 }
 
+export interface TriviaSprint { id: string; questions: Task[]; answers: number[]; deadline: number; finished: boolean; earnedPoints: number; }
 export interface Session {
   // Live gameplay snapshot used by the active game screen.
   id: string;
@@ -103,6 +110,13 @@ export interface Session {
   sessionScore: number;
   currentStreak: number;
   discardsRemaining: number;
+  minigameHelpSeen?: string[];
+  whoAmI?: { characterId: string; choices: string[]; cluesRevealed: number; answer?: number; finished: boolean; earnedPoints: number };
+  recentWhoAmI?: string[];
+  triviaSprint?: TriviaSprint;
+  recentSprintQuestions?: string[];
+  fiftyFiftyUses: number;
+  triviaEliminatedChoices: Record<string, number[]>;
   totalCompletions: number;
   hand: Task[];
   challengeTasks: Task[];

@@ -1,0 +1,664 @@
+{
+  "source": "User-supplied PlayDisneyParks-trivia.zip / questions.json / en-US",
+  "imported": 2146,
+  "totalRecords": 2310,
+  "review": "Structural text checks; exact normalized wording deduplication. Semantic duplicates and factual updates still need editorial review. Park questions are labeled historical. Missing image assets are omitted only when text stands alone.",
+  "excluded": [
+    {
+      "id": "1011",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "1083",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1086",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1090",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1161",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1164",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1165",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1180",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1211",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1278",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1581",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1765",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1819",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1820",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1831",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1832",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1875",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1955",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1956",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "1997",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "2070",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "2493",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2497",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2498",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2502",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2503",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2504",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2505",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2541",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2544",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2551",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2552",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2553",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2557",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2558",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2562",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2564",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2565",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2566",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2580",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2588",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2601",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2626",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2649",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2652",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2654",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2668",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2684",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2689",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2739",
+      "reason": "retired attraction context needs separate editorial review"
+    },
+    {
+      "id": "2745",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2750",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2754",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "2772",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2820",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "2821",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "2823",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2824",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2835",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2839",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "2842",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2852",
+      "reason": "missing or duplicate question/answer text"
+    },
+    {
+      "id": "2856",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "2860",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "2861",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "2862",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "2863",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "2864",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "2865",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "2866",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "2867",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "2868",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "rec094iTASP1duciT",
+      "reason": "already imported pilot"
+    },
+    {
+      "id": "rec18BGqY9HeKOds5",
+      "reason": "already imported pilot"
+    },
+    {
+      "id": "rec1sM4cRcogBT8eU",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "rec5ZWxtjvcQIczoJ",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "rec6TsxR0AEHaFHGy",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recAnoZX7W3DTjVtL",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recAraBg8Z4YJlAGI",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recAuokLznXNhY7pg",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recBnFefQRKMskTn3",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recE1gu5XfXm61q9f",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recGcCeZYSjeLclGx",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recHbW8hUzDrCw9u5",
+      "reason": "invalid or all-correct answer set"
+    },
+    {
+      "id": "recILFVGEHvAKfzo5",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recK7GlUOTGnnMfPH",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recKbJTP0t70ROiQc",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recLisoh7Ii4a5y7D",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recMf81QWSIuR2L93",
+      "reason": "invalid or all-correct answer set"
+    },
+    {
+      "id": "recTAMU5vgXPO2XbZ",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recTFJxdaMoqzVfGd",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recU8q9YpiNE4FFMR",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recYvmFXTaEVEVCbc",
+      "reason": "invalid or all-correct answer set"
+    },
+    {
+      "id": "reca2ZkfNYIO1R3lR",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recbKdrCzzdQvkJxU",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recbaYnYr5FUVOHXh",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "rece295tJ5z2cfuVI",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "receD6KsgbQr66MHX",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recegrfMI6mVizkKK",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recgKN3kojdthDH69",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recjSTgbauEXcdeHr",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recmNBER8TAhAoIgY",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recn0DVkntwqNZ0uB",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recpJKADGUu5renKi",
+      "reason": "invalid or all-correct answer set"
+    },
+    {
+      "id": "recpVqnUs8lSER3DQ",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recqgT12oplWknZ4K",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recqnpFZrgqq15YQB",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recqvKNx5Bf0zMi2T",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "rectaVIh0NbyQDLRD",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recvV8LzCmAEEqIwO",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recveY1w3huWlw7GH",
+      "reason": "unsupported visual or sequence format"
+    },
+    {
+      "id": "recyUXsTHtjqTPn3h",
+      "reason": "invalid or all-correct answer set"
+    },
+    {
+      "id": "toh1000",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1001",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1002",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1003",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1004",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1005",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1006",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1007",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1008",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1009",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1010",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1011",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1013",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1014",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1015",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1016",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1017",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1019",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1020",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1021",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1022",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1023",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1024",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1025",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1026",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1027",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1028",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1029",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1030",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1031",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1032",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1033",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1034",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1035",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1037",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1043",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1056",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1060",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1061",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1066",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1070",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1072",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1076",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1077",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1078",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1089",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1094",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1109",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1112",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1114",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1134",
+      "reason": "duplicate question wording or existing question"
+    },
+    {
+      "id": "toh1140",
+      "reason": "duplicate question wording or existing question"
+    }
+  ]
+}

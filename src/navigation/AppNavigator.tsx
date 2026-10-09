@@ -6,7 +6,8 @@
  */
 
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
+import { useAppTheme } from '../theme/useAppTheme';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import HomeScreen from '../screens/HomeScreen';
@@ -17,8 +18,10 @@ import ProfileScreen from '../screens/ProfileScreen';
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
+  const { dark, colors } = useAppTheme();
+  const navigationTheme = dark ? DarkTheme : DefaultTheme;
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={{ ...navigationTheme, colors: { ...navigationTheme.colors, background: colors.bg, card: colors.surface } }}>
       {/* The app uses a simple stack flow instead of nested navigators.
           Home is the entry point, while Game, Settings, and Profile are
           pushed on top as full-screen destinations. */}

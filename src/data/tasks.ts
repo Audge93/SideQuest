@@ -1,3 +1,4 @@
+import { EXTRA_SMALL_TASKS, EXTRA_BIG_TASKS, EXTRA_RIDE_TASKS } from './extraTasks';
 import { Task, Ride } from '../types';
 
 /**
@@ -14,6 +15,7 @@ import { Task, Ride } from '../types';
 // tag: undefined = works at any park
 
 export const SMALL_TASKS: Task[] = [
+  ...EXTRA_SMALL_TASKS,
   // ══════════════════════════════════════════════════════════════════════════
   // ── Find 🔍 (observation) ────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
@@ -50,7 +52,7 @@ export const SMALL_TASKS: Task[] = [
   { id: 'find-e-10', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find someone wearing a birthday button', points: 5, difficulty: 'easy', tag: 'disney' },
   { id: 'find-m-1', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find a Hidden Mickey in your surroundings', points: 10, difficulty: 'medium', tag: 'disney' },
   { id: 'find-h-7', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find a tribute to Walt Disney', points: 15, difficulty: 'hard', tag: 'disney' },
-  { id: 'find-h-8', size: 'small', category: 'find', displayCategory: 'Find', description: 'Spot a Main Street window dedication', points: 15, difficulty: 'hard', tag: 'disney' },
+  { id: 'find-h-8', size: 'small', category: 'find', displayCategory: 'Find', description: 'Find a dedication, commemorative plaque, or named tribute', points: 15, difficulty: 'hard', tag: 'disney' },
 
   // ══════════════════════════════════════════════════════════════════════════
   // ── Photo 📸 ─────────────────────────────────────────────────────────────
@@ -78,7 +80,7 @@ export const SMALL_TASKS: Task[] = [
   { id: 'photo-h-6', size: 'small', category: 'photo', displayCategory: 'Photo', description: 'Dramatic farewell photo', points: 15, difficulty: 'hard' },
 
   // ── Disney-only Photo ──
-  { id: 'photo-e-7', size: 'small', category: 'photo', displayCategory: 'Photo', description: "Photo like you're holding the castle", points: 5, difficulty: 'easy', tag: 'disney' },
+  { id: 'photo-e-7', size: 'small', category: 'photo', displayCategory: 'Photo', description: "Photo like you're holding a park landmark", points: 5, difficulty: 'easy', tag: 'disney' },
 
   // ══════════════════════════════════════════════════════════════════════════
   // ── Act 🎬 (action) ──────────────────────────────────────────────────────
@@ -90,7 +92,7 @@ export const SMALL_TASKS: Task[] = [
   { id: 'act-e-3', size: 'small', category: 'act', displayCategory: 'Act', description: 'Superhero pose, hold 5 seconds', points: 5, difficulty: 'easy' },
   { id: 'act-e-5', size: 'small', category: 'act', displayCategory: 'Act', description: 'Pretend to be a statue for 15 seconds', points: 5, difficulty: 'easy' },
   { id: 'act-e-7', size: 'small', category: 'act', displayCategory: 'Act', description: 'Dramatic bow after finishing a ride', points: 5, difficulty: 'easy' },
-  { id: 'act-m-1', size: 'small', category: 'act', displayCategory: 'Act', description: 'Villain laugh loud enough for nearby people', points: 10, difficulty: 'medium' },
+  { id: 'act-m-1', size: 'small', category: 'act', displayCategory: 'Act', description: 'Perform a quiet villain laugh for your own party', points: 10, difficulty: 'medium' },
   { id: 'act-m-2', size: 'small', category: 'act', displayCategory: 'Act', description: 'Walk like a pirate 30 seconds', points: 10, difficulty: 'medium' },
   { id: 'act-m-3', size: 'small', category: 'act', displayCategory: 'Act', description: 'Narrate line like nature documentary', points: 10, difficulty: 'medium' },
   { id: 'act-m-4', size: 'small', category: 'act', displayCategory: 'Act', description: 'British accent for one full minute', points: 10, difficulty: 'medium' },
@@ -107,11 +109,34 @@ export const SMALL_TASKS: Task[] = [
   // ── Disney-only Act ──
   { id: 'act-e-4', size: 'small', category: 'act', displayCategory: 'Act', description: 'Royal wave for 10 seconds', points: 5, difficulty: 'easy', tag: 'disney' },
   { id: 'act-e-6', size: 'small', category: 'act', displayCategory: 'Act', description: 'March like a toy soldier 15 seconds', points: 5, difficulty: 'easy', tag: 'disney' },
+
+  // More actions: playable solo or with your own party, without involving strangers.
+  { id: 'act-e-8', size: 'small', category: 'act', displayCategory: 'Act', description: 'Give your group a secret handshake', points: 5, difficulty: 'easy' },
+  { id: 'act-e-9', size: 'small', category: 'act', displayCategory: 'Act', description: 'Make a heart with your hands for your group', points: 5, difficulty: 'easy' },
+  { id: 'act-e-10', size: 'small', category: 'act', displayCategory: 'Act', description: 'Pretend to open an invisible treasure chest', points: 5, difficulty: 'easy' },
+  { id: 'act-e-11', size: 'small', category: 'act', displayCategory: 'Act', description: 'Make three different surprised faces', points: 5, difficulty: 'easy' },
+  { id: 'act-e-12', size: 'small', category: 'act', displayCategory: 'Act', description: 'Pretend to steer a spaceship for 10 seconds', points: 5, difficulty: 'easy' },
+  { id: 'act-e-13', size: 'small', category: 'act', displayCategory: 'Act', description: 'Invent a victory gesture for your next completed quest', points: 5, difficulty: 'easy' },
+  { id: 'act-e-14', size: 'small', category: 'act', displayCategory: 'Act', description: 'Make a silent wish and mime blowing out a candle', points: 5, difficulty: 'easy' },
+  { id: 'act-m-8', size: 'small', category: 'act', displayCategory: 'Act', description: 'Invent a 20-second commercial for your favorite ride', points: 10, difficulty: 'medium' },
+  { id: 'act-m-9', size: 'small', category: 'act', displayCategory: 'Act', description: 'Describe your next adventure like a movie trailer', points: 10, difficulty: 'medium' },
+  { id: 'act-m-10', size: 'small', category: 'act', displayCategory: 'Act', description: 'Mime packing three imaginary items for an expedition', points: 10, difficulty: 'medium' },
+  { id: 'act-m-11', size: 'small', category: 'act', displayCategory: 'Act', description: 'Introduce your group as a team of explorers', points: 10, difficulty: 'medium' },
+  { id: 'act-m-12', size: 'small', category: 'act', displayCategory: 'Act', description: 'Give a weather report for an imaginary planet', points: 10, difficulty: 'medium' },
+  { id: 'act-m-13', size: 'small', category: 'act', displayCategory: 'Act', description: 'Pretend your snack is a priceless museum exhibit', points: 10, difficulty: 'medium' },
+  { id: 'act-m-14', size: 'small', category: 'act', displayCategory: 'Act', description: 'Tell your group a story using only five gestures', points: 10, difficulty: 'medium' },
+  { id: 'act-h-7', size: 'small', category: 'act', displayCategory: 'Act', description: 'Invent a four-line poem about your park day', points: 15, difficulty: 'hard' },
+  { id: 'act-h-8', size: 'small', category: 'act', displayCategory: 'Act', description: 'Tell a 30-second adventure with a beginning, twist, and ending', points: 15, difficulty: 'hard' },
+  { id: 'act-h-9', size: 'small', category: 'act', displayCategory: 'Act', description: 'Mime three imaginary rides in a row without speaking', points: 15, difficulty: 'hard' },
+  { id: 'act-h-10', size: 'small', category: 'act', displayCategory: 'Act', description: 'Make up a rhyming slogan for your adventure team', points: 15, difficulty: 'hard' },
+  { id: 'act-h-11', size: 'small', category: 'act', displayCategory: 'Act', description: 'Describe your day as three different imaginary characters', points: 15, difficulty: 'hard' },
+  { id: 'act-h-12', size: 'small', category: 'act', displayCategory: 'Act', description: 'Give a 30-second tour of your surroundings as a space explorer', points: 15, difficulty: 'hard' },
 ];
 
 // ─── Big Tasks ──────────────────────────────────────────────────────────────
 
 export const BIG_TASKS: Task[] = [
+  ...EXTRA_BIG_TASKS,
   // ══════════════════════════════════════════════════════════════════════════
   // ── Treat 🍦 (food) ──────────────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
@@ -155,13 +180,13 @@ export const BIG_TASKS: Task[] = [
   // ══════════════════════════════════════════════════════════════════════════
 
   // ── Generic (any park) ──
-  { id: 'explore-e-1', size: 'big', category: 'explore', displayCategory: 'Explore', description: "Find a hidden restroom most don't know about", points: 25, difficulty: 'easy' },
+  { id: 'explore-e-1', size: 'big', category: 'explore', displayCategory: 'Explore', description: "Locate a public restroom using the park map", points: 25, difficulty: 'easy' },
   { id: 'explore-e-2', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Walk a land without looking at your phone', points: 25, difficulty: 'easy' },
   { id: 'explore-e-3', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Read every plaque or sign in a queue', points: 25, difficulty: 'easy' },
   { id: 'explore-e-4', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Find a quiet spot most people walk past', points: 25, difficulty: 'easy' },
   { id: 'explore-e-5', size: 'big', category: 'explore', displayCategory: 'Explore', description: "Discover a shop you've never been in", points: 25, difficulty: 'easy' },
   { id: 'explore-m-1', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Explore a new land and find 3 hidden details', points: 50, difficulty: 'medium' },
-  { id: 'explore-m-2', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Walk the full park perimeter', points: 50, difficulty: 'medium' },
+  { id: 'explore-m-2', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Visit three different lands using public paths', points: 50, difficulty: 'medium' },
   { id: 'explore-m-3', size: 'big', category: 'explore', displayCategory: 'Explore', description: 'Find 3 water features or fountains', points: 50, difficulty: 'medium' },
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -188,33 +213,34 @@ export const BIG_TASKS: Task[] = [
 // in-ride objectives. Filtered at runtime by park selection and height filter.
 
 export const RIDE_ACTIVITY_TASKS: Task[] = [
+  ...EXTRA_RIDE_TASKS,
 
   // ── Magic Kingdom ──────────────────────────────────────────────────────────
   { id: 'rideact-buzz-mk-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Score higher than 100,000 on Buzz Lightyear's Space Ranger Spin", points: 75, difficulty: 'hard', rideId: 'wdw-mk-buzz-lightyears-space-ranger-spin', parkId: 'wdw-mk', heightRequirement: 0, tag: 'disney' },
   { id: 'rideact-buzz-mk-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Target only Z targets on Buzz Lightyear's Space Ranger Spin", points: 50, difficulty: 'medium', rideId: 'wdw-mk-buzz-lightyears-space-ranger-spin', parkId: 'wdw-mk', heightRequirement: 0, tag: 'disney' },
   { id: 'rideact-pirates-mk-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Count every time you hear 'Yo ho, yo ho' on Pirates of the Caribbean", points: 50, difficulty: 'medium', rideId: 'wdw-mk-pirates-of-the-caribbean', parkId: 'wdw-mk', heightRequirement: 0, tag: 'disney' },
-  { id: 'rideact-spacemtn-mk-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Keep your hands up for the entire Space Mountain ride', points: 50, difficulty: 'medium', rideId: 'wdw-mk-space-mountain', parkId: 'wdw-mk', heightRequirement: 44, tag: 'disney' },
+  { id: 'rideact-spacemtn-mk-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'After Space Mountain, describe the turn that surprised you most', points: 50, difficulty: 'medium', rideId: 'wdw-mk-space-mountain', parkId: 'wdw-mk', heightRequirement: 44, tag: 'disney' },
   { id: 'rideact-bigthunder-mk-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Spot the hidden skull on Big Thunder Mountain Railroad', points: 50, difficulty: 'medium', rideId: 'wdw-mk-big-thunder-mountain-railroad', parkId: 'wdw-mk', heightRequirement: 40, tag: 'disney' },
-  { id: 'rideact-speedway-mk-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Complete Tomorrowland Speedway without touching the guide rail', points: 75, difficulty: 'hard', rideId: 'wdw-mk-tomorrowland-speedway', parkId: 'wdw-mk', heightRequirement: 32, tag: 'disney' },
+  { id: 'rideact-speedway-mk-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'After Tomorrowland Speedway, name three details along the track', points: 75, difficulty: 'hard', rideId: 'wdw-mk-tomorrowland-speedway', parkId: 'wdw-mk', heightRequirement: 32, tag: 'disney' },
 
   // ── Hollywood Studios ──────────────────────────────────────────────────────
   { id: 'rideact-tsm-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Score higher than 100,000 points on Toy Story Mania!', points: 75, difficulty: 'hard', rideId: 'wdw-hs-toy-story-mania', parkId: 'wdw-hs', heightRequirement: 0, tag: 'disney' },
   { id: 'rideact-tsm-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Beat everyone in your group's score on Toy Story Mania!", points: 50, difficulty: 'medium', rideId: 'wdw-hs-toy-story-mania', parkId: 'wdw-hs', heightRequirement: 0, tag: 'disney' },
-  { id: 'rideact-tot-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Keep your hands raised for the entire Tower of Terror drop sequence', points: 50, difficulty: 'medium', rideId: 'wdw-hs-tower-of-terror', parkId: 'wdw-hs', heightRequirement: 40, tag: 'disney' },
+  { id: 'rideact-tot-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Spot three eerie decorations in the Tower of Terror lobby', points: 50, difficulty: 'medium', rideId: 'wdw-hs-tower-of-terror', parkId: 'wdw-hs', heightRequirement: 40, tag: 'disney' },
   { id: 'rideact-tot-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Count the exact number of elevator drops on Tower of Terror', points: 75, difficulty: 'hard', rideId: 'wdw-hs-tower-of-terror', parkId: 'wdw-hs', heightRequirement: 40, tag: 'disney' },
-  { id: 'rideact-falcon-hs-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Claim the pilot seat on Millennium Falcon: Smugglers Run', points: 50, difficulty: 'medium', rideId: 'wdw-hs-millennium-falcon-smugglers-run', parkId: 'wdw-hs', heightRequirement: 38, tag: 'disney' },
-  { id: 'rideact-falcon-hs-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Complete Millennium Falcon: Smugglers Run with no failed shots', points: 75, difficulty: 'hard', rideId: 'wdw-hs-millennium-falcon-smugglers-run', parkId: 'wdw-hs', heightRequirement: 38, tag: 'disney' },
-  { id: 'rideact-rotr-hs-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Count every stormtrooper you encounter on Rise of the Resistance', points: 50, difficulty: 'medium', rideId: 'wdw-hs-star-wars-rise-of-the-resistance', parkId: 'wdw-hs', heightRequirement: 40, tag: 'disney' },
+  { id: 'rideact-falcon-hs-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Complete your assigned crew role on Millennium Falcon: Smugglers Run', points: 50, difficulty: 'medium', rideId: 'wdw-hs-millennium-falcon-smugglers-run', parkId: 'wdw-hs', heightRequirement: 38, tag: 'disney' },
+  { id: 'rideact-falcon-hs-2', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'After Millennium Falcon: Smugglers Run, recount three moments of your mission', points: 75, difficulty: 'hard', rideId: 'wdw-hs-millennium-falcon-smugglers-run', parkId: 'wdw-hs', heightRequirement: 38, tag: 'disney' },
+  { id: 'rideact-rotr-hs-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Notice three uniform details on Rise of the Resistance', points: 50, difficulty: 'medium', rideId: 'wdw-hs-star-wars-rise-of-the-resistance', parkId: 'wdw-hs', heightRequirement: 40, tag: 'disney' },
 
   // ── EPCOT ──────────────────────────────────────────────────────────────────
-  { id: 'rideact-testtrack-ep-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Design a car on Test Track that scores 100% in all categories', points: 75, difficulty: 'hard', rideId: 'wdw-ep-test-track', parkId: 'wdw-ep', heightRequirement: 40, tag: 'disney' },
-  { id: 'rideact-soarin-ep-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: "Spot 5 different landmarks on Soarin' Around the World", points: 50, difficulty: 'medium', rideId: 'wdw-ep-soarin-around-the-world', parkId: 'wdw-ep', heightRequirement: 40, tag: 'disney' },
+  { id: 'rideact-testtrack-ep-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'After Test Track, describe three ideas about the future of transportation', points: 75, difficulty: 'hard', rideId: 'wdw-ep-test-track', parkId: 'wdw-ep', heightRequirement: 40, tag: 'disney' },
+  { id: 'rideact-soarin-ep-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: "After Soarin’, recall five different landscapes you saw", points: 50, difficulty: 'medium', rideId: 'wdw-ep-soarin-around-the-world', parkId: 'wdw-ep', heightRequirement: 40, tag: 'disney' },
   { id: 'rideact-sse-ep-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Count the number of scenes on Spaceship Earth', points: 75, difficulty: 'hard', rideId: 'wdw-ep-spaceship-earth', parkId: 'wdw-ep', heightRequirement: 0, tag: 'disney' },
-  { id: 'rideact-mspace-ep-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Complete Mission: SPACE orange mission with zero team errors', points: 75, difficulty: 'hard', rideId: 'wdw-ep-mission-space', parkId: 'wdw-ep', heightRequirement: 40, tag: 'disney' },
+  { id: 'rideact-mspace-ep-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Complete your assigned role on either Mission: SPACE mission', points: 75, difficulty: 'hard', rideId: 'wdw-ep-mission-space', parkId: 'wdw-ep', heightRequirement: 40, tag: 'disney' },
 
   // ── Animal Kingdom ─────────────────────────────────────────────────────────
   { id: 'rideact-safari-ak-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Spot 10 different animals on Kilimanjaro Safaris', points: 50, difficulty: 'medium', rideId: 'wdw-ak-kilimanjaro-safaris', parkId: 'wdw-ak', heightRequirement: 0, tag: 'disney' },
-  { id: 'rideact-everest-ak-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Keep your hands up through the backwards section of Expedition Everest', points: 50, difficulty: 'medium', rideId: 'wdw-ak-expedition-everest', parkId: 'wdw-ak', heightRequirement: 44, tag: 'disney' },
+  { id: 'rideact-everest-ak-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'After Expedition Everest, describe how the track changed direction', points: 50, difficulty: 'medium', rideId: 'wdw-ak-expedition-everest', parkId: 'wdw-ak', heightRequirement: 44, tag: 'disney' },
   { id: 'rideact-kali-ak-1', size: 'big', category: 'ride', displayCategory: 'Ride', description: 'Correctly predict which seat gets the most wet on Kali River Rapids', points: 25, difficulty: 'easy', rideId: 'wdw-ak-kali-river-rapids', parkId: 'wdw-ak', heightRequirement: 38, tag: 'disney' },
 ];
 

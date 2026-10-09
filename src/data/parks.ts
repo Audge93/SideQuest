@@ -12,7 +12,7 @@ export const PARKS: Park[] = [
 // Master attraction catalog. The store turns these into ride tasks at runtime
 // so ride metadata only has to be maintained in one place.
 export const RIDES: Ride[] = [
-  // ── Magic Kingdom (23) ──────────────────────────────────────────────
+  // ── Magic Kingdom (22) ──────────────────────────────────────────────
   { id: 'wdw-mk-space-mountain', name: 'Space Mountain', heightRequirement: 44, intensity: 'thrill', points: 75, parkId: 'wdw-mk' },
   { id: 'wdw-mk-tianas-bayou-adventure', name: "Tiana's Bayou Adventure", heightRequirement: 40, intensity: 'moderate', points: 50, parkId: 'wdw-mk' },
   { id: 'wdw-mk-big-thunder-mountain-railroad', name: 'Big Thunder Mountain Railroad', heightRequirement: 40, intensity: 'moderate', points: 50, parkId: 'wdw-mk' },
@@ -34,14 +34,13 @@ export const RIDES: Ride[] = [
   { id: 'wdw-mk-magic-carpets-of-aladdin', name: 'Magic Carpets of Aladdin', heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-mk' },
   { id: 'wdw-mk-peoplemover', name: 'PeopleMover', heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-mk' },
   { id: 'wdw-mk-barnstormer', name: 'Barnstormer', heightRequirement: 35, intensity: 'gentle', points: 25, parkId: 'wdw-mk' },
-  { id: 'wdw-mk-mickey-minnies-runaway-railway', name: "Mickey & Minnie's Runaway Railway", heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-mk' },
   { id: 'wdw-mk-monsters-inc-laugh-floor', name: 'Monsters Inc. Laugh Floor', heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-mk' },
 
   // ── Hollywood Studios (9) ───────────────────────────────────────────
   { id: 'wdw-hs-slinky-dog-dash', name: 'Slinky Dog Dash', heightRequirement: 38, intensity: 'moderate', points: 50, parkId: 'wdw-hs' },
   { id: 'wdw-hs-star-wars-rise-of-the-resistance', name: 'Star Wars: Rise of the Resistance', heightRequirement: 40, intensity: 'thrill', points: 75, parkId: 'wdw-hs' },
   { id: 'wdw-hs-tower-of-terror', name: 'Tower of Terror', heightRequirement: 40, intensity: 'thrill', points: 75, parkId: 'wdw-hs' },
-  { id: 'wdw-hs-rock-n-roller-coaster', name: "Rock 'n' Roller Coaster", heightRequirement: 48, intensity: 'thrill', points: 75, parkId: 'wdw-hs' },
+  { id: 'wdw-hs-rock-n-roller-coaster', name: "Rock ’n’ Roller Coaster Starring The Muppets", heightRequirement: 48, intensity: 'thrill', points: 75, parkId: 'wdw-hs' },
   { id: 'wdw-hs-millennium-falcon-smugglers-run', name: 'Millennium Falcon: Smugglers Run', heightRequirement: 38, intensity: 'moderate', points: 50, parkId: 'wdw-hs' },
   { id: 'wdw-hs-mickey-minnies-runaway-railway', name: "Mickey & Minnie's Runaway Railway", heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-hs' },
   { id: 'wdw-hs-toy-story-mania', name: 'Toy Story Mania!', heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-hs' },
@@ -54,7 +53,7 @@ export const RIDES: Ride[] = [
   { id: 'wdw-ep-frozen-ever-after', name: 'Frozen Ever After', heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-ep' },
   { id: 'wdw-ep-test-track', name: 'Test Track', heightRequirement: 40, intensity: 'moderate', points: 50, parkId: 'wdw-ep' },
   { id: 'wdw-ep-remys-ratatouille-adventure', name: "Remy's Ratatouille Adventure", heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-ep' },
-  { id: 'wdw-ep-soarin-around-the-world', name: "Soarin' Around the World", heightRequirement: 40, intensity: 'moderate', points: 50, parkId: 'wdw-ep' },
+  { id: 'wdw-ep-soarin-around-the-world', name: "Soarin’ Across America", heightRequirement: 40, intensity: 'moderate', points: 50, parkId: 'wdw-ep' },
   { id: 'wdw-ep-mission-space', name: 'Mission: SPACE', heightRequirement: 40, intensity: 'moderate', points: 50, parkId: 'wdw-ep' },
   { id: 'wdw-ep-living-with-the-land', name: 'Living with the Land', heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-ep' },
   { id: 'wdw-ep-journey-of-water', name: 'Journey of Water', heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-ep' },
@@ -62,14 +61,12 @@ export const RIDES: Ride[] = [
   { id: 'wdw-ep-gran-fiesta-tour', name: 'Gran Fiesta Tour', heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-ep' },
   { id: 'wdw-ep-journey-into-imagination-with-figment', name: 'Journey Into Imagination with Figment', heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-ep' },
 
-  // ── Animal Kingdom (7) ──────────────────────────────────────────────
+  // ── Animal Kingdom (5) ──────────────────────────────────────────────
   { id: 'wdw-ak-flight-of-passage', name: 'Flight of Passage', heightRequirement: 44, intensity: 'thrill', points: 75, parkId: 'wdw-ak' },
   { id: 'wdw-ak-kilimanjaro-safaris', name: 'Kilimanjaro Safaris', heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-ak' },
   { id: 'wdw-ak-expedition-everest', name: 'Expedition Everest', heightRequirement: 44, intensity: 'thrill', points: 75, parkId: 'wdw-ak' },
-  { id: 'wdw-ak-dinosaur', name: 'DINOSAUR', heightRequirement: 40, intensity: 'moderate', points: 50, parkId: 'wdw-ak' },
   { id: 'wdw-ak-kali-river-rapids', name: 'Kali River Rapids', heightRequirement: 38, intensity: 'moderate', points: 50, parkId: 'wdw-ak' },
   { id: 'wdw-ak-navi-river-journey', name: "Na'vi River Journey", heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-ak' },
-  { id: 'wdw-ak-triceratop-spin', name: 'TriceraTop Spin', heightRequirement: 0, intensity: 'gentle', points: 25, parkId: 'wdw-ak' },
 ];
 
 // Convenience lookup for turning a stored park id into displayable park metadata.

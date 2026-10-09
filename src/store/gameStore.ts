@@ -10,8 +10,10 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Task, Session, Settings, Player, Badge, BadgeTier, CategoryToggles, SaveSlot, Draft, MAX_SAVE_SLOTS } from '../types';
 import { SMALL_TASKS, BIG_TASKS, RIDE_ACTIVITY_TASKS, generateRideTasks } from '../data/tasks';
+import { WHO_AM_I } from '../data/whoAmI';
 import { TRIVIA_TASKS } from '../data/trivia';
 import { RIDES, PARKS } from '../data/parks';
+import { correctTriviaAnswers } from '../utils/trivia';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -121,6 +123,22 @@ function syncBadges(saved: Badge[] | undefined): Badge[] {
   });
 }
 
+// Refresh current wording and catalog names in previously dealt cards.
+function refreshSavedTrivia(session: Session, settings?: Settings): Session {
+  const current = new Map([...TRIVIA_TASKS, ...SMALL_TASKS, ...BIG_TASKS, ...RIDE_ACTIVITY_TASKS, ...generateRideTasks(RIDES)].map(task => [task.id, task]));
+  const refresh = (task: Task) => {
+    const known = current.get(task.id.split('::challenge::')[0]);
+    return known ? { ...task, ...known, id: task.id } : task;
+  };
+  const retired = new Set(['wdw-mk-mickey-minnies-runaway-railway', 'wdw-ak-dinosaur', 'wdw-ak-triceratop-spin']);
+  const hasRetired = session.challengeTasks.some(task => task.rideId && retired.has(task.rideId));
+  const poolSettings: Settings = { ...DEFAULT_SETTINGS, ...settings, parkIds: settings?.parkIds ?? session.parkIds, categoryToggles: { ...DEFAULT_SETTINGS.categoryToggles, ...settings?.categoryToggles } };
+  const challengeTasks = hasRetired ? drawChallengeBoard(buildTaskPools(poolSettings).big, 3) : session.challengeTasks.map(refresh);
+  return { ...session, fiftyFiftyUses: session.fiftyFiftyUses ?? 2,
+    triviaEliminatedChoices: session.triviaEliminatedChoices ?? {}, hand: session.hand.map(refresh), challengeTasks,
+    draft: session.draft ? { ...session.draft, options: session.draft.options.map(refresh) } : null };
+}
+
 // ─── Store Types ──────────────────────────────────────────────────────────────
 
 interface GameState {
@@ -154,7 +172,15 @@ interface GameState {
   completeTask: (taskId: string, isChallenge: boolean) => void;
   discardTask: (taskId: string) => void;
   swapChallengeTask: (taskId: string) => void;
+  acknowledgeMinigameHelp: (game: string) => void;
+  startWhoAmI: () => void;
+  revealWhoClue: () => void;
+  answerWhoAmI: (choice: number) => void;
+  startTriviaSprint: (seconds: 30 | 60) => void;
+  answerSprint: (choice: number, questionId?: string) => void;
+  finishSprint: () => void;
   answerTrivia: (taskId: string, correct: boolean) => void;
+  useTriviaFiftyFifty: (taskId: string) => void;
   chooseDraftCard: (taskId: string) => void;
   clearNewBadges: () => void;
   resetAllData: () => void;
@@ -217,10 +243,11 @@ function drawFromPool(pool: Task[], exclude: Task[], count: number): Task[] {
   const available = pool.filter(t => !excludeIds.has(t.id));
   const result: Task[] = [];
   let triviaCount = 0;
+  const triviaLimit = pool.some(task => task.category !== 'trivia') ? MAX_TRIVIA_IN_HAND : count;
   for (const task of available) {
     if (result.length >= count) break;
     if (task.category === 'trivia') {
-      if (triviaCount >= MAX_TRIVIA_IN_HAND) continue;
+      if (triviaCount >= triviaLimit) continue;
       triviaCount++;
     }
     result.push(task);
@@ -264,7 +291,8 @@ const DRAFT_SIZE = 3;
 function pickDraftOptions(pool: Task[], exclude: Task[], handAfterRemoval: Task[]): Task[] {
   const excludeIds = new Set(exclude.map(t => t.id));
   const handIds = new Set(handAfterRemoval.map(t => t.id));
-  const triviaFull = handAfterRemoval.filter(t => t.category === 'trivia').length >= MAX_TRIVIA_IN_HAND;
+  const triviaFull = pool.some(task => task.category !== 'trivia') &&
+    handAfterRemoval.filter(t => t.category === 'trivia').length >= MAX_TRIVIA_IN_HAND;
   const eligible = (t: Task) => !(triviaFull && t.category === 'trivia');
 
   let available = pool.filter(t => !excludeIds.has(t.id) && eligible(t));
@@ -473,17 +501,16 @@ export const useGameStore = create<GameState>((set, get) => ({
   /** Partially update settings and persist */
   updateSettings: (patch) => {
     set(s => ({ settings: { ...s.settings, ...patch } }));
-    get().saveToStorage();
+    if (get().session && get().activeSlotId) get().autoSave();
+    else get().saveToStorage();
   },
 
   updateCategoryToggle: (category, value) => {
-    set(s => ({
-      settings: {
-        ...s.settings,
-        categoryToggles: { ...s.settings.categoryToggles, [category]: value },
-      },
-    }));
-    get().saveToStorage();
+    const current = get().settings.categoryToggles;
+    const group: (keyof CategoryToggles)[] = ['find', 'photo', 'trivia', 'act'].includes(category)
+      ? ['find', 'photo', 'trivia', 'act'] : ['ride', 'treat', 'pins', 'meet', 'explore', 'seek'];
+    if (!value && !group.some(key => key !== category && current[key])) return;
+    get().updateSettings({ categoryToggles: { ...current, [category]: value } });
   },
 
   updatePlayerName: (name) => {
@@ -518,6 +545,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       sessionScore: 0,
       currentStreak: 0,
       discardsRemaining: 2,
+      fiftyFiftyUses: 2,
+      triviaEliminatedChoices: {},
       totalCompletions: 0,
       hand,
       challengeTasks,
@@ -612,14 +641,16 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   /** Load a save slot and set it as active */
   loadSlot: (slotId) => {
-    const { saveSlots } = get();
+    const { saveSlots, settings } = get();
     const slot = saveSlots.find(s => s && s.id === slotId);
     if (!slot) return;
 
     // Restore the saved session snapshot and the paired settings snapshot together.
     set({
-      session: { ...slot.session },
-      settings: { ...slot.settings },
+      session: refreshSavedTrivia(slot.session, slot.settings),
+      settings: { ...DEFAULT_SETTINGS, ...slot.settings,
+        categoryToggles: { ...DEFAULT_SETTINGS.categoryToggles, ...slot.settings?.categoryToggles },
+        darkMode: settings.darkMode, soundEnabled: settings.soundEnabled, hapticsEnabled: settings.hapticsEnabled },
       activeSlotId: slotId,
     });
     get().saveToStorage();
@@ -737,6 +768,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       sessionScore: newScore,
       currentStreak: newStreak,
       discardsRemaining: newDiscards,
+      fiftyFiftyUses: Math.min(3, (session.fiftyFiftyUses ?? 2) + (newTotalCompletions % 5 === 0 ? 1 : 0)),
+      triviaEliminatedChoices: Object.fromEntries(Object.entries(session.triviaEliminatedChoices ?? {}).filter(([id]) => id !== taskId)),
       totalCompletions: newTotalCompletions,
       hand: newHand,
       challengeTasks: newChallengeTasks,
@@ -800,6 +833,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       ...session,
       currentStreak: 0,
       discardsRemaining: session.discardsRemaining - 1,
+      triviaEliminatedChoices: Object.fromEntries(Object.entries(session.triviaEliminatedChoices ?? {}).filter(([id]) => id !== taskId)),
       hand,
       draft,
     };
@@ -829,6 +863,74 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   /** Handles trivia answer — correct = complete task, wrong = replace card + reset streak */
+  useTriviaFiftyFifty: (taskId) => {
+    const { session } = get();
+    const task = session?.hand.find(t => t.id === taskId);
+    if (!session || !task || task.category !== 'trivia' || task.triviaChoices?.length !== 4 ||
+      correctTriviaAnswers(task).length !== 1 || session.fiftyFiftyUses <= 0 || session.triviaEliminatedChoices[taskId]) return;
+    const correct = correctTriviaAnswers(task)[0];
+    const removed = shuffle([0, 1, 2, 3].filter(index => index !== correct)).slice(0, 2);
+    set({ session: { ...session, fiftyFiftyUses: session.fiftyFiftyUses - 1,
+      triviaEliminatedChoices: { ...session.triviaEliminatedChoices, [taskId]: removed } } });
+    get().autoSave();
+  },
+
+  acknowledgeMinigameHelp: (game) => {
+    const { session } = get(); if (!session) return;
+    set({ session: { ...session, minigameHelpSeen: [...new Set([...(session.minigameHelpSeen ?? []), game])] } }); get().autoSave();
+  },
+  startWhoAmI: () => {
+    const { session } = get(); if (!session || (session.whoAmI && !session.whoAmI.finished)) return;
+    const recent = new Set(session.recentWhoAmI ?? []);
+    const fresh = WHO_AM_I.filter(c => !recent.has(c.id));
+    const character = shuffle(fresh.length ? fresh : WHO_AM_I)[0];
+    const choices = shuffle([character.name, ...shuffle(WHO_AM_I.filter(c => c.id !== character.id)).slice(0, 3).map(c => c.name)]);
+    set({ session: { ...session, recentWhoAmI: [...(session.recentWhoAmI ?? []), character.id].slice(-15),
+      whoAmI: { characterId: character.id, choices, cluesRevealed: 1, finished: false, earnedPoints: 0 } } }); get().autoSave();
+  },
+  revealWhoClue: () => {
+    const { session } = get(); const round = session?.whoAmI;
+    if (!session || !round || round.finished || round.cluesRevealed >= 3) return;
+    set({ session: { ...session, whoAmI: { ...round, cluesRevealed: round.cluesRevealed + 1 } } }); get().autoSave();
+  },
+  answerWhoAmI: (choice) => {
+    const { session } = get(); const round = session?.whoAmI;
+    if (!session || !round || round.finished || !Number.isInteger(choice) || choice < -1 || choice >= round.choices.length) return;
+    const character = WHO_AM_I.find(c => c.id === round.characterId); if (!character) return;
+    const earnedPoints = round.choices[choice] === character.name ? (4 - round.cluesRevealed) * 5 : 0;
+    set({ session: { ...session, sessionScore: session.sessionScore + earnedPoints,
+      whoAmI: { ...round, answer: choice, finished: true, earnedPoints } } }); get().autoSave();
+  },
+  startTriviaSprint: (seconds) => {
+    const { session } = get();
+    if (!session || (session.triviaSprint && !session.triviaSprint.finished)) return;
+    const pool = TRIVIA_TASKS.filter(t => t.triviaChoices && correctTriviaAnswers(t).length === 1 && t.description.length <= 180 && t.triviaChoices.every(c => c.length <= 60));
+    const recent = new Set(session.recentSprintQuestions ?? []);
+    const questions = [...shuffle(pool.filter(t => !recent.has(t.id))), ...shuffle(pool.filter(t => recent.has(t.id)))].slice(0, 10);
+    if (questions.length !== 10) return;
+    set({ session: { ...session, recentSprintQuestions: [...(session.recentSprintQuestions ?? []), ...questions.map(t => t.id)].slice(-50),
+      triviaSprint: { id: String(Date.now()) + Math.random(), questions, answers: [], deadline: Date.now() + seconds * 1000, finished: false, earnedPoints: 0 } } });
+    get().autoSave();
+  },
+  answerSprint: (choice, questionId) => {
+    const { session } = get(); const round = session?.triviaSprint;
+    if (!session || !round || round.finished) return;
+    if (Date.now() >= round.deadline) { get().finishSprint(); return; }
+    const question = round.questions[round.answers.length];
+    if (!question || (questionId !== undefined && questionId !== question.id) || !Number.isInteger(choice) || choice < 0 || choice >= (question.triviaChoices?.length ?? 0)) return;
+    const answers = [...round.answers, choice];
+    set({ session: { ...session, triviaSprint: { ...round, answers } } });
+    if (answers.length === 10) get().finishSprint(); else get().autoSave();
+  },
+  finishSprint: () => {
+    const { session } = get(); const round = session?.triviaSprint;
+    if (!session || !round || round.finished || (round.answers.length < 10 && Date.now() < round.deadline)) return;
+    const correct = round.questions.filter((q, i) => correctTriviaAnswers(q).includes(round.answers[i]));
+    const multiplier = correct.length === 10 ? 3 : correct.length === 9 ? 2 : 1;
+    const earnedPoints = correct.reduce((sum, q) => sum + q.points, 0) * multiplier;
+    set({ session: { ...session, sessionScore: session.sessionScore + earnedPoints, triviaSprint: { ...round, finished: true, earnedPoints } } });
+    get().autoSave();
+  },
   answerTrivia: (taskId, correct) => {
     if (correct) {
       // Correct trivia uses the same completion pipeline as any other hand task.
@@ -846,6 +948,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const updatedSession: Session = {
         ...session,
         currentStreak: 0,
+        triviaEliminatedChoices: Object.fromEntries(Object.entries(session.triviaEliminatedChoices ?? {}).filter(([id]) => id !== taskId)),
         hand,
         draft,
       };
@@ -914,7 +1017,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
         // Migration support for older saves that predate the dedicated save-slot
         // system. Legacy active sessions are moved into slot 0 automatically.
-        const session = saved.session ?? null;
+        const session = saved.session ? refreshSavedTrivia(saved.session, saved.settings) : null;
         if (session && session.active && !saved.saveSlots) {
           const date = new Date(session.startedAt);
           const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

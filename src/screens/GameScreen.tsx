@@ -1,3 +1,4 @@
+import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 /**
  * GameScreen.tsx
  *
@@ -26,6 +27,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Badge, Task } from '../types';
 import Confetti from '../components/Confetti';
+import Minigames from '../components/Minigames';
 import BadgeUnlockPopup from '../components/BadgeUnlockPopup';
 import CardCarousel, { handCardWidth } from '../components/CardCarousel';
 import CardFace from '../components/CardFace';
@@ -85,6 +87,9 @@ const GAME_TIPS: { id: string; title: string; message: string; icon: IconName | 
 ];
 
 export default function GameScreen() {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, true, ['hudScoreLabel','hudScoreValue']);
+
   const navigation = useNavigation<any>();
   const {
     session,
@@ -93,6 +98,7 @@ export default function GameScreen() {
     discardTask,
     swapChallengeTask,
     answerTrivia,
+    useTriviaFiftyFifty,
     chooseDraftCard,
     newlyEarnedBadges,
     clearNewBadges,
@@ -108,6 +114,7 @@ export default function GameScreen() {
   const [handHeight, setHandHeight] = useState(0);
   const draft = session?.draft ?? null;
   const [expandedChallenge, setExpandedChallenge] = useState<Task | null>(null);
+  const [showMinigames, setShowMinigames] = useState(false);
   const [showParkModal, setShowParkModal] = useState(false);
   const [selectedParkId, setSelectedParkId] = useState<string>(PARKS[0].id);
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
@@ -234,7 +241,7 @@ export default function GameScreen() {
       <View style={styles.backgroundTint} pointerEvents="none" />
 
       <SafeAreaView style={styles.safe}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle={dark ? "light-content" : "dark-content"} />
 
         <View style={styles.screenContent}>
           <ScoreHud
@@ -271,7 +278,7 @@ export default function GameScreen() {
           <View style={styles.handSection}>
             <View style={[styles.sectionHeadingRow, styles.handHeading]}>
               <Text style={styles.sectionTitle}>Your Hand</Text>
-              <Text style={styles.sectionHint}>Swipe to browse</Text>
+              <TouchableOpacity testID="minigames-btn" accessibilityRole="button" onPress={() => setShowMinigames(true)} style={{ minHeight: 44, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: TABLE.gold, borderRadius: 10, borderWidth: 2, borderColor: INK }}><GameIcon name="controller" size={22}/><Text style={{ fontFamily: FONTS.display, fontSize: 16, color: INK }}>Minigames</Text></TouchableOpacity>
             </View>
             <View style={styles.handArea} onLayout={e => setHandHeight(e.nativeEvent.layout.height)}>
               {handHeight > 0 && (
@@ -284,6 +291,9 @@ export default function GameScreen() {
               onDiscard={id => discardTask(id)}
               onTriviaAnswer={(id, correct) => answerTrivia(id, correct)}
               discardsRemaining={session.discardsRemaining}
+              fiftyFiftyUses={session.fiftyFiftyUses}
+              triviaEliminatedChoices={session.triviaEliminatedChoices}
+              onFiftyFifty={useTriviaFiftyFifty}
             />
               )}
             </View>
@@ -317,6 +327,7 @@ export default function GameScreen() {
         </View>
       </SafeAreaView>
 
+      {showMinigames && <Minigames onClose={() => setShowMinigames(false)} />}
       {activeBadge && <BadgeUnlockPopup key={activeBadge.id} badge={activeBadge} onDismiss={handleBadgeDismiss} />}
 
       {expandedChallenge && (
@@ -451,6 +462,9 @@ function ScoreHud({
   streak: number;
   completed: number;
 }) {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, true, ['hudScoreLabel','hudScoreValue']);
+
   const { display, bump } = useCountUp(score);
   const streakPips = streak % 5;
 
@@ -503,6 +517,9 @@ function NavItem({
   active?: boolean;
   onPress?: () => void;
 }) {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, true, ['hudScoreLabel','hudScoreValue']);
+
   return (
     <TouchableOpacity style={styles.navItem} onPress={onPress} activeOpacity={0.8} disabled={active}>
       <View style={[styles.navIconWrap, active && styles.navIconWrapActive]}>
@@ -526,6 +543,9 @@ function ChallengeDetailModal({
   onSwap: () => void;
   onClose: () => void;
 }) {
+  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const styles = useThemedStyles(BASE_STYLES, true, ['hudScoreLabel','hudScoreValue']);
+
   const appear = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.spring(appear, { toValue: 1, friction: 7, tension: 90, useNativeDriver: true }).start();
@@ -578,7 +598,7 @@ function ChallengeDetailModal({
   );
 }
 
-const styles = StyleSheet.create({
+const BASE_STYLES = StyleSheet.create({
   backgroundImage: {
     flex: 1,
     width: SCREEN_W,
