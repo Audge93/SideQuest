@@ -9,6 +9,103 @@ async function snap(page: Page, name: string) {
 
 const byId = (page: Page, id: string) => page.locator(`[data-testid="${id}"]`);
 
+test('Sprint nine-correct scoring, paged review, report drafts, and review resume preserve card rewards', async ({ page }) => {
+  await page.addInitScript(() => { (window as any).openedLinks = []; window.open = ((url: any) => { (window as any).openedLinks.push(String(url)); return null; }) as any; });
+  await startGame(page);
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('parkquest_state')!);
+    const questions = Array.from({ length: 10 }, (_, i) => ({ id: `review-fixture-${i}`, size: 'small', category: 'trivia', displayCategory: 'Trivia', description: `Review question ${i + 1}: choose the first answer.`, points: 5, difficulty: 'easy', triviaChoices: ['Right answer', 'Wrong answer', 'Third answer', 'Fourth answer'], triviaAnswer: 0, triviaExplanation: 'Read this explanation at your own pace.' }));
+    for (const session of [state.session, state.saveSlots.find((s: any) => s?.id === state.activeSlotId).session]) Object.assign(session, {
+      sessionScore: 20, currentStreak: 3, totalCompletions: 4, discardsRemaining: 1, fiftyFiftyUses: 1, minigameHelpSeen: ['sprint'],
+      triviaSprint: { id: 'review-round', questions, answers: Array(9).fill(0), deadline: Date.now() + 60_000, durationSeconds: 60, finished: false, earnedPoints: 0 },
+    });
+    localStorage.setItem('parkquest_state', JSON.stringify(state));
+  });
+  await page.reload(); await byId(page, 'continue-game-btn').click(); await byId(page, 'save-select-0').click();
+  const hand = (await savedState(page)).session.hand;
+  await byId(page, 'minigames-btn').click();
+  await expect(byId(page, 'choose-sprint')).toContainText('Resume');
+  await byId(page, 'choose-sprint').click();
+  await byId(page, 'sprint-choice-1').click();
+  await expect(byId(page, 'sprint-results')).toContainText('9/10 correct');
+  await expect(byId(page, 'sprint-score-breakdown')).toHaveText('45 question points × 2 = 90 points added to your score.');
+  await expect(byId(page, 'sprint-review-previous')).toBeDisabled();
+  for (let i = 1; i < 10; i++) await byId(page, 'sprint-review-next').click();
+  await expect(byId(page, 'sprint-review-position')).toHaveText('Review 10 of 10');
+  await expect(byId(page, 'sprint-review-card')).toContainText('Your answer: Wrong answer');
+  await expect(byId(page, 'sprint-review-next')).toBeDisabled();
+  await snap(page, '46-sprint-paged-review');
+  await byId(page, 'sprint-report-btn').click();
+  expect(decodeURIComponent(await page.evaluate(() => (window as any).openedLinks.at(-1)))).toContain('Card ID: review-fixture-9');
+  await byId(page, 'minigames-close').click(); await byId(page, 'minigames-close').click();
+  await page.reload(); await byId(page, 'continue-game-btn').click(); await byId(page, 'save-select-0').click();
+  await byId(page, 'minigames-btn').click(); await byId(page, 'choose-sprint').click();
+  await expect(byId(page, 'sprint-review-position')).toHaveText('Review 10 of 10');
+  await expect(byId(page, 'sprint-60')).toBeChecked();
+  await byId(page, 'sprint-review-previous').click();
+  await expect(byId(page, 'sprint-review-question')).toHaveText('Review question 9: choose the first answer.');
+  const session = (await savedState(page)).session;
+  expect(session).toMatchObject({ sessionScore: 110, currentStreak: 3, totalCompletions: 4, discardsRemaining: 1, fiftyFiftyUses: 1 });
+  expect(session.hand).toEqual(hand);
+});
+
+test('largest-text minigames keep the clock and exit visible and preserve a running Sprint through Help', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await startGame(page); await page.getByText('Settings', { exact: true }).click();
+  await byId(page, 'text-extra-large').click(); await byId(page, 'comfort-readableFont').click(); await page.getByText('‹ Back').click();
+  await byId(page, 'minigames-btn').click(); await byId(page, 'choose-sprint').click(); await byId(page, 'minigame-tips-dismiss').click();
+  await byId(page, 'sprint-60').click(); await expect(byId(page, 'sprint-60')).toBeChecked(); await byId(page, 'sprint-start').click();
+  const round = (await savedState(page)).session.triviaSprint;
+  await byId(page, 'sprint-choice-3').scrollIntoViewIfNeeded();
+  const timer = await byId(page, 'sprint-timer').boundingBox();
+  const exit = await byId(page, 'minigames-close').boundingBox();
+  expect(timer!.y).toBeGreaterThanOrEqual(0); expect(timer!.y + timer!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  expect(exit!.y + exit!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  await snap(page, '47-readable-sprint-clock');
+  await page.clock.install();
+  await byId(page, 'minigame-help').click(); await expect(byId(page, 'sprint-help-clock')).toHaveCount(1);
+  await page.clock.fastForward(5000); await byId(page, 'minigame-tips-dismiss').click();
+  expect((await savedState(page)).session.triviaSprint.deadline).toBe(round.deadline);
+  await byId(page, 'minigames-close').click(); await expect(byId(page, 'sprint-resume-status')).toBeVisible();
+  await byId(page, 'choose-sprint').click();
+  expect((await savedState(page)).session.triviaSprint.id).toBe(round.id);
+  await page.clock.fastForward(61_000); await expect(byId(page, 'sprint-results')).toContainText('Time’s Up!');
+  await expect(byId(page, 'sprint-results')).toContainText('10 unanswered');
+  await snap(page, '48-readable-sprint-review');
+  await byId(page, 'minigames-close').click(); await byId(page, 'choose-who').click(); await byId(page, 'minigame-tips-dismiss').click(); await byId(page, 'who-start').click();
+  await byId(page, 'who-next-clue').click(); await byId(page, 'who-next-clue').click(); await byId(page, 'who-give-up').click();
+  await expect(byId(page, 'who-results')).toContainText('Correct answer:');
+  const whoExit = await byId(page, 'minigames-close').boundingBox();
+  expect(whoExit!.y + whoExit!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  await snap(page, '49-readable-who-review');
+});
+
+test('Who Am I explains clue costs and wrong guesses and resumes results without duplicate points', async ({ page }) => {
+  await startGame(page);
+  const initial = (await savedState(page)).session;
+  await byId(page, 'minigames-btn').click(); await byId(page, 'choose-who').click(); await byId(page, 'minigame-tips-dismiss').click(); await byId(page, 'who-start').click();
+  await expect(byId(page, 'who-next-clue')).toContainText('10 points');
+  await byId(page, 'who-next-clue').click(); await expect(byId(page, 'who-point-status')).toContainText('10 points');
+  const round = (await savedState(page)).session.whoAmI;
+  const name = WHO_AM_I.find(c => c.id === round.characterId)!.name;
+  await byId(page, `who-choice-${round.choices.findIndex((choice: string) => choice !== name)}`).click();
+  await expect(byId(page, 'who-results')).toContainText('No points this round');
+  await expect(byId(page, 'who-results')).toContainText(`Correct answer: ${name}`);
+  await byId(page, 'minigames-close').click(); await byId(page, 'minigames-close').click();
+  await byId(page, 'minigames-btn').click(); await expect(byId(page, 'choose-who')).toContainText('View your answer'); await byId(page, 'choose-who').click();
+  await expect(byId(page, 'who-results')).toContainText('Not quite!');
+  expect((await savedState(page)).session.sessionScore).toBe(initial.sessionScore);
+  await byId(page, 'who-start').click(); await byId(page, 'who-next-clue').click();
+  const next = (await savedState(page)).session.whoAmI;
+  const correct = WHO_AM_I.find(c => c.id === next.characterId)!.name;
+  await byId(page, `who-choice-${next.choices.indexOf(correct)}`).click();
+  await expect(byId(page, 'who-results')).toContainText('Correct after 2 clues: 10 points');
+  await byId(page, 'minigames-close').click(); await byId(page, 'choose-who').click();
+  const finished = (await savedState(page)).session;
+  expect(finished.sessionScore).toBe(initial.sessionScore + 10);
+  expect(finished.currentStreak).toBe(initial.currentStreak); expect(finished.discardsRemaining).toBe(initial.discardsRemaining); expect(finished.fiftyFiftyUses).toBe(initial.fiftyFiftyUses); expect(finished.totalCompletions).toBe(initial.totalCompletions);
+});
+
 test('canceling new-game setup preserves the current game and its settings', async ({ page }) => {
   await startGame(page);
   await page.getByText('Settings', { exact: true }).click();

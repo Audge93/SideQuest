@@ -66,6 +66,17 @@ state().startTriviaSprint(60); assert.equal(state().session.triviaSprint.id,inPr
 state().loadSlot(state().activeSlotId);assert.equal(state().session.triviaSprint.id,inProgress.id);
 store.setState({session:{...state().session,triviaSprint:{...inProgress,deadline:Date.now()-1}}});
 state().answerSprint(0);assert.equal(state().session.triviaSprint.finished,true);assert.equal(state().session.triviaSprint.answers.length,0);
+const reviewScore = state().session.sessionScore;
+state().reviewSprintQuestion(9); assert.equal(state().session.triviaSprint.reviewIndex, 9);
+for (const invalid of [-1, 10, 1.5]) state().reviewSprintQuestion(invalid);
+assert.equal(state().session.triviaSprint.reviewIndex, 9);
+state().loadSlot(state().activeSlotId);
+assert.equal(state().session.triviaSprint.reviewIndex, 9); assert.equal(state().session.triviaSprint.durationSeconds, 30);
+assert.equal(state().session.sessionScore, reviewScore);
+const finishedId = state().session.triviaSprint.id;
+state().startTriviaSprint(45); assert.equal(state().session.triviaSprint.id, finishedId);
+state().startTriviaSprint(60); assert.equal(state().session.triviaSprint.durationSeconds, 60);
+state().reviewSprintQuestion(2); assert.equal(state().session.triviaSprint.reviewIndex, undefined);
 console.log('Trivia Sprint passed: multiplier thresholds, exactly-once scoring, expiration, unlimited replay, and save/resume.');
 const characters = load('src/data/whoAmI.ts').WHO_AM_I;
 for(const clues of [1,2,3]) {

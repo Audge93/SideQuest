@@ -183,6 +183,7 @@ interface GameState {
   startTriviaSprint: (seconds: 30 | 60) => void;
   answerSprint: (choice: number, questionId?: string) => void;
   finishSprint: () => void;
+  reviewSprintQuestion: (index: number) => void;
   answerTrivia: (taskId: string, correct: boolean) => void;
   useTriviaFiftyFifty: (taskId: string) => void;
   chooseDraftCard: (taskId: string) => void;
@@ -914,13 +915,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
   startTriviaSprint: (seconds) => {
     const { session } = get();
-    if (!session || (session.triviaSprint && !session.triviaSprint.finished)) return;
+    if (!session || (seconds !== 30 && seconds !== 60) || (session.triviaSprint && !session.triviaSprint.finished)) return;
     const pool = TRIVIA_TASKS.filter(t => t.triviaChoices && correctTriviaAnswers(t).length === 1 && t.description.length <= 180 && t.triviaChoices.every(c => c.length <= 60));
     const recent = new Set(session.recentSprintQuestions ?? []);
     const questions = [...shuffle(pool.filter(t => !recent.has(t.id))), ...shuffle(pool.filter(t => recent.has(t.id)))].slice(0, 10);
     if (questions.length !== 10) return;
     set({ session: { ...session, recentSprintQuestions: [...(session.recentSprintQuestions ?? []), ...questions.map(t => t.id)].slice(-50),
-      triviaSprint: { id: String(Date.now()) + Math.random(), questions, answers: [], deadline: Date.now() + seconds * 1000, finished: false, earnedPoints: 0 } } });
+      triviaSprint: { id: String(Date.now()) + Math.random(), questions, answers: [], deadline: Date.now() + seconds * 1000, durationSeconds: seconds, finished: false, earnedPoints: 0 } } });
     get().autoSave();
   },
   answerSprint: (choice, questionId) => {
@@ -941,6 +942,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     const earnedPoints = correct.reduce((sum, q) => sum + q.points, 0) * multiplier;
     set({ session: { ...session, sessionScore: session.sessionScore + earnedPoints, triviaSprint: { ...round, finished: true, earnedPoints } } });
     get().autoSave();
+  },
+  reviewSprintQuestion: (index) => {
+    const { session } = get(); const round = session?.triviaSprint;
+    if (!session || !round?.finished || !Number.isInteger(index) || index < 0 || index >= round.questions.length) return;
+    set({ session: { ...session, triviaSprint: { ...round, reviewIndex: index } } }); get().autoSave();
   },
   answerTrivia: (taskId, correct) => {
     if (correct) {

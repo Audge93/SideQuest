@@ -25,9 +25,11 @@ interface Props {
   style?: StyleProp<ViewStyle>;
   testID?: string;
   accessibilityLabel?: string;
+  /** Providing selected makes this a radio option. */
+  selected?: boolean;
 }
 
-export default function GameButton({ multiline, label, sublabel, tone = 'green', onPress, disabled, size = 'md', style, testID, accessibilityLabel }: Props) {
+export default function GameButton({ multiline, label, sublabel, tone = 'green', onPress, disabled, size = 'md', style, testID, accessibilityLabel, selected }: Props) {
   const reduced = useReducedMotion();
   const { scale, readableFont, highContrast } = useReadingPreferences();
   const press = useRef(new Animated.Value(0)).current;
@@ -44,9 +46,10 @@ export default function GameButton({ multiline, label, sublabel, tone = 'green',
       onPress={disabled ? undefined : () => { playSound('tap'); onPress?.(); }}
       onPressIn={() => !disabled && animate(1)}
       onPressOut={() => animate(0)}
-      accessibilityRole="button"
+      accessibilityRole={selected === undefined ? 'button' : 'radio'}
+      aria-checked={selected}
       accessibilityLabel={accessibilityLabel ?? [label, sublabel].filter(Boolean).join(', ')}
-      accessibilityState={{ disabled: !!disabled }}
+      accessibilityState={{ disabled: !!disabled, ...(selected === undefined ? {} : { checked: selected }) }}
       style={[styles.wrap, style]}
     >
       <Animated.View

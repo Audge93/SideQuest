@@ -100,7 +100,7 @@ export interface Player {
   color: string;
 }
 
-export interface TriviaSprint { id: string; questions: Task[]; answers: number[]; deadline: number; finished: boolean; earnedPoints: number; }
+export interface TriviaSprint { id: string; questions: Task[]; answers: number[]; deadline: number; durationSeconds?: 30 | 60; reviewIndex?: number; finished: boolean; earnedPoints: number; }
 export interface Session {
   // Live gameplay snapshot used by the active game screen.
   id: string;
