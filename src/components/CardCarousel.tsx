@@ -602,7 +602,7 @@ export default function CardCarousel({
       <View style={styles.actionBar}>
         <GameButton
           testID="discard-btn"
-          label={isTrivia ? 'Pass' : 'Discard'}
+          label="Discard"
           sublabel={`${discardsRemaining} left`}
           tone="red"
           disabled={busy || discardsRemaining <= 0}

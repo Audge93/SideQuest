@@ -172,6 +172,7 @@ test('largest-text minigames keep the clock and exit visible and preserve a runn
   await startGame(page); await page.getByText('Settings', { exact: true }).click();
   await byId(page, 'settings-tab-accessibility').click();
   await byId(page, 'text-extra-large').click(); await byId(page, 'comfort-readableFont').click(); await page.getByText('‹ Back').click();
+  await page.clock.install();
   await byId(page, 'minigames-btn').click(); await byId(page, 'choose-sprint').click(); await byId(page, 'minigame-tips-dismiss').click();
   await expect(byId(page, 'sprint-30')).toHaveCount(0); await expect(byId(page, 'sprint-60')).toHaveCount(0); await byId(page, 'sprint-start').click();
   const round = (await savedState(page)).session.triviaSprint;
@@ -181,7 +182,6 @@ test('largest-text minigames keep the clock and exit visible and preserve a runn
   expect(timer!.y).toBeGreaterThanOrEqual(0); expect(timer!.y + timer!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
   expect(exit!.y + exit!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
   await snap(page, '47-readable-sprint-clock');
-  await page.clock.install();
   await byId(page, 'minigame-help').click(); await expect(byId(page, 'sprint-help-clock')).toHaveCount(1);
   await page.clock.fastForward(5000); await byId(page, 'minigame-tips-dismiss').click();
   expect((await savedState(page)).session.triviaSprint.deadline).toBe(round.deadline);
