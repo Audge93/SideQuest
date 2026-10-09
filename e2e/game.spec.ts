@@ -9,6 +9,122 @@ async function snap(page: Page, name: string) {
 
 const byId = (page: Page, id: string) => page.locator(`[data-testid="${id}"]`);
 
+test('Settings separates accessibility controls and keeps preferences when switching tabs', async ({ page }) => {
+  await page.goto('/'); await byId(page, 'home-settings-btn').click();
+  await expect(byId(page, 'settings-tab-general')).toHaveAttribute('aria-selected', 'true');
+  await expect(byId(page, 'motion-system')).toHaveCount(0);
+  await byId(page, 'about-btn').click();
+  await expect(byId(page, 'about-panel')).toContainText('GooglyBlox');
+  await expect(byId(page, 'about-archive-link')).toHaveCount(0);
+  await snap(page, '55-about-credit'); await byId(page, 'about-close-btn').click();
+  await byId(page, 'settings-tab-accessibility').click();
+  await expect(byId(page, 'settings-tab-accessibility')).toHaveAttribute('aria-selected', 'true');
+  await expect(byId(page, 'height-filter-switch')).toHaveCount(0);
+  await byId(page, 'motion-on').click(); await byId(page, 'text-extra-large').click();
+  await snap(page, '56-settings-accessibility-tab');
+  await byId(page, 'settings-tab-general').click(); await expect(byId(page, 'sound-switch')).toBeVisible();
+  await byId(page, 'settings-tab-accessibility').click(); await expect(byId(page, 'motion-on')).toBeChecked();
+  await expect(byId(page, 'text-extra-large')).toBeChecked();
+});
+
+test('profile names validate inline, cancel edits, and persist independently', async ({ page }) => {
+  await startGame(page);
+  const original = await savedState(page);
+  await page.getByText('Profile', { exact: true }).click();
+  await byId(page, 'profile-edit-name').click();
+  await byId(page, 'profile-name-input').fill('   '); await byId(page, 'profile-name-save').click();
+  await expect(page.getByText('Enter a nickname, or choose Cancel.')).toBeVisible();
+  await byId(page, 'profile-name-cancel').click();
+  expect((await savedState(page)).player.name).toBe(original.player.name);
+  await byId(page, 'profile-edit-name').click(); await byId(page, 'profile-name-input').fill('  Adventure Pal  ');
+  await byId(page, 'profile-name-save').click();
+  await byId(page, 'profile-edit-game-name').click();
+  await byId(page, 'profile-game-name-input').fill(' '); await byId(page, 'profile-game-name-save').click();
+  await expect(page.getByText('Enter a game name, or choose Cancel.')).toBeVisible();
+  await byId(page, 'profile-game-name-cancel').click();
+  await byId(page, 'profile-edit-game-name').click(); await byId(page, 'profile-game-name-input').fill('  Birthday Adventure  ');
+  await byId(page, 'profile-game-name-save').click();
+  await expect(byId(page, 'profile-save-context')).toContainText('Birthday Adventure');
+  await page.reload(); await byId(page, 'home-profile-btn').click();
+  await expect(byId(page, 'profile-edit-name')).toContainText('Adventure Pal');
+  await expect(byId(page, 'profile-save-context')).toContainText('Birthday Adventure');
+  await snap(page, '50-profile-summary');
+});
+
+test('profile shows milestone goals and earned filters without double counting ended saves', async ({ page }) => {
+  await startGame(page);
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('parkquest_state')!); const slot = state.saveSlots.find((s: any) => s);
+    const tasks = Array.from({ length: 9 }, (_, i) => ({ ...slot.session.hand[0], id: `finished-${i}`, category: 'find' }));
+    for (const session of [state.session, slot.session]) Object.assign(session, { active: false, completedTasks: tasks, totalCompletions: 9, currentStreak: 4, sessionScore: 95 });
+    slot.categoryCompletions = { find: 9 }; state.activeSlotId = null;
+    localStorage.setItem('parkquest_state', JSON.stringify(state));
+  });
+  await page.reload(); await byId(page, 'home-profile-btn').click();
+  await expect(byId(page, 'profile-completions')).toContainText('9 completed cards');
+  await expect(byId(page, 'badge-progress-sharp-eye-bronze')).toHaveText('9 / 10 cards');
+  await expect(byId(page, 'badge-progress-streak-bronze')).toHaveText('4 / 5 card streak');
+  await expect(byId(page, 'badge-progress-score-bronze')).toHaveText('95 / 100 points');
+  await expect(byId(page, 'badge-progress-hopper-bronze')).toHaveText('1 / 2 parks');
+  await expect(byId(page, 'badge-progress-completionist-bronze')).toHaveText('0 / 10 category badges');
+  await byId(page, 'badge-filter-earned').click(); await expect(byId(page, 'badge-first-steps')).toContainText('Earned');
+  await expect(byId(page, 'badge-score-bronze')).toHaveCount(0);
+  await byId(page, 'badge-filter-locked').click(); await expect(byId(page, 'badge-first-steps')).toHaveCount(0);
+  await expect(byId(page, 'badge-score-bronze')).toContainText('Earn 100 points in this game');
+  await snap(page, '51-profile-badge-progress');
+});
+
+test('minigame score badges unlock immediately and celebrate after leaving the minigames', async ({ page }) => {
+  await startGame(page);
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('parkquest_state')!);
+    for (const session of [state.session, state.saveSlots.find((s: any) => s).session]) session.sessionScore = 95;
+    state.settings.textSize = 'extra-large'; state.settings.readableFont = true; state.settings.reduceMotion = 'on';
+    localStorage.setItem('parkquest_state', JSON.stringify(state));
+  });
+  await page.reload(); await byId(page, 'continue-game-btn').click(); await byId(page, 'save-select-0').click();
+  await byId(page, 'minigames-btn').click(); await byId(page, 'choose-who').click(); await byId(page, 'minigame-tips-dismiss').click(); await byId(page, 'who-start').click();
+  const round = (await savedState(page)).session.whoAmI;
+  const name = WHO_AM_I.find(c => c.id === round.characterId)!.name;
+  await byId(page, `who-choice-${round.choices.indexOf(name)}`).click();
+  await expect.poll(async () => (await savedState(page)).saveSlots.find((s: any) => s).badges.find((b: any) => b.id === 'score-bronze').earned).toBe(true);
+  await page.waitForTimeout(1400); await expect(byId(page, 'badge-dismiss')).toHaveCount(0);
+  await byId(page, 'minigames-close').click(); await byId(page, 'minigames-close').click();
+  await byId(page, 'badge-dismiss').scrollIntoViewIfNeeded();
+  const dismiss = await byId(page, 'badge-dismiss').boundingBox();
+  expect(dismiss!.y + dismiss!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  await snap(page, '54-readable-badge-unlock');
+  await byId(page, 'badge-dismiss').click(); await expect(byId(page, 'badge-dismiss')).toBeHidden();
+  await page.getByText('Profile', { exact: true }).click();
+  await expect(byId(page, 'badge-score-bronze')).toContainText('Earned');
+  await expect(byId(page, 'profile-score')).toHaveText('110 points');
+  await expect(byId(page, 'profile-completions')).toContainText('0 completed cards');
+});
+
+test('largest-text profile badges and deletion confirmation fit and preserve other saves', async ({ page }) => {
+  await startGame(page);
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('parkquest_state')!); const slot = state.saveSlots.find((s: any) => s);
+    state.saveSlots[1] = { ...slot, id: 'other-save', name: 'Other Adventure', session: { ...slot.session, id: 'other-session' } };
+    state.settings.textSize = 'extra-large'; state.settings.readableFont = true; state.settings.highContrast = true; state.settings.reduceMotion = 'on';
+    localStorage.setItem('parkquest_state', JSON.stringify(state));
+  });
+  await page.reload(); await byId(page, 'home-profile-btn').click();
+  await byId(page, 'badge-score-bronze').scrollIntoViewIfNeeded();
+  const tile = await byId(page, 'badge-score-bronze').boundingBox();
+  expect(tile!.width).toBeGreaterThan(250); expect(tile!.x + tile!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  await snap(page, '52-readable-profile-badges');
+  await byId(page, 'profile-delete-save').click();
+  await expect(byId(page, 'profile-delete-confirm')).toContainText('Other saves and your nickname stay');
+  await snap(page, '53-profile-delete-confirm');
+  await byId(page, 'profile-delete-cancel').click();
+  expect((await savedState(page)).saveSlots.filter(Boolean)).toHaveLength(2);
+  await byId(page, 'profile-delete-save').click(); await byId(page, 'profile-delete-confirm-btn').click();
+  await expect(byId(page, 'new-game-btn')).toBeVisible();
+  const remaining = (await savedState(page)).saveSlots.filter(Boolean);
+  expect(remaining).toHaveLength(1); expect(remaining[0].id).toBe('other-save');
+});
+
 test('Sprint nine-correct scoring, paged review, report drafts, and review resume preserve card rewards', async ({ page }) => {
   await page.addInitScript(() => { (window as any).openedLinks = []; window.open = ((url: any) => { (window as any).openedLinks.push(String(url)); return null; }) as any; });
   await startGame(page);
@@ -52,6 +168,7 @@ test('Sprint nine-correct scoring, paged review, report drafts, and review resum
 test('largest-text minigames keep the clock and exit visible and preserve a running Sprint through Help', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await startGame(page); await page.getByText('Settings', { exact: true }).click();
+  await byId(page, 'settings-tab-accessibility').click();
   await byId(page, 'text-extra-large').click(); await byId(page, 'comfort-readableFont').click(); await page.getByText('‹ Back').click();
   await byId(page, 'minigames-btn').click(); await byId(page, 'choose-sprint').click(); await byId(page, 'minigame-tips-dismiss').click();
   await byId(page, 'sprint-60').click(); await expect(byId(page, 'sprint-60')).toBeChecked(); await byId(page, 'sprint-start').click();
@@ -113,6 +230,7 @@ test('canceling new-game setup preserves the current game and its settings', asy
   const before = await savedState(page);
   await byId(page, 'new-game-btn').click();
   await byId(page, 'setup-player-name').fill('Different Team');
+  await byId(page, 'new-game-next-btn').click();
   await byId(page, 'park-option-wdw-ak').click();
   await byId(page, 'new-game-next-btn').click();
   await byId(page, 'setup-pins').click();
@@ -121,6 +239,8 @@ test('canceling new-game setup preserves the current game and its settings', asy
   await byId(page, 'setup-back-btn').click();
   await expect(byId(page, 'park-option-wdw-ak')).toBeChecked();
   await byId(page, 'setup-back-btn').click();
+  await expect(byId(page, 'setup-player-name')).toHaveValue('Different Team');
+  await byId(page, 'setup-back-btn').click();
   await expect(byId(page, 'new-game-setup')).toHaveCount(0);
   const after = await savedState(page);
   expect(after.settings).toEqual(before.settings);
@@ -128,6 +248,7 @@ test('canceling new-game setup preserves the current game and its settings', asy
   expect(after.saveSlots).toEqual(before.saveSlots);
   await byId(page, 'new-game-btn').click();
   await expect(byId(page, 'setup-player-name')).toHaveValue('Test Party');
+  await byId(page, 'new-game-next-btn').click();
   await expect(byId(page, 'park-option-wdw-mk')).toBeChecked();
 });
 
@@ -144,10 +265,19 @@ test('new-game setup validates names and commits reviewed choices to a separate 
   await byId(page, 'setup-player-name').press('Enter');
   await expect(byId(page, 'setup-game-name')).toBeFocused();
   await byId(page, 'setup-game-name').fill('  EPCOT Adventure  ');
-  await byId(page, 'park-option-wdw-ep').click();
+  await expect(byId(page, 'setup-step')).toHaveText('Step 1 of 3 · Names');
+  await expect(byId(page, 'setup-park-hint')).toHaveCount(0);
+  await snap(page, '57-setup-names');
   await byId(page, 'new-game-next-btn').click();
-  await expect(byId(page, 'setup-review')).toContainText('Playing as Family Team');
-  await expect(byId(page, 'setup-review')).toContainText('Saved as EPCOT Adventure');
+  await expect(byId(page, 'setup-step')).toHaveText('Step 2 of 3 · Park');
+  await expect(byId(page, 'setup-player-name')).toHaveCount(0);
+  await expect(byId(page, 'setup-park-hint')).toHaveText('Choose where you’re starting; you can switch parks during play.');
+  await byId(page, 'park-option-wdw-ep').click();
+  await snap(page, '58-setup-park');
+  await byId(page, 'new-game-next-btn').click();
+  await expect(byId(page, 'setup-step')).toHaveText('Step 3 of 3 · Options');
+  await expect(byId(page, 'setup-review')).toContainText('Family Team');
+  await expect(byId(page, 'setup-review')).toContainText('EPCOT Adventure');
   await byId(page, 'setup-pins').click();
   await byId(page, 'setup-height-filter').click();
   await byId(page, 'setup-height-minus').click();
@@ -168,11 +298,13 @@ test('new-game setup supports largest text with reachable fixed actions and auto
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await byId(page, 'home-settings-btn').click();
+  await byId(page, 'settings-tab-accessibility').click();
   await byId(page, 'text-extra-large').click();
   await byId(page, 'comfort-readableFont').click();
   await page.getByText('‹ Back').click();
   await byId(page, 'new-game-btn').click();
   await byId(page, 'setup-player-name').fill('Large Text Team');
+  await byId(page, 'new-game-next-btn').click();
   await byId(page, 'park-option-wdw-ak').click();
   await snap(page, '42-readable-setup');
   let button = await byId(page, 'new-game-next-btn').boundingBox();
@@ -233,6 +365,7 @@ test('incompatible new-game options show a recoverable error without creating a 
   const original = (await savedState(page)).saveSlots;
   await byId(page, 'new-game-btn').click();
   await byId(page, 'new-game-next-btn').click();
+  await byId(page, 'new-game-next-btn').click();
   await byId(page, 'setup-pins').click();
   await byId(page, 'start-game-btn').click();
   await expect(byId(page, 'setup-error')).toBeVisible();
@@ -243,16 +376,20 @@ test('incompatible new-game options show a recoverable error without creating a 
   expect((await savedState(page)).saveSlots.filter(Boolean)).toHaveLength(2);
 });
 
-test('opening tips explain every game rule and wait for the player to advance', async ({ page }) => {
+test('opening tips stay concise and wait for the player to advance', async ({ page }) => {
   await page.goto('/');
   await byId(page, 'new-game-btn').click();
   await page.getByPlaceholder('Enter your name...').fill('Test Party');
+  await byId(page, 'new-game-next-btn').click();
   await byId(page, 'park-option-wdw-mk').click();
   await byId(page, 'new-game-next-btn').click();
   await byId(page, 'start-game-btn').click();
-  for (let step = 1; step <= 8; step++) {
-    await expect(byId(page, 'game-tip-position')).toHaveText(`${step} of 8`);
-    if (step === 4) await snap(page, '41-passes-tip');
+  for (let step = 1; step <= 5; step++) {
+    await expect(byId(page, 'game-tip-position')).toHaveText(`${step} of 5`);
+    await expect(page.getByText('Passes & Discards', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Trivia Answers', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('50/50', { exact: true })).toHaveCount(0);
+    if (step === 4) await snap(page, '41-streak-tip');
     const next = await byId(page, 'game-tip-next').boundingBox();
     expect(next!.y + next!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
     await byId(page, 'game-tip-next').click();
@@ -261,20 +398,18 @@ test('opening tips explain every game rule and wait for the player to advance', 
   await expect(byId(page, 'hand-card')).toHaveCount(5);
 });
 
-test('game guide explains current reward progress and card position without changing the hand', async ({ page }) => {
+test('hand navigation and park cancel preserve the hand without a duplicate tutorial', async ({ page }) => {
   await startGame(page);
   const original = (await savedState(page)).session.hand.map((t: any) => t.id);
+  await expect(byId(page, 'park-chip')).toHaveCount(0);
+  await expect(byId(page, 'challenges-heading').locator('[data-testid="minigames-btn"]')).toHaveCount(1);
+  await expect(byId(page, 'game-help-btn')).toHaveCount(0);
+  await expect(byId(page, 'game-help-panel')).toHaveCount(0);
   await expect(byId(page, 'hand-position')).toHaveText('1 of 5');
   await byId(page, 'hand-next').click();
   await expect(byId(page, 'hand-position')).toHaveText('2 of 5');
   await byId(page, 'hand-previous').click();
-  await byId(page, 'game-help-btn').click();
-  await expect(byId(page, 'game-reward-progress')).toContainText('2 of 2 passes');
-  await expect(byId(page, 'game-reward-progress')).toContainText('2 of 3 50/50 uses');
-  await expect(byId(page, 'game-reward-progress')).toContainText('Complete 5 more cards');
-  await snap(page, '37-game-guide');
-  await byId(page, 'reading-close').click();
-  await byId(page, 'park-chip').click();
+  await page.getByText('Park', { exact: true }).click();
   await expect(byId(page, 'switch-park-confirm')).toBeDisabled();
   await page.getByText('Cancel', { exact: true }).click();
   expect((await savedState(page)).session.hand.map((t: any) => t.id)).toEqual(original);
@@ -309,9 +444,6 @@ test('fifth completion explains its streak bonus and refills passes and 50/50', 
   await page.reload();
   await byId(page, 'continue-game-btn').click();
   await page.getByText('Select', { exact: true }).first().click();
-  await byId(page, 'game-help-btn').click();
-  await expect(byId(page, 'game-reward-progress')).toContainText('Complete 1 more card');
-  await byId(page, 'reading-close').click();
   await byId(page, 'complete-btn').click();
   await byId(page, 'trivia-choice-0').click();
   await expect(byId(page, 'trivia-outcome')).toContainText('+10 streak bonus!');
@@ -326,16 +458,12 @@ test('device reduced motion and largest reading size work through drafts and min
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await startGame(page);
   await page.getByText('Settings', { exact: true }).click();
+  await byId(page, 'settings-tab-accessibility').click();
   await expect(byId(page, 'motion-system')).toBeChecked();
   await byId(page, 'text-extra-large').click();
   await byId(page, 'comfort-readableFont').click();
   await page.getByText('‹ Back').click();
-  await byId(page, 'game-help-btn').click();
-  await snap(page, '39-readable-game-guide');
-  const guideClose = await byId(page, 'reading-close').boundingBox();
-  expect(guideClose!.y + guideClose!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
-  await byId(page, 'reading-close').click();
-  await byId(page, 'park-chip').click();
+  await page.getByText('Park', { exact: true }).click();
   await snap(page, '40-readable-park-switch');
   const parkConfirm = await byId(page, 'switch-park-confirm').boundingBox();
   expect(parkConfirm!.y + parkConfirm!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
@@ -361,6 +489,7 @@ test('device reduced motion and largest reading size work through drafts and min
 test('comfort preferences persist, readable views fit, and cards have button navigation', async ({ page }) => {
   await startGame(page);
   await page.getByText('Settings', { exact: true }).click();
+  await byId(page, 'settings-tab-accessibility').click();
   await byId(page, 'motion-on').click();
   await byId(page, 'comfort-readableFont').click();
   await byId(page, 'comfort-highContrast').click();
@@ -391,6 +520,7 @@ test('comfort preferences persist, readable views fit, and cards have button nav
 test('seated and quiet activity filters apply to new cards without emptying the board', async ({ page }) => {
   await startGame(page);
   await page.getByText('Settings', { exact: true }).click();
+  await byId(page, 'settings-tab-accessibility').click();
   await byId(page, 'comfort-seatedOnly').click();
   await byId(page, 'comfort-noPerforming').click();
   await byId(page, 'comfort-lessWalking').click();
@@ -437,6 +567,7 @@ async function startGame(page: Page, parkId = 'wdw-mk') {
   await page.goto('/');
   await byId(page, 'new-game-btn').click();
   await page.getByPlaceholder('Enter your name...').fill('Test Party');
+  await byId(page, 'new-game-next-btn').click();
   await byId(page, `park-option-${parkId}`).click();
   await byId(page, 'new-game-next-btn').click();
   await byId(page, 'start-game-btn').click();
@@ -477,6 +608,7 @@ async function pickFirstDraftOption(page: Page) {
 test('only Walt Disney World parks are offered', async ({ page }) => {
   await page.goto('/');
   await byId(page, 'new-game-btn').click();
+  await byId(page, 'new-game-next-btn').click();
   for (const id of ['wdw-mk', 'wdw-hs', 'wdw-ep', 'wdw-ak']) {
     await expect(byId(page, `park-option-${id}`)).toBeVisible();
   }
@@ -494,7 +626,8 @@ test('the game table renders a full hand and three challenges', async ({ page })
   const footer = await centered.getByTestId('card-footer').boundingBox();
   expect(description!.y + description!.height).toBeLessThanOrEqual(footer!.y + 1);
   await expect(byId(page, 'challenge-card')).toHaveCount(3);
-  await expect(page.getByText('Hollywood Studios')).toBeVisible();
+  expect((await savedState(page)).settings.parkIds).toEqual(['wdw-hs']);
+  await expect(page.getByText('Park', { exact: true })).toBeVisible();
   expect(await score(page)).toBe(0);
   await snap(page, '02-table');
 });
@@ -655,7 +788,8 @@ test('switching parks redeals the hand for the new park', async ({ page }) => {
   await byId(page, 'switch-park-wdw-ep').click();
   await page.getByText('Switch', { exact: true }).click();
   await expect(byId(page, 'switch-park-wdw-ep')).toBeHidden();
-  await expect(byId(page, 'park-chip')).toContainText('EPCOT');
+  expect((await savedState(page)).settings.parkIds).toEqual(['wdw-ep']);
+  await expect(byId(page, 'park-chip')).toHaveCount(0);
   await expect(byId(page, 'hand-card')).toHaveCount(5);
 });
 
@@ -779,10 +913,10 @@ test('visiting all four parks earns Park Hopper Gold', async ({ page }) => {
     await byId(page, `switch-park-${park}`).click();
     await page.getByText('Switch', { exact: true }).click();
     await expect(byId(page, `switch-park-${park}`)).toBeHidden();
+    await byId(page, 'badge-dismiss').click();
+    await expect(byId(page, 'badge-dismiss')).toBeHidden();
   }
-  // Badges are awarded when a task is completed.
-  await byId(page, 'challenge-card').first().click();
-  await byId(page, 'challenge-complete-btn').click();
+  // Park badges unlock immediately when the park is selected.
   await expect
     .poll(async () => {
       const slot = (await savedState(page)).saveSlots.find((s: any) => s);
@@ -845,6 +979,8 @@ test('minigames teach the rules, score a perfect sprint, and allow unlimited rep
   await byId(page,'minigames-close').click();
   await byId(page,'minigames-close').click();
   await expect(byId(page,'hand-card')).toHaveCount(5);
+  await byId(page, 'badge-dismiss').click();
+  await expect(byId(page, 'badge-dismiss')).toBeHidden();
   await byId(page,'minigames-btn').click();await byId(page,'choose-sprint').click();
   await expect(byId(page,'minigame-tips')).toHaveCount(0);
   await byId(page,'minigame-help').click();await expect(byId(page,'minigame-tips')).toBeVisible();

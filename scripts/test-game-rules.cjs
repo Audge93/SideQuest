@@ -162,3 +162,49 @@ const fullBefore = JSON.stringify(state().saveSlots);
 assert.equal(state().startSession('No space', { settings: setupSettings, playerName: 'Another Player' }), false);
 assert.equal(JSON.stringify(state().saveSlots), fullBefore);
 console.log('New-game setup passed: atomic creation, validation, prior-save isolation, zero-height filtering, and full-slot protection.');
+
+// Badge thresholds, ending/resuming, and minigame score unlocks use the same progress rules.
+const { gameBadgeStats, badgeProgress } = load('src/utils/badges.ts');
+store.setState({session:null,activeSlotId:null,saveSlots:[null,null,null],newlyEarnedBadges:[]});
+state().startSession('Badge rules');
+const badgeSlot = state().saveSlots.find(s=>s);
+const blankBadges = badgeSlot.badges.map(b=>({...b,earned:false,earnedAt:undefined}));
+function badgeScenario(count, score=0, streak=0, parks=['wdw-mk']) {
+  const completedTasks = Array.from({length:count},(_,i)=>({...fixture,id:'badge-card-'+i,category:'find'}));
+  store.setState({session:{...badgeSlot.session,completedTasks,totalCompletions:count,sessionScore:score,currentStreak:streak,parkIds:parks},
+    activeSlotId:badgeSlot.id,saveSlots:[{...badgeSlot,badges:blankBadges,categoryCompletions:{},visitedParks:parks},null,null],newlyEarnedBadges:[]});
+  state().refreshBadges(); return state().saveSlots[0];
+}
+for(const [tier,goal] of [['bronze',10],['silver',25],['gold',50],['platinum',100]]) {
+  assert.equal(badgeScenario(goal-1).badges.find(b=>b.id==='sharp-eye-'+tier).earned,false);
+  assert.equal(badgeScenario(goal).badges.find(b=>b.id==='sharp-eye-'+tier).earned,true);
+}
+for(const [tier,goal] of [['bronze',100],['silver',500],['gold',1000],['platinum',5000]]) {
+  assert.equal(badgeScenario(0,goal-1).badges.find(b=>b.id==='score-'+tier).earned,false);
+  assert.equal(badgeScenario(0,goal).badges.find(b=>b.id==='score-'+tier).earned,true);
+}
+for(const [tier,goal] of [['bronze',5],['silver',10],['gold',20],['platinum',30]]) {
+  assert.equal(badgeScenario(0,0,goal-1).badges.find(b=>b.id==='streak-'+tier).earned,false);
+  assert.equal(badgeScenario(0,0,goal).badges.find(b=>b.id==='streak-'+tier).earned,true);
+}
+badgeScenario(9,95,4); state().endSession();
+const endedSlot = state().saveSlots[0];
+assert.equal(gameBadgeStats(endedSlot,state().session).categoryCounts.find,9);
+state().loadSlot(endedSlot.id); state().completeTask(state().session.hand[0].id,false);
+assert.equal(gameBadgeStats(state().saveSlots[0],state().session).completions,10);
+const scoreSlot=badgeScenario(0,95);
+state().startWhoAmI(); const whoRound=state().session.whoAmI;
+const whoName=characters.find(c=>c.id===whoRound.characterId).name;
+state().answerWhoAmI(whoRound.choices.indexOf(whoName));
+assert.equal(state().saveSlots[0].badges.find(b=>b.id==='score-bronze').earned,true);
+assert.equal(state().session.totalCompletions,0);
+const awardTime=state().saveSlots[0].badges.find(b=>b.id==='score-bronze').earnedAt;
+state().refreshBadges();assert.equal(state().newlyEarnedBadges.filter(b=>b.id==='score-bronze').length,1);
+assert.equal(state().saveSlots[0].badges.find(b=>b.id==='score-bronze').earnedAt,awardTime);
+const allCats = ['find','photo','trivia','act','ride','treat','pins','meet','explore','seek'];
+const tasks = allCats.flatMap(category=>Array.from({length:100},(_,i)=>({...fixture,id:category+i,category})));
+store.setState({session:{...state().session,completedTasks:tasks,totalCompletions:1000,sessionScore:5000,currentStreak:30,parkIds:['wdw-mk','wdw-hs','wdw-ep','wdw-ak']}});
+state().refreshBadges(); assert.ok(state().saveSlots[0].badges.every(b=>b.earned));
+const snapshot=gameBadgeStats(state().saveSlots[0],state().session);
+assert.equal(badgeProgress(blankBadges.find(b=>b.id==='completionist-platinum'),snapshot,state().saveSlots[0].badges).current,10);
+console.log('Badges passed: every category/score/streak threshold, completionist tiers, per-game counts, no double counting, minigame unlocks, and exactly-once awards.');

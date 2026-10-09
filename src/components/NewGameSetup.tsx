@@ -21,7 +21,7 @@ export default function NewGameSetup({ onClose, onStart }: {
   const [draft, setDraft] = useState<Settings>(() => ({ ...initial.settings, parkIds: [initial.settings.parkIds[0]], categoryToggles: { ...initial.settings.categoryToggles } }));
   const [name, setName] = useState(initial.player.name);
   const [gameName, setGameName] = useState('');
-  const [page, setPage] = useState<1 | 2>(1);
+  const [page, setPage] = useState<1 | 2 | 3>(1);
   const [error, setError] = useState('');
   const starting = useRef(false);
   const gameNameRef = useRef<TextInput>(null);
@@ -34,7 +34,7 @@ export default function NewGameSetup({ onClose, onStart }: {
   const valid = !!name.trim() && !!park;
   const automaticName = defaultGameName(draft.parkIds[0]);
   const preferences = [draft.seatedOnly && 'Seated-friendly', draft.lessWalking && 'Less walking', draft.noPerforming && 'No speaking/performing'].filter(Boolean);
-  const changePage = (next: 1 | 2) => { Keyboard.dismiss(); setPage(next); setError(''); scrollRef.current?.scrollTo({ y: 0, animated: false }); };
+  const changePage = (next: 1 | 2 | 3) => { Keyboard.dismiss(); setPage(next); setError(''); scrollRef.current?.scrollTo({ y: 0, animated: false }); };
   const start = () => {
     if (starting.current || !valid) return;
     starting.current = true;
@@ -49,17 +49,18 @@ export default function NewGameSetup({ onClose, onStart }: {
     <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View testID="new-game-setup" accessibilityViewIsModal style={styles.panel}>
         <ScrollView ref={scrollRef} style={{ flexShrink: 1 }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-          <FocusHeading title={page === 1 ? 'New Game' : 'Ready to Play?'} />
-          <Text testID="setup-step" style={styles.kicker}>Step {page} of 2 · {page === 1 ? 'Name & park' : 'Review & options'}</Text>
+          <FocusHeading title={page === 1 ? 'Name Your Game' : page === 2 ? 'Choose Your Park' : 'Game Options'} />
+          <Text testID="setup-step" style={styles.kicker}>Step {page} of 3 · {page === 1 ? 'Names' : page === 2 ? 'Park' : 'Options'}</Text>
           {page === 1 ? <>
-            <Text style={styles.body}>Play solo or share one game with your group. Choose where you’re starting; you can switch parks during play.</Text>
             <Text style={styles.label}>PLAYER / TEAM NAME</Text>
             <TextInput testID="setup-player-name" accessibilityLabel="Player or team name, required" value={name} onChangeText={setName} style={styles.input} placeholder="Enter your name..." placeholderTextColor={colors.textMuted} maxLength={24} autoCapitalize="words" returnKeyType="next" onSubmitEditing={() => gameNameRef.current?.focus()} selectionColor={colors.green} />
             {!name.trim() && <Text testID="setup-name-error" accessibilityLiveRegion="polite" style={styles.body}>Enter a player or team name to continue.</Text>}
             <Text style={styles.label}>GAME NAME (OPTIONAL)</Text>
             <TextInput ref={gameNameRef} testID="setup-game-name" accessibilityLabel="Game name, optional" value={gameName} onChangeText={setGameName} style={styles.input} placeholder={automaticName} placeholderTextColor={colors.textMuted} maxLength={30} autoCapitalize="words" returnKeyType="done" onSubmitEditing={Keyboard.dismiss} selectionColor={colors.green} />
             <Text style={styles.hint}>Leave this blank to use the date and park name.</Text>
+          </> : page === 2 ? <>
             <Text style={styles.label}>WALT DISNEY WORLD PARK</Text>
+            <Text testID="setup-park-hint" style={styles.hint}>Choose where you’re starting; you can switch parks during play.</Text>
             <View style={styles.parks}>
               {PARKS.map(p => {
                 const selected = p.id === park?.id;
@@ -72,15 +73,14 @@ export default function NewGameSetup({ onClose, onStart }: {
           </> : <>
             <View testID="setup-review" style={styles.review}>
               <Text style={styles.label}>{park?.name}</Text>
-              <Text style={styles.body}>Playing as {name.trim()}</Text>
-              <Text style={styles.body}>Saved as {gameName.trim() || automaticName}</Text>
+              <Text style={styles.hint}>{name.trim()} · {gameName.trim() || automaticName}</Text>
             </View>
             <View style={styles.toggleRow}>
-              <GameIcon name="pins" size={28} /><View style={{ flex: 1 }}><Text style={styles.label}>Pin Trading Tasks</Text><Text style={styles.hint}>Include challenges that use your trading pins.</Text></View>
+              <GameIcon name="pins" size={28} /><View style={{ flex: 1 }}><Text style={styles.label}>Pin Trading Tasks</Text><Text style={styles.hint}>Use your trading pins.</Text></View>
               <Switch testID="setup-pins" accessibilityLabel="Include pin trading tasks" value={draft.categoryToggles.pins} onValueChange={pins => setDraft(value => ({ ...value, categoryToggles: { ...value.categoryToggles, pins } }))} trackColor={{ true: colors.green, false: colors.borderMedium }} />
             </View>
             <View style={styles.toggleRow}>
-              <GameIcon name="ruler" size={28} /><View style={{ flex: 1 }}><Text style={styles.label}>Filter by Height</Text><Text style={styles.hint}>Exclude ride tasks above the shortest rider’s height.</Text></View>
+              <GameIcon name="ruler" size={28} /><View style={{ flex: 1 }}><Text style={styles.label}>Filter by Height</Text><Text style={styles.hint}>Skip rides above your shortest rider’s height.</Text></View>
               <Switch testID="setup-height-filter" accessibilityLabel="Filter ride tasks by height" value={draft.heightFilterEnabled} onValueChange={heightFilterEnabled => setDraft(value => ({ ...value, heightFilterEnabled }))} trackColor={{ true: colors.green, false: colors.borderMedium }} />
             </View>
             {draft.heightFilterEnabled && <View>
@@ -90,14 +90,14 @@ export default function NewGameSetup({ onClose, onStart }: {
               <Text style={styles.hint}>0 inches includes only rides without a minimum height.</Text>
             </View>}
             {!!preferences.length && <Text testID="setup-comfort-summary" style={styles.body}>Activity preferences: {preferences.join(' · ')}</Text>}
-            <Text style={styles.hint}>Other activity choices follow your Settings. You can change options during play.</Text>
-            <Text style={styles.body}>Your game saves automatically on this device. Find it under Continue Game.</Text>
+            <Text style={styles.hint}>More options in Settings.</Text>
+            <Text style={styles.body}>Saved automatically on this device.</Text>
           </>}
           {!!error && <Text testID="setup-error" accessibilityRole="alert" style={[styles.body, { color: dark ? '#FF8A8A' : '#B62828' }]}>{error}</Text>}
         </ScrollView>
         <View style={styles.actions}>
-          <GameButton testID="setup-back-btn" label={page === 1 ? 'Cancel' : 'Back'} tone="gray" onPress={() => page === 1 ? onClose() : changePage(1)} style={{ flex: 1 }} />
-          <GameButton testID={page === 1 ? 'new-game-next-btn' : 'start-game-btn'} label={page === 1 ? 'Next' : 'Start Game'} tone="green" disabled={!valid} onPress={() => page === 1 ? changePage(2) : start()} style={{ flex: 1.4 }} />
+          <GameButton testID="setup-back-btn" label={page === 1 ? 'Cancel' : 'Back'} tone="gray" onPress={() => page === 1 ? onClose() : changePage(page === 3 ? 2 : 1)} style={{ flex: 1 }} />
+          <GameButton testID={page < 3 ? 'new-game-next-btn' : 'start-game-btn'} label={page < 3 ? 'Next' : 'Start Game'} tone="green" disabled={!valid} onPress={() => page < 3 ? changePage(page === 1 ? 2 : 3) : start()} style={{ flex: 1.4 }} />
         </View>
       </View>
     </KeyboardAvoidingView>

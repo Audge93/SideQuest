@@ -2,9 +2,9 @@ import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 /**
  * ProfileScreen.tsx — Player profile and badge collection
  *
- * Displays the player avatar, editable name, lifetime stats (points, badges,
+ * Displays the player avatar, editable name, per-game stats (points, badges,
  * parks visited), and a tiered badge grid with progress bars for unearned
- * badges. Includes a "Reset All Data" button with confirmation modal.
+ * badges. Includes game-save deletion with confirmation.
  */
 
 import React, { useState } from 'react';
@@ -17,14 +17,16 @@ import {
   StatusBar,
   TouchableOpacity,
   TextInput,
-  Alert,
-  Modal,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
 import { Badge, BadgeTier, SaveSlot } from '../types';
 import { COLORS, SHADOWS, RADII } from '../theme/theme';
 import { PARKS } from '../data/parks';
+import GameButton from '../components/GameButton';
+import ReadingModal from '../components/ReadingModal';
+import { useReadingPreferences } from '../theme/useAccessibility';
+import { badgeProgress, gameBadgeStats, BadgeStats } from '../utils/badges';
 import GameIcon, { badgeIconName } from '../components/icons/GameIcon';
 
 const TIER_COLORS: Record<BadgeTier, string> = {
@@ -37,40 +39,16 @@ const TIER_COLORS: Record<BadgeTier, string> = {
 // Fixed ordering so tiers always render from easiest to hardest.
 const TIER_LABELS: BadgeTier[] = ['bronze', 'silver', 'gold', 'platinum'];
 
-/** Maps badge base id → task category for looking up completion progress */
-const BADGE_TO_CATEGORY: Record<string, string> = {
-  'sharp-eye': 'find',
-  'shutterbug': 'photo',
-  'brain-box': 'trivia',
-  'scene-stealer': 'act',
-  'thrill-seeker': 'ride',
-  'foodie': 'treat',
-  'pin-pro': 'pins',
-  'star-struck': 'meet',
-  'trailblazer': 'explore',
-  'treasure-hunter': 'seek',
-};
-
-/** Extracts the numeric threshold from badge description, e.g. "Complete 10 Find tasks" → 10 */
-function getThreshold(badge: Badge): number | null {
-  const match = badge.description.match(/^Complete (\d+)/);
-  return match ? parseInt(match[1], 10) : null;
-}
-
-/** Gets the task category for a badge id like "sharp-eye-bronze" → "find" */
-function getCategoryForBadge(badgeId: string): string | null {
-  for (const [baseId, category] of Object.entries(BADGE_TO_CATEGORY)) {
-    if (badgeId.startsWith(baseId)) return category;
-  }
-  return null;
-}
-
 export default function ProfileScreen() {
-  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const { colors: COLORS, dark } = useAppTheme();
   const styles = useThemedStyles(BASE_STYLES, false, []);
 
   const navigation = useNavigation<any>();
   const { player, session, saveSlots, activeSlotId, updatePlayerName, renameActiveSlot, deleteSlot } = useGameStore();
+  const { scale } = useReadingPreferences();
+  const [filter, setFilter] = useState<'all' | 'earned' | 'locked'>('all');
+  const [nameError, setNameError] = useState('');
+  const [gameNameError, setGameNameError] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(player.name);
   const [editingGameName, setEditingGameName] = useState(false);
@@ -82,10 +60,10 @@ export default function ProfileScreen() {
   const handleSaveGameName = () => {
     const trimmed = gameNameInput.trim();
     if (!trimmed) {
-      Alert.alert('Name Required', 'Please enter a game name.');
+      setGameNameError('Enter a game name, or choose Cancel.');
       return;
     }
-    renameActiveSlot(trimmed);
+    renameActiveSlot(trimmed); setGameNameError('');
     setEditingGameName(false);
   };
 
@@ -93,10 +71,10 @@ export default function ProfileScreen() {
   const handleSaveName = () => {
     const trimmed = nameInput.trim();
     if (!trimmed) {
-      Alert.alert('Name Required', 'Please enter a name.');
+      setNameError('Enter a nickname, or choose Cancel.');
       return;
     }
-    updatePlayerName(trimmed);
+    updatePlayerName(trimmed); setNameError('');
     setEditingName(false);
   };
 
@@ -112,14 +90,7 @@ export default function ProfileScreen() {
   const earnedBadges = slotBadges.filter(b => b.earned);
   const visitedParks = (displaySlot?.visitedParks ?? []).filter(id => PARKS.some(p => p.id === id));
 
-  // Build category counts from slot's stored completions + any live session tasks
-  const combinedCounts: Record<string, number> = { ...(displaySlot?.categoryCompletions || {}) };
-  if (session) {
-    for (const t of session.completedTasks) {
-      combinedCounts[t.category] = (combinedCounts[t.category] || 0) + 1;
-    }
-  }
-
+  const stats = displaySlot ? gameBadgeStats(displaySlot, session) : null;
   // Group slot badges by tier
   const badgesByTier: Record<BadgeTier, Badge[]> = {
     bronze: [],
@@ -128,7 +99,7 @@ export default function ProfileScreen() {
     platinum: [],
   };
   slotBadges.forEach(b => {
-    badgesByTier[b.tier].push(b);
+    if (filter === 'all' || (filter === 'earned' ? b.earned : !b.earned)) badgesByTier[b.tier].push(b);
   });
 
   return (
@@ -154,7 +125,8 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           )}
         </View>
-        <Text style={styles.pageTitle}>Profile</Text>
+        <Text accessibilityRole="header" style={styles.pageTitle}>Profile</Text>
+        <Text testID="profile-save-context" style={styles.contextText}>{displaySlot ? `Progress for “${displaySlot.name}”. Badges belong to this game save.` : 'Your nickname is shared across games. Start a game to begin collecting badges.'}</Text>
 
         {/* Current game name — only shown when there is an active session */}
         {session && activeSlot && (
@@ -164,20 +136,20 @@ export default function ProfileScreen() {
               <View style={styles.nameEditRow}>
                 <TextInput
                   style={styles.nameInput}
-                  value={gameNameInput}
+                  testID="profile-game-name-input" accessibilityLabel="Game name" value={gameNameInput} onSubmitEditing={handleSaveGameName}
                   onChangeText={setGameNameInput}
                   autoFocus
                   maxLength={30}
                   placeholderTextColor={COLORS.textLight}
                   selectionColor={COLORS.green}
                 />
-                <TouchableOpacity style={styles.saveBtn} onPress={handleSaveGameName}>
-                  <Text style={styles.saveBtnText}>Save</Text>
-                </TouchableOpacity>
+                <GameButton testID="profile-game-name-save" label="Save Game Name" onPress={handleSaveGameName} />
+                <GameButton testID="profile-game-name-cancel" label="Cancel" tone="gray" onPress={() => { setEditingGameName(false); setGameNameError(''); }} />
+                {!!gameNameError && <Text accessibilityLiveRegion="polite" style={styles.errorText}>{gameNameError}</Text>}
               </View>
             ) : (
               <TouchableOpacity
-                style={styles.nameRow}
+                testID="profile-edit-game-name" accessibilityRole="button" accessibilityLabel="Edit game name" style={styles.nameRow}
                 onPress={() => { setGameNameInput(activeSlot.name); setEditingGameName(true); }}
               >
                 <Text style={styles.playerName}>{activeSlot.name}</Text>
@@ -196,26 +168,26 @@ export default function ProfileScreen() {
             <View style={styles.nameEditRow}>
               <TextInput
                 style={styles.nameInput}
-                value={nameInput}
+                testID="profile-name-input" accessibilityLabel="Player nickname" value={nameInput} onSubmitEditing={handleSaveName}
                 onChangeText={setNameInput}
                 autoFocus
                 maxLength={20}
                 placeholderTextColor={COLORS.textLight}
                 selectionColor={COLORS.green}
               />
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveName}>
-                <Text style={styles.saveBtnText}>Save</Text>
-              </TouchableOpacity>
+              <GameButton testID="profile-name-save" label="Save Nickname" onPress={handleSaveName} />
+              <GameButton testID="profile-name-cancel" label="Cancel" tone="gray" onPress={() => { setEditingName(false); setNameError(''); }} />
+              {!!nameError && <Text accessibilityLiveRegion="polite" style={styles.errorText}>{nameError}</Text>}
             </View>
           ) : (
-            <TouchableOpacity style={styles.nameRow} onPress={() => { setNameInput(player.name); setEditingName(true); }}>
+            <TouchableOpacity testID="profile-edit-name" accessibilityRole="button" accessibilityLabel="Edit player nickname" style={styles.nameRow} onPress={() => { setNameInput(player.name); setEditingName(true); }}>
               <Text style={styles.playerName}>{player.name}</Text>
               <GameIcon name="pencil" size={22} />
             </TouchableOpacity>
           )}
           <View style={styles.scoresRow}>
             <View style={styles.scoreItem}>
-              <Text style={styles.scoreValue}>{earnedBadges.length}</Text>
+              <Text testID="profile-badges-earned" style={styles.scoreValue}>{earnedBadges.length}</Text>
               <Text style={styles.scoreLabel}>Badges Earned</Text>
             </View>
             <View style={styles.scoreDivider} />
@@ -226,15 +198,26 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {stats && <View style={styles.playerCard}>
+          <Text testID="profile-score" style={styles.scoreValue}>{stats.score} points</Text>
+          <Text testID="profile-completions" style={styles.contextText}>{stats.completions} completed cards · current streak {stats.streak}</Text>
+          <Text style={styles.contextText}>Minigames count toward point badges. Category badges and streaks count completed cards.</Text>
+          <Text style={styles.contextText}>Parks visited: {visitedParks.map(id => PARKS.find(p => p.id === id)?.name).join(', ') || 'None yet'}. Switching parks in the app counts as a visit.</Text>
+        </View>}
         {/* Badge collection grouped by tier so progress is easy to scan. */}
         <SectionHeader title="BADGES" />
+        {!!displaySlot && <View style={styles.filters} accessibilityRole="radiogroup" accessibilityLabel="Badge filter">
+          {(['all', 'earned', 'locked'] as const).map(value => <GameButton key={value} testID={`badge-filter-${value}`} label={value === 'all' ? 'All Badges' : value === 'earned' ? 'Earned' : 'In Progress'} selected={filter === value} tone={filter === value ? 'blue' : 'gray'} onPress={() => setFilter(value)} />)}
+        </View>}
+        {!!displaySlot && Object.values(badgesByTier).every(list => list.length === 0) && <Text style={styles.noBadgesText}>{filter === 'earned' ? 'No badges earned yet. Choose In Progress to see your next goals.' : 'You have earned every badge in this game!'}</Text>}
         {slotBadges.length === 0 && (
           <Text style={styles.noBadgesText}>Start a game to earn badges!</Text>
         )}
         {TIER_LABELS.map(tier => {
           const tierBadges = badgesByTier[tier];
           if (tierBadges.length === 0) return null;
-          const earnedCount = tierBadges.filter(b => b.earned).length;
+          const allTierBadges = slotBadges.filter(b => b.tier === tier);
+          const earnedCount = allTierBadges.filter(b => b.earned).length;
           return (
             <View key={tier} style={styles.tierSection}>
               <View style={styles.tierHeader}>
@@ -243,7 +226,7 @@ export default function ProfileScreen() {
                   {tier.charAt(0).toUpperCase() + tier.slice(1)}
                 </Text>
                 <Text style={styles.tierCount}>
-                  {earnedCount} / {tierBadges.length}
+                  {earnedCount} / {allTierBadges.length} earned
                 </Text>
               </View>
               <View style={styles.badgeGrid}>
@@ -252,7 +235,9 @@ export default function ProfileScreen() {
                     key={badge.id}
                     badge={badge}
                     tierColor={TIER_COLORS[tier]}
-                    categoryCounts={combinedCounts}
+                    stats={stats!}
+                    badges={slotBadges}
+                    wide={scale > 1}
                   />
                 ))}
               </View>
@@ -261,7 +246,7 @@ export default function ProfileScreen() {
         })}
         {displaySlot && (
           <TouchableOpacity
-            style={styles.resetBtn}
+            testID="profile-delete-save" accessibilityRole="button" style={styles.resetBtn}
             onPress={() => setShowDeleteConfirm(true)}
             activeOpacity={0.7}
           >
@@ -270,117 +255,51 @@ export default function ProfileScreen() {
         )}
       </ScrollView>
 
-      {/* Delete Game Save Confirmation Modal */}
-      <Modal
-        visible={showDeleteConfirm}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowDeleteConfirm(false)}
-      >
-        <View style={styles.resetOverlay}>
-          <View style={styles.resetCard}>
-            <GameIcon name="trash" size={56} style={styles.resetCardIcon} />
-            <Text style={styles.resetCardTitle}>Delete Game Save?</Text>
-            <Text style={styles.resetCardMessage}>
-              {displaySlot ? `"${displaySlot.name}" will be permanently deleted. This cannot be undone.` : ''}
-            </Text>
-            <View style={styles.resetCardActions}>
-              <TouchableOpacity
-                style={styles.resetConfirmBtn}
-                onPress={() => {
-                  if (displaySlot) deleteSlot(displaySlot.id);
-                  setShowDeleteConfirm(false);
-                  navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.resetConfirmBtnText}>Yes, Delete</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.resetCancelBtn}
-                onPress={() => setShowDeleteConfirm(false)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.resetCancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {showDeleteConfirm && <ReadingModal testID="profile-delete-confirm" title="Delete Game Save?" closeLabel="Cancel" closeTestID="profile-delete-cancel" onClose={() => setShowDeleteConfirm(false)}>
+        <Text style={styles.contextText}>“{displaySlot?.name}” and its score, badges, and progress will be permanently deleted. Other saves and your nickname stay on this device. This cannot be undone.</Text>
+        <GameButton testID="profile-delete-confirm-btn" label="Yes, Delete This Save" multiline tone="red" onPress={() => {
+          if (displaySlot) deleteSlot(displaySlot.id);
+          setShowDeleteConfirm(false); navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+        }} />
+      </ReadingModal>}
     </SafeAreaView>
   );
 }
 
-/** Individual badge tile — shows icon, name, progress bar (if unearned), or earned date */
-function BadgeTile({
-  badge,
-  tierColor,
-  categoryCounts,
-}: {
-  badge: Badge;
-  tierColor: string;
-  categoryCounts: Record<string, number>;
-}) {
-  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
-  const styles = useThemedStyles(BASE_STYLES, false, []);
-
-  const earned = badge.earned;
-  const category = getCategoryForBadge(badge.id);
-  const threshold = getThreshold(badge);
-  const current = category ? (categoryCounts[category] || 0) : null;
-  // Only unearned category badges show a progress bar. Earned badges instead
-  // switch to a completed state with their completion date/summary.
-  const showProgress = category && threshold !== null && !earned;
-  const progressPct = showProgress ? Math.min((current! / threshold!) * 100, 100) : 0;
-
-  return (
-    <View style={[styles.badgeTile, earned ? { borderColor: tierColor } : styles.badgeTileLocked]}>
-      <GameIcon name={badgeIconName(badge.id)} size={38} style={[styles.badgeIcon, !earned && styles.badgeIconLocked]} />
-      <Text style={[styles.badgeName, !earned && styles.badgeNameLocked]}>{badge.name}</Text>
-      <Text style={styles.badgeDescription}>{badge.description}</Text>
-
-      {/* Progress counter for category badges */}
-      {showProgress && (
-        <View style={styles.progressContainer}>
-          <View style={styles.progressTrack}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${progressPct}%`, backgroundColor: tierColor },
-              ]}
-            />
-          </View>
-          <Text style={styles.progressText}>
-            {current} / {threshold}
-          </Text>
-        </View>
-      )}
-
-      {/* Earned counter for completed category badges */}
-      {earned && category && threshold !== null && (
-        <Text style={[styles.progressTextEarned, { color: tierColor }]}>
-          ✓ {threshold} / {threshold}
-        </Text>
-      )}
-
-      {earned && badge.earnedAt && (
-        <Text style={styles.badgeDate}>
-          {new Date(badge.earnedAt).toLocaleDateString()}
-        </Text>
-      )}
-    </View>
-  );
+function BadgeTile({ badge, tierColor, stats, badges, wide }: { badge: Badge; tierColor: string; stats: BadgeStats; badges: Badge[]; wide: boolean }) {
+  const styles = useThemedStyles(BASE_STYLES);
+  const { colors } = useAppTheme();
+  const { highContrast } = useReadingPreferences();
+  const progress = badgeProgress(badge, stats, badges);
+  const current = progress ? Math.min(progress.current, progress.goal) : 0;
+  const validDate = badge.earnedAt && Number.isFinite(new Date(badge.earnedAt).getTime());
+  return <View testID={`badge-${badge.id}`} style={[styles.badgeTile, wide && { width: '100%' }, badge.earned ? { borderColor: tierColor } : styles.badgeTileLocked]}>
+    <GameIcon name={badgeIconName(badge.id)} size={38} style={styles.badgeIcon} />
+    <Text style={styles.badgeName}>{badge.name}</Text>
+    <Text style={styles.badgeDescription}>{badge.description}</Text>
+    <Text style={styles.progressText}>{badge.earned ? 'Earned' : 'In progress'}</Text>
+    {!badge.earned && progress && <View style={styles.progressContainer}>
+      <View accessibilityRole="progressbar" accessibilityLabel={badge.name} accessibilityValue={{ min: 0, max: progress.goal, now: current, text: `${current} of ${progress.goal} ${progress.unit}` }} style={[styles.progressTrack, highContrast && { backgroundColor: colors.surface, borderColor: colors.textDark, borderWidth: 1 }]}>
+        <View style={[styles.progressFill, { width: `${current / progress.goal * 100}%`, backgroundColor: highContrast ? colors.textDark : tierColor }]} />
+      </View>
+      <Text testID={`badge-progress-${badge.id}`} style={styles.progressText}>{current} / {progress.goal} {progress.unit}</Text>
+    </View>}
+    {!!validDate && <Text style={styles.badgeDate}>Earned {new Date(badge.earnedAt!).toLocaleDateString()}</Text>}
+  </View>;
 }
 
 function SectionHeader({ title }: { title: string }) {
-  const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const { colors: COLORS, dark } = useAppTheme();
   const styles = useThemedStyles(BASE_STYLES, false, []);
 
   // Small reusable heading used between major profile sections.
-  return <Text style={styles.sectionHeader}>{title}</Text>;
+  return <Text accessibilityRole="header" style={styles.sectionHeader}>{title}</Text>;
 }
 
 const BASE_STYLES = StyleSheet.create({
+  contextText: { color: COLORS.textBody, fontSize: 15, lineHeight: 22, marginBottom: 12 },
+  errorText: { color: COLORS.textDark, fontSize: 15, lineHeight: 22 },
+  filters: { gap: 8, marginBottom: 16 },
   safe: { flex: 1, backgroundColor: COLORS.bg },
   container: { flex: 1 },
   scroll: { padding: 16, paddingBottom: 80 },
@@ -419,44 +338,34 @@ const BASE_STYLES = StyleSheet.create({
     fontWeight: '900',
   },
   nameRow: {
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 16,
   },
   playerName: {
+    flexShrink: 1,
     color: COLORS.textDark,
     fontSize: 22,
     fontWeight: '700',
   },
   nameEditRow: {
-    flexDirection: 'row',
+    width: '100%',
+    flexDirection: 'column',
     alignItems: 'center',
     gap: 10,
     marginBottom: 16,
   },
   nameInput: {
-    flex: 1,
+    width: '100%',
+    minHeight: 48,
     color: COLORS.textDark,
     fontSize: 20,
     fontWeight: '700',
     borderBottomWidth: 2,
     borderBottomColor: COLORS.green,
     paddingVertical: 4,
-  },
-  saveBtn: {
-    backgroundColor: COLORS.green,
-    borderRadius: RADII.button,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderBottomWidth: 3,
-    borderBottomColor: COLORS.greenDark,
-    ...SHADOWS.button,
-  },
-  saveBtnText: {
-    color: COLORS.white,
-    fontWeight: '800',
-    fontSize: 13,
   },
   scoresRow: {
     flexDirection: 'row',
@@ -465,7 +374,7 @@ const BASE_STYLES = StyleSheet.create({
   },
   scoreItem: { flex: 1, alignItems: 'center' },
   scoreValue: {
-    color: COLORS.green,
+    color: COLORS.textDark,
     fontSize: 22,
     fontWeight: '900',
   },
@@ -536,9 +445,6 @@ const BASE_STYLES = StyleSheet.create({
   badgeIcon: {
     marginBottom: 6,
   },
-  badgeIconLocked: {
-    opacity: 0.3,
-  },
   badgeName: {
     color: COLORS.textDark,
     fontWeight: '700',
@@ -546,14 +452,11 @@ const BASE_STYLES = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 4,
   },
-  badgeNameLocked: {
-    color: COLORS.textLight,
-  },
   badgeDescription: {
     color: COLORS.textMuted,
-    fontSize: 11,
+    fontSize: 13,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 19,
   },
   progressContainer: {
     width: '100%',
@@ -577,11 +480,6 @@ const BASE_STYLES = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  progressTextEarned: {
-    fontSize: 11,
-    fontWeight: '800',
-    marginTop: 6,
-  },
   badgeDate: {
     color: COLORS.textLight,
     fontSize: 10,
@@ -601,69 +499,6 @@ const BASE_STYLES = StyleSheet.create({
   resetBtnText: {
     color: COLORS.red,
     fontWeight: '700',
-    fontSize: 15,
-  },
-  resetOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 28,
-  },
-  resetCard: {
-    width: '100%',
-    maxWidth: 340,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    padding: 28,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 10,
-  },
-  resetCardIcon: {
-    marginBottom: 12,
-  },
-  resetCardTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: COLORS.textDark,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  resetCardMessage: {
-    fontSize: 15,
-    color: COLORS.textBody,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  resetCardActions: {
-    width: '100%',
-    gap: 10,
-  },
-  resetConfirmBtn: {
-    backgroundColor: COLORS.red,
-    borderRadius: RADII.button,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderBottomWidth: 4,
-    borderBottomColor: '#C0392B',
-  },
-  resetConfirmBtnText: {
-    color: COLORS.white,
-    fontWeight: '900',
-    fontSize: 16,
-  },
-  resetCancelBtn: {
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  resetCancelBtnText: {
-    color: COLORS.textMuted,
-    fontWeight: '600',
     fontSize: 15,
   },
   noBadgesText: {

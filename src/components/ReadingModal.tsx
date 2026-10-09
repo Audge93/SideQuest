@@ -19,8 +19,8 @@ export function FocusHeading({ title }: { title: string }) {
   return <Text ref={ref} accessibilityRole="header" accessible {...(Platform.OS === 'web' ? { tabIndex: -1 } as any : {})}
     style={{ fontSize: 24 * scale, fontWeight: '700', color: colors.textDark }}>{title}</Text>;
 }
-export default function ReadingModal({ title, children, onClose, testID = 'reading-panel' }: {
-  title: string; children: React.ReactNode; onClose: () => void; testID?: string;
+export default function ReadingModal({ title, children, onClose, testID = 'reading-panel', closeLabel = 'Close', closeTestID = 'reading-close' }: {
+  title: string; children: React.ReactNode; onClose: () => void; testID?: string; closeLabel?: string; closeTestID?: string;
 }) {
   const { colors } = useAppTheme();
   const reduced = useReducedMotion();
@@ -30,7 +30,7 @@ export default function ReadingModal({ title, children, onClose, testID = 'readi
         <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 16 }}>
           <FocusHeading title={title} />{children}
         </ScrollView>
-        <GameButton testID="reading-close" label="Close" onPress={onClose} tone="blue" style={{ flexGrow: 0 }} />
+        <GameButton testID={closeTestID} label={closeLabel} onPress={onClose} tone="blue" style={{ flexGrow: 0 }} />
       </View>
     </View>
   </Modal>;

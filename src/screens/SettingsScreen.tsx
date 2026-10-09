@@ -1,6 +1,6 @@
 import { playSound } from '../utils/sounds';
 import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -51,6 +51,8 @@ export default function SettingsScreen() {
   const handleReturnToMenu = () => {
     navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
   };
+  const [tab, setTab] = useState<'general' | 'accessibility'>('general');
+  const scrollRef = useRef<ScrollView>(null);
   const [showAbout, setShowAbout] = useState(false);
   const [info, setInfo] = useState<'help' | 'report' | 'privacy' | 'delete' | null>(null);
   const [filterError, setFilterError] = useState('');
@@ -65,7 +67,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView testID="settings-screen" style={styles.safe}>
       <StatusBar barStyle={dark ? "light-content" : "dark-content"} />
-      <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
+      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.scroll}>
         {/* Header row: back on left, return-to-menu on right when in-game */}
         <View style={styles.headerRow}>
           <TouchableOpacity
@@ -85,7 +87,12 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           )}
         </View>
-        <Text style={styles.pageTitle}>Settings</Text>
+        <Text accessibilityRole="header" style={styles.pageTitle}>Settings</Text>
+        <View style={[styles.themeRow, { flexWrap: 'wrap', marginBottom: 16 }]} accessibilityRole="tablist">
+          {(['general', 'accessibility'] as const).map(value => <TouchableOpacity key={value} testID={`settings-tab-${value}`} accessibilityRole="tab" aria-selected={tab === value} accessibilityState={{ selected: tab === value }} style={[styles.themeChip, tab === value && styles.themeChipSelected]} onPress={() => { setTab(value); scrollRef.current?.scrollTo({ y: 0, animated: false }); }}><Text style={[styles.themeChipText, tab === value && styles.themeChipTextSelected]}>{value === 'general' ? 'General' : 'Accessibility'}</Text></TouchableOpacity>)}
+        </View>
+        {tab === 'general' && <>
+        {!!filterError && <Text accessibilityLiveRegion="polite" style={styles.sectionDescription}>{filterError}</Text>}
         <SectionCard title="ABOUT SIDE QUEST">
           <TouchableOpacity testID="about-btn" accessibilityRole="button"
             style={styles.showTipsBtn} onPress={() => setShowAbout(true)}>
@@ -93,6 +100,8 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </SectionCard>
 
+        </>}
+        {tab === 'accessibility' && <View testID="settings-accessibility-panel">
         <SectionCard title="ACCESSIBILITY & COMFORT">
           <Text style={styles.sectionDescription}>Choose what works for you. Your phone’s text size is also supported.</Text>
           <Text style={styles.settingLabel}>Reduce Motion</Text>
@@ -120,6 +129,8 @@ export default function SettingsScreen() {
           {!!filterError && <Text testID="filter-error" accessibilityLiveRegion="polite" style={styles.sectionDescription}>{filterError}</Text>}
         </SectionCard>
 
+        </View>}
+        {tab === 'general' && <View testID="settings-general-panel">
         {/* Height filtering changes which ride tasks are allowed to appear when
             the store builds the ride task pool for the session. */}
         <SectionCard title="HEIGHT FILTER">
@@ -268,6 +279,7 @@ export default function SettingsScreen() {
         <SectionCard title="HELP & PRIVACY">
           {(['help', 'report', 'privacy', 'delete'] as const).map(key => <TouchableOpacity key={key} testID={`settings-${key}-btn`} accessibilityRole="button" style={styles.showTipsBtn} onPress={() => setInfo(key)}><Text style={styles.showTipsBtnText}>{key === 'help' ? 'Help & Support' : key === 'report' ? 'Report a Question' : key === 'privacy' ? 'Privacy Policy' : 'Clear All Local Data'}</Text></TouchableOpacity>)}
         </SectionCard>
+        </View>}
       </ScrollView>
       {info && <ReadingModal title={info === 'help' ? 'Help & Support' : info === 'report' ? 'Report a Question' : info === 'privacy' ? 'Privacy Policy' : 'Clear All Local Data?'} testID={`settings-${info}-panel`} onClose={() => setInfo(null)}>
         {(info === 'help' ? HELP_TEXT : info === 'privacy' ? PRIVACY_TEXT : info === 'report' ? ['Reports open a draft on GitHub for you to review and submit. GitHub may require an account. Issues are public: do not include private information. You can also report a specific question from its trivia card or Sprint review.'] : ['This permanently removes every saved game, your player name, and preferences on this device. It cannot be undone.']).map((paragraph, i) => <Text key={i} style={bodyStyle}>{paragraph}</Text>)}
@@ -278,7 +290,7 @@ export default function SettingsScreen() {
         </>}
         {info === 'delete' && <TouchableOpacity testID="clear-data-confirm" accessibilityRole="button" style={styles.showTipsBtn} onPress={async () => { await useGameStore.getState().resetAllData(); setInfo(null); navigation.reset({ index: 0, routes: [{ name: 'Home' }] }); }}><Text style={styles.showTipsBtnText}>Yes, Clear All Local Data</Text></TouchableOpacity>}
       </ReadingModal>}
-      <Modal visible={showAbout} transparent animationType={reduced ? 'none' : 'fade'} onRequestClose={() => setShowAbout(false)}>
+      {showAbout && <Modal visible transparent animationType={reduced ? 'none' : 'fade'} onRequestClose={() => setShowAbout(false)}>
         <View style={aboutStyles.overlay}>
           <View accessibilityViewIsModal testID="about-panel" style={[aboutStyles.panel, { backgroundColor: COLORS.surface }]}>
             <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 16 }}>
@@ -288,17 +300,13 @@ export default function SettingsScreen() {
               <Text style={[aboutStyles.body, { color: COLORS.textBody }]}>Side Quest is not affiliated with, endorsed by, or sponsored by The Walt Disney Company or its subsidiaries. Disney names, characters, and trademarks belong to their respective owners.</Text>
               <Text style={[aboutStyles.heading, { color: COLORS.textDark }]}>Trivia preservation credit</Text>
               <Text style={[aboutStyles.body, { color: COLORS.textBody }]}>Thank you to GooglyBlox for preserving and sharing the Play Disney Parks trivia archive. Some trivia in Side Quest comes from that preservation work. Original Play Disney Parks trivia was created by Disney; preservation credit does not imply ownership or Disney endorsement.</Text>
-              <TouchableOpacity testID="about-archive-link" accessibilityRole="link"
-                onPress={() => Linking.openURL('https://archive.notaspider.dev/details/play-disney-parks-cdn').catch(() => Alert.alert('Unable to open link', 'Please try again later.'))}>
-                <Text style={[aboutStyles.link, { color: dark ? COLORS.blue : "#2257B3" }]}>Visit GooglyBlox’s preservation archive</Text>
-              </TouchableOpacity>
             </ScrollView>
             <TouchableOpacity testID="about-close-btn" accessibilityRole="button" style={styles.showTipsBtn} onPress={() => setShowAbout(false)}>
               <Text style={styles.showTipsBtnText}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </Modal>}
     </SafeAreaView>
   );
 }

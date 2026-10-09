@@ -15,6 +15,7 @@ import { WHO_AM_I } from '../data/whoAmI';
 import { TRIVIA_TASKS } from '../data/trivia';
 import { RIDES, PARKS } from '../data/parks';
 import { correctTriviaAnswers } from '../utils/trivia';
+import { badgeProgress, gameBadgeStats } from '../utils/badges';
 import { defaultGameName } from '../utils/gameSetup';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -73,11 +74,11 @@ const DEFAULT_BADGES: Badge[] = [
   { id: 'streak-silver', name: 'On Fire (Silver)', description: 'Reach a 10-task streak', tier: 'silver', earned: false },
   { id: 'streak-gold', name: 'Blazing (Gold)', description: 'Reach a 20-task streak', tier: 'gold', earned: false },
   { id: 'streak-platinum', name: 'Inferno (Platinum)', description: 'Reach a 30-task streak', tier: 'platinum', earned: false },
-  // Lifetime score tiers
-  { id: 'score-bronze', name: 'Centurion (Bronze)', description: 'Earn 100 lifetime points', tier: 'bronze', earned: false },
-  { id: 'score-silver', name: 'High Roller (Silver)', description: 'Earn 500 lifetime points', tier: 'silver', earned: false },
-  { id: 'score-gold', name: 'Legend (Gold)', description: 'Earn 1,000 lifetime points', tier: 'gold', earned: false },
-  { id: 'score-platinum', name: 'Mythic (Platinum)', description: 'Earn 5,000 lifetime points', tier: 'platinum', earned: false },
+  // Per-game score tiers, including minigame points
+  { id: 'score-bronze', name: 'Centurion (Bronze)', description: 'Earn 100 points in this game', tier: 'bronze', earned: false },
+  { id: 'score-silver', name: 'High Roller (Silver)', description: 'Earn 500 points in this game', tier: 'silver', earned: false },
+  { id: 'score-gold', name: 'Legend (Gold)', description: 'Earn 1,000 points in this game', tier: 'gold', earned: false },
+  { id: 'score-platinum', name: 'Mythic (Platinum)', description: 'Earn 5,000 points in this game', tier: 'platinum', earned: false },
   // Park hopper tiers
   { id: 'hopper-bronze', name: 'Park Hopper (Bronze)', description: 'Visit 2 parks', tier: 'bronze', earned: false },
   { id: 'hopper-silver', name: 'Park Hopper (Silver)', description: 'Visit 3 parks', tier: 'silver', earned: false },
@@ -187,6 +188,7 @@ interface GameState {
   answerTrivia: (taskId: string, correct: boolean) => void;
   useTriviaFiftyFifty: (taskId: string) => void;
   chooseDraftCard: (taskId: string) => void;
+  refreshBadges: () => void;
   clearNewBadges: () => void;
   resetAllData: () => Promise<void>;
   triggerTips: () => void;
@@ -371,115 +373,14 @@ function pickChallengeReplacement(
 // Badges are checked in two passes so "completionist" badges can see freshly-earned
 // category badges from the first pass.
 
-/** Category badge tier thresholds — must match catBadges() calls above */
-const CAT_THRESHOLDS: Record<string, [number, number, number, number]> = {
-  'sharp-eye': [10, 25, 50, 100],
-  'shutterbug': [10, 25, 50, 100],
-  'brain-box': [10, 25, 50, 100],
-  'scene-stealer': [10, 25, 50, 100],
-  'thrill-seeker': [10, 25, 50, 100],
-  'foodie': [10, 25, 50, 100],
-  'pin-pro': [10, 25, 50, 100],
-  'star-struck': [10, 25, 50, 100],
-  'trailblazer': [10, 25, 50, 100],
-  'treasure-hunter': [10, 25, 50, 100],
-};
-
-const CAT_TO_CATEGORY: Record<string, string> = {
-  'sharp-eye': 'find',
-  'shutterbug': 'photo',
-  'brain-box': 'trivia',
-  'scene-stealer': 'act',
-  'thrill-seeker': 'ride',
-  'foodie': 'treat',
-  'pin-pro': 'pins',
-  'star-struck': 'meet',
-  'trailblazer': 'explore',
-  'treasure-hunter': 'seek',
-};
-
-const TIER_INDEX: Record<BadgeTier, number> = { bronze: 0, silver: 1, gold: 2, platinum: 3 };
-
-const CAT_BASE_IDS = Object.keys(CAT_THRESHOLDS);
-
-/** Merges lifetime category counts with current session completions */
-function buildCategoryCounts(
-  lifetimeCounts: Record<string, number>,
-  sessionTasks: Task[],
-): Record<string, number> {
-  const counts: Record<string, number> = { ...lifetimeCounts };
-  for (const t of sessionTasks) {
-    counts[t.category] = (counts[t.category] || 0) + 1;
-  }
-  return counts;
-}
-
-/**
- * Evaluates all badge unlock conditions and returns updated badge array.
- * Checks category thresholds, milestones (first task, streaks), lifetime
- * score tiers, park hopper counts, and completionist meta-badges.
- */
-function checkBadges(
-  badges: Badge[],
-  categoryCounts: Record<string, number>,
-  totalCompletions: number,
-  currentStreak: number,
-  sessionScore: number,
-  visitedParks: string[],
-): Badge[] {
-  const countByCategory = (cat: string) => categoryCounts[cat] || 0;
-
-  return badges.map(b => {
-    if (b.earned) return b;
-    let earned = false;
-
-    // Check category tiered badges (e.g. "sharp-eye-bronze")
-    for (const baseId of CAT_BASE_IDS) {
-      const tiers: BadgeTier[] = ['bronze', 'silver', 'gold', 'platinum'];
-      for (const tier of tiers) {
-        if (b.id === `${baseId}-${tier}`) {
-          const cat = CAT_TO_CATEGORY[baseId];
-          const threshold = CAT_THRESHOLDS[baseId][TIER_INDEX[tier]];
-          earned = countByCategory(cat) >= threshold;
-        }
-      }
-    }
-
-    // Milestone badges
-    const parksVisited = visitedParks.filter(id => PARKS.some(p => p.id === id)).length;
-    switch (b.id) {
-      case 'first-steps': earned = totalCompletions >= 1; break;
-      case 'streak-bronze': earned = currentStreak >= 5; break;
-      case 'streak-silver': earned = currentStreak >= 10; break;
-      case 'streak-gold': earned = currentStreak >= 20; break;
-      case 'streak-platinum': earned = currentStreak >= 30; break;
-      case 'score-bronze': earned = sessionScore >= 100; break;
-      case 'score-silver': earned = sessionScore >= 500; break;
-      case 'score-gold': earned = sessionScore >= 1000; break;
-      case 'score-platinum': earned = sessionScore >= 5000; break;
-      case 'hopper-bronze': earned = parksVisited >= 2; break;
-      case 'hopper-silver': earned = parksVisited >= 3; break;
-      case 'hopper-gold': earned = parksVisited >= 4; break;
-      case 'completionist-bronze': {
-        earned = CAT_BASE_IDS.every(id => badges.find(bb => bb.id === `${id}-bronze`)?.earned);
-        break;
-      }
-      case 'completionist-silver': {
-        earned = CAT_BASE_IDS.every(id => badges.find(bb => bb.id === `${id}-silver`)?.earned);
-        break;
-      }
-      case 'completionist-gold': {
-        earned = CAT_BASE_IDS.every(id => badges.find(bb => bb.id === `${id}-gold`)?.earned);
-        break;
-      }
-      case 'completionist-platinum': {
-        earned = CAT_BASE_IDS.every(id => badges.find(bb => bb.id === `${id}-platinum`)?.earned);
-        break;
-      }
-    }
-
-    return earned ? { ...b, earned: true, earnedAt: Date.now() } : b;
+function checkedSlot(slot: SaveSlot, session = slot.session): SaveSlot {
+  const stats = gameBadgeStats(slot, session);
+  let badges = slot.badges;
+  for (let pass = 0; pass < 2; pass++) badges = badges.map(b => {
+    const progress = badgeProgress(b, stats, badges);
+    return !b.earned && progress && progress.current >= progress.goal ? { ...b, earned: true, earnedAt: Date.now() } : b;
   });
+  return { ...slot, badges, visitedParks: stats.parks };
 }
 
 /** Detects which badges were newly earned by comparing old vs new arrays by ID */
@@ -523,7 +424,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   updatePlayerName: (name) => {
-    set(s => ({ player: { ...s.player, name } }));
+    if (!name.trim()) return;
+    set(s => ({ player: { ...s.player, name: name.trim().slice(0, 20) } }));
     get().saveToStorage();
   },
 
@@ -664,8 +566,10 @@ export const useGameStore = create<GameState>((set, get) => ({
         darkMode: settings.darkMode, soundEnabled: settings.soundEnabled, hapticsEnabled: settings.hapticsEnabled,
         reduceMotion: settings.reduceMotion, textSize: settings.textSize, readableFont: settings.readableFont, highContrast: settings.highContrast },
       activeSlotId: slotId,
+      newlyEarnedBadges: [],
     });
-    get().saveToStorage();
+    get().refreshBadges();
+    get().autoSave();
   },
 
   /** Delete a save slot */
@@ -686,9 +590,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   /** Rename the currently active save slot */
   renameActiveSlot: (name) => {
     const { saveSlots, activeSlotId } = get();
-    if (!activeSlotId) return;
+    if (!activeSlotId || !name.trim()) return;
     const newSlots = saveSlots.map(s =>
-      s && s.id === activeSlotId ? { ...s, name: name.trim() } : s
+      s && s.id === activeSlotId ? { ...s, name: name.trim().slice(0, 30) } : s
     );
     set({ saveSlots: newSlots } as any);
     get().saveToStorage();
@@ -730,6 +634,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     };
 
     set({ settings: updatedSettings, session: updatedSession });
+    get().refreshBadges();
     get().autoSave();
     get().saveToStorage();
   },
@@ -789,44 +694,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       draft: newDraft,
     };
 
-    // Check badges using the active save slot's badge state (per-game, not lifetime)
-    const { saveSlots, activeSlotId } = get();
-    const activeSlot = saveSlots.find(s => s && s.id === activeSlotId);
-
-    if (activeSlot) {
-      const allVisited = [...new Set([...activeSlot.visitedParks, ...updatedSession.parkIds])];
-      const combinedCounts = buildCategoryCounts(
-        activeSlot.categoryCompletions || {},
-        updatedSession.completedTasks,
-      );
-      const totalCompletions = Object.values(combinedCounts).reduce((a, b) => a + b, 0);
-
-      let updatedBadges = checkBadges(
-        activeSlot.badges, combinedCounts, totalCompletions,
-        newStreak, newScore, allVisited,
-      );
-      // Run twice so completionist badges can see freshly earned category badges
-      updatedBadges = checkBadges(
-        updatedBadges, combinedCounts, totalCompletions,
-        newStreak, newScore, allVisited,
-      );
-
-      const freshlyEarned = findNewlyEarned(activeSlot.badges, updatedBadges);
-
-      const newSlots = saveSlots.map(s =>
-        s && s.id === activeSlotId
-          ? { ...s, badges: updatedBadges, visitedParks: allVisited }
-          : s,
-      );
-
-      set({
-        session: updatedSession,
-        saveSlots: newSlots,
-        newlyEarnedBadges: [...get().newlyEarnedBadges, ...freshlyEarned],
-      });
-    } else {
-      set({ session: updatedSession });
-    }
+    set({ session: updatedSession });
+    get().refreshBadges();
     get().saveToStorage();
   },
 
@@ -911,7 +780,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const character = WHO_AM_I.find(c => c.id === round.characterId); if (!character) return;
     const earnedPoints = round.choices[choice] === character.name ? (4 - round.cluesRevealed) * 5 : 0;
     set({ session: { ...session, sessionScore: session.sessionScore + earnedPoints,
-      whoAmI: { ...round, answer: choice, finished: true, earnedPoints } } }); get().autoSave();
+      whoAmI: { ...round, answer: choice, finished: true, earnedPoints } } }); get().refreshBadges(); get().autoSave();
   },
   startTriviaSprint: (seconds) => {
     const { session } = get();
@@ -941,6 +810,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const multiplier = correct.length === 10 ? 3 : correct.length === 9 ? 2 : 1;
     const earnedPoints = correct.reduce((sum, q) => sum + q.points, 0) * multiplier;
     set({ session: { ...session, sessionScore: session.sessionScore + earnedPoints, triviaSprint: { ...round, finished: true, earnedPoints } } });
+    get().refreshBadges();
     get().autoSave();
   },
   reviewSprintQuestion: (index) => {
@@ -989,6 +859,15 @@ export const useGameStore = create<GameState>((set, get) => ({
     get().saveToStorage();
   },
 
+  refreshBadges: () => {
+    const { session, saveSlots, activeSlotId } = get();
+    if (!session) return;
+    const slot = saveSlots.find(s => s?.id === activeSlotId);
+    if (!slot) return;
+    const updated = checkedSlot(slot, session);
+    set({ saveSlots: saveSlots.map(s => s?.id === slot.id ? updated : s),
+      newlyEarnedBadges: [...get().newlyEarnedBadges, ...findNewlyEarned(slot.badges, updated.badges)] });
+  },
   clearNewBadges: () => {
     // Clears the transient unlock queue once the popup sequence is complete.
     set({ newlyEarnedBadges: [] });
@@ -1061,12 +940,12 @@ export const useGameStore = create<GameState>((set, get) => ({
         saveSlots = saveSlots.map(s => {
           if (!s) return null;
           const raw = s as any;
-          return {
+          return checkedSlot({
             ...s,
             badges: syncBadges(raw.badges),
             categoryCompletions: raw.categoryCompletions ?? {},
             visitedParks: raw.visitedParks ?? (s.session?.parkIds ?? []),
-          };
+          }, s.id === activeSlotId && session ? session : s.session);
         });
 
         // Migrate old category toggle keys to new names

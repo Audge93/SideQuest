@@ -85,6 +85,14 @@ The Minigames button is beside Your Hand in the game screen. Both games are avai
 
 Additional shared task expansions live in `src/data/extraTasks.ts`, included by the arrays in `tasks.ts`. The bulk archive lives in `src/data/archiveTrivia.ts`, included by `TRIVIA_TASKS`. Run `npm run validate:content` to verify every park still meets the requested minimums. Current totals are in `docs/content-counts.md`.
 
+## Profile and badges
+
+Badges and progress belong to each game save; the player nickname is shared across saves. Profile identifies the active save, or the most recently saved game when none is active. It displays score, completed cards, current streak, parks, earned dates, and All/Earned/In Progress filters. Larger text uses one badge per row. Name edits offer Save/Cancel and inline validation; deleting a game save requires confirmation and preserves other saves and the nickname.
+
+`src/utils/badges.ts` supplies the numeric progress used by both Profile and unlock evaluation. Category tiers require 10/25/50/100 completed cards; streak tiers require 5/10/20/30; score tiers require 100/500/1,000/5,000 points in that game, including minigames. Park Hopper requires selecting 2/3/4 distinct supported parks in the app, rather than GPS visits. Completionist requires all 10 category badges at the matching tier. Completed cards retained in a saved session are not added to stored totals a second time after ending/resuming.
+
+Unlocks are evaluated after card completion, minigame scoring, park switching, and loading a save. Older saves are synchronized from their recorded statistics at app launch, preserving already earned badges and dates. Celebration popups wait until the minigame panel closes. Badge definitions in `gameStore.ts` and goals in `utils/badges.ts` must agree; update the rule tests when changing a threshold.
+
 Known task wording and attraction display names now refresh on resume too. If a saved challenge board contains one of the retired catalog entries, it is redealt from the current eligible challenge pool; score and completion history remain intact.
 
 ## Accessibility, comfort, and support
@@ -99,6 +107,10 @@ Settings changes that leave fewer than five hand tasks or three challenge tasks 
 
 Hand navigation has Previous, Next, and Read Card controls. Read Card and challenge detail show full instructions in scrolling views. Question results name accepted answers explicitly and remain until dismissed. Native announcements, focus management, labels, and large touch controls are part of the normal UI. Real VoiceOver/TalkBack, device text scaling, and switch-control checks on installed iOS/Android builds remain part of release validation; web tests alone cannot certify those experiences.
 
-The question-mark button beside Your Hand opens How to Play, including current pass/50/50 balances, progress toward the next refill, and the next streak bonus. Opening tips and this guide share `GAME_TIPS` in `src/screens/GameScreen.tsx`; keep both synchronized with any rule changes. Pass and Discard spend the same balance (maximum 2). Wrong trivia resets the streak without spending a pass. Correct trivia counts as a card completion; minigame answers do not. Trivia results explain these effects before dismissal. Multi-answer questions permit exactly the required number of selected answers; players can deselect a pick to change it.
+Opening tips use `GAME_TIPS` in `src/screens/GameScreen.tsx`: Your Hand, Pick Your Next Quest, Challenges, Streaks, and Badges. There is no separate question-mark button or How to Play popup beside Your Hand. Pass/discard, trivia-answer, and 50/50 tips were removed from this sequence. Pass and Discard spend the same balance (maximum 2). Wrong trivia resets the streak without spending a pass. Correct trivia counts as a card completion; minigame answers do not. Trivia results explain these effects before dismissal. Multi-answer questions permit exactly the required number of selected answers; players can deselect a pick to change it.
 
 Help and privacy copy lives in `src/data/helpAndPrivacy.ts`. Reports open reviewable public GitHub issue drafts and do not automatically send anything. The question report includes the task ID, wording, and choices. Privacy describes local storage, hosting, external links, and confirmed deletion of all local data. Update it whenever data practices change. `npm run build:web` generates `public/privacy.html` from the same policy for a deployable `/privacy.html` URL; keep the generated page synchronized. Review the final hosting configuration and store privacy disclosures before publishing.
+
+Settings separates General from Accessibility tabs. Motion, reading size, readable font, contrast, and activity comfort filters live under Accessibility; height, categories, theme, feedback, and support remain under General. Switching tabs does not reset preferences. New-game setup has three steps: player/team and game names, starting park, then game options. The park-switching note appears beneath Walt Disney World Park on step 2. About preserves GooglyBlox’s trivia credit without an archive link.
+
+Minigames is beside Challenges. The bottom-navigation Park button is the sole park-switch entry point; there is no park dropdown in the Challenges header.

@@ -1,6 +1,6 @@
 import { useReducedMotion, useReadingPreferences } from '../theme/useAccessibility';
 import { ScrollView } from 'react-native';
-import ReadingModal, { FocusHeading } from '../components/ReadingModal';
+import { FocusHeading } from '../components/ReadingModal';
 import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 /**
  * GameScreen.tsx
@@ -70,20 +70,6 @@ const GAME_TIPS: { id: string; title: string; message: string; icon: IconName | 
     icon: 'trophy',
   },
   {
-    id: 'tip-discard',
-    title: 'Passes & Discards',
-    message: 'Pass a trivia question to read its answer, or Discard an activity you don’t want. Both use one of your shared passes and reset your streak. You start with 2 and earn 1 every 5 completed cards, up to 2.',
-    icon: 'swap',
-  },
-  {
-    id: 'tip-trivia', title: 'Trivia Answers', icon: 'trivia',
-    message: 'Correct trivia earns the card’s points and counts as a completion. A wrong answer earns no points and resets your streak, but doesn’t spend a pass. Answers stay visible until you dismiss them. Not now closes an unanswered question without spending a pass.',
-  },
-  {
-    id: 'tip-fifty', title: '50/50', icon: 'trivia',
-    message: '50/50 removes 2 wrong choices on a four-choice question with one correct answer. You start with 2 uses and earn 1 every 5 completed cards, up to 3. Wrong answers, passes, and minigames don’t count toward these rewards.',
-  },
-  {
     id: 'tip-streak',
     title: 'Streaks',
     message: 'Complete tasks in a row to build your streak. Every 5 in a row earns a +10 bonus.',
@@ -133,7 +119,6 @@ export default function GameScreen() {
   const [selectedParkId, setSelectedParkId] = useState<string>(PARKS[0].id);
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [showTips, setShowTips] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
   const [badgeQueue, setBadgeQueue] = useState<Badge[]>([]);
   const [activeBadge, setActiveBadge] = useState<Badge | null>(null);
   const processedBadgeIdsRef = useRef(new Set<string>());
@@ -185,11 +170,8 @@ export default function GameScreen() {
     const unprocessed = newlyEarnedBadges.filter(b => !processedBadgeIdsRef.current.has(b.id));
     if (unprocessed.length === 0) return;
 
-    for (const b of unprocessed) {
-      processedBadgeIdsRef.current.add(b.id);
-    }
-
     const timer = setTimeout(() => {
+      for (const b of unprocessed) processedBadgeIdsRef.current.add(b.id);
       setBadgeQueue(prev => [...prev, ...unprocessed]);
     }, 1200);
 
@@ -197,11 +179,11 @@ export default function GameScreen() {
   }, [newlyEarnedBadges]);
 
   useEffect(() => {
-    if (badgeQueue.length > 0 && !activeBadge && !draft) {
+    if (badgeQueue.length > 0 && !activeBadge && !draft && !showMinigames) {
       setActiveBadge(badgeQueue[0]);
       setBadgeQueue(prev => prev.slice(1));
     }
-  }, [activeBadge, badgeQueue, draft]);
+  }, [activeBadge, badgeQueue, draft, showMinigames]);
 
   // Let the card burst and score pop play before the draft takes over the screen.
   useEffect(() => {
@@ -228,6 +210,7 @@ export default function GameScreen() {
     return () => clearInterval(interval);
   }, [autoSave]);
 
+  const currentPark = PARKS.find(p => settings.parkIds.includes(p.id));
   if (!session) {
     return (
       <View style={styles.loadingContainer}>
@@ -245,7 +228,6 @@ export default function GameScreen() {
     setShowBigFirework(true);
   };
 
-  const currentPark = PARKS.find(p => settings.parkIds.includes(p.id));
 
   return (
     <ImageBackground
@@ -266,15 +248,10 @@ export default function GameScreen() {
           />
 
           <View style={styles.section}>
-            <View style={styles.sectionHeadingRow}>
+            <View testID="challenges-heading" style={styles.sectionHeadingRow}>
               <Text style={styles.sectionTitle}>Challenges</Text>
-              {currentPark ? (
-                <TouchableOpacity testID="park-chip" accessibilityRole="button" accessibilityLabel={`Switch parks. Current park: ${currentPark.name}`} style={styles.parkChip} onPress={openParkModal} activeOpacity={0.8} hitSlop={8}>
-                  <GameIcon name={currentPark.icon} size={22} />
-                  <Text style={styles.parkChipText} numberOfLines={1}>{currentPark.name}</Text>
-                  <GameIcon name="chevron-down" size={14} />
-                </TouchableOpacity>
-              ) : null}
+              <TouchableOpacity testID="minigames-btn" accessibilityRole="button" onPress={() => setShowMinigames(true)} style={{ minHeight: 44, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: TABLE.gold, borderRadius: 10, borderWidth: 2, borderColor: INK }}><GameIcon name="controller" size={22}/><Text style={{ fontFamily: FONTS.display, fontSize: 16, color: INK }}>Minigames</Text></TouchableOpacity>
+
             </View>
             <View style={styles.challengeRow}>
               {session.challengeTasks.map(task => (
@@ -296,9 +273,7 @@ export default function GameScreen() {
             <View style={[styles.sectionHeadingRow, styles.handHeading]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1 }}>
                 <Text style={styles.sectionTitle}>Your Hand</Text>
-                <TouchableOpacity testID="game-help-btn" accessibilityRole="button" accessibilityLabel="How to play and reward progress" onPress={() => setShowGuide(true)} style={{ width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}><GameIcon name="trivia" size={24} /></TouchableOpacity>
               </View>
-              <TouchableOpacity testID="minigames-btn" accessibilityRole="button" onPress={() => setShowMinigames(true)} style={{ minHeight: 44, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: TABLE.gold, borderRadius: 10, borderWidth: 2, borderColor: INK }}><GameIcon name="controller" size={22}/><Text style={{ fontFamily: FONTS.display, fontSize: 16, color: INK }}>Minigames</Text></TouchableOpacity>
             </View>
             <View style={styles.handArea} onLayout={e => setHandHeight(e.nativeEvent.layout.height)}>
               {handHeight > 0 && (
@@ -348,10 +323,6 @@ export default function GameScreen() {
       </SafeAreaView>
 
       {showMinigames && <Minigames onClose={() => setShowMinigames(false)} />}
-      {showGuide && <ReadingModal title="How to Play" testID="game-help-panel" onClose={() => setShowGuide(false)}>
-        <Text testID="game-reward-progress" style={styles.panelBody}>{`${session.discardsRemaining} of 2 passes · ${session.fiftyFiftyUses} of 3 50/50 uses\nComplete ${5 - session.totalCompletions % 5} more ${session.totalCompletions % 5 === 4 ? 'card' : 'cards'} for the next refill (up to each limit).\n${5 - session.currentStreak % 5} more in a row for a +10 streak bonus.`}</Text>
-        {GAME_TIPS.map(tip => <View key={tip.id} style={{ gap: 6 }}><Text accessibilityRole="header" style={[styles.panelBody, { fontWeight: '900' }]}>{tip.title}</Text><Text style={styles.panelBody}>{tip.message}</Text></View>)}
-      </ReadingModal>}
       {activeBadge && <BadgeUnlockPopup key={activeBadge.id} badge={activeBadge} onDismiss={handleBadgeDismiss} />}
 
       {expandedChallenge && (
