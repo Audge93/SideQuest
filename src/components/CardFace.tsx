@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useReadingPreferences } from '../theme/useAccessibility';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform, AccessibilityInfo, findNodeHandle } from 'react-native';
 import { Task } from '../types';
 import GameIcon, { IconName } from './icons/GameIcon';
 import {
@@ -31,6 +31,16 @@ interface Props {
 export default function CardFace({ task, width, variant = 'full', descriptionLines = 5, descriptionTestID = 'card-description', highlighted, children }: Props) {
   const { highContrast, readableFont, scale: readingScale } = useReadingPreferences();
   const expanded = variant === 'reading';
+  const descriptionRef = useRef<Text>(null);
+  useEffect(() => {
+    if (!expanded) return;
+    const previous = Platform.OS === 'web' && typeof document !== 'undefined' ? document.activeElement as HTMLElement : null;
+    const frame = requestAnimationFrame(() => {
+      if (Platform.OS === 'web') (descriptionRef.current as any)?.focus?.();
+      else { const node = findNodeHandle(descriptionRef.current); if (node) AccessibilityInfo.setAccessibilityFocus(node); }
+    });
+    return () => { cancelAnimationFrame(frame); if (previous?.isConnected) previous.focus?.(); };
+  }, [expanded, task.id]);
   const height = Math.round(width * (variant === 'compact' ? 1.22 : CARD_ASPECT));
   const s = width / 260;
   const frame = CATEGORY_FRAME_COLORS[task.category] ?? '#666';
@@ -122,12 +132,16 @@ export default function CardFace({ task, width, variant = 'full', descriptionLin
         {!compact && (
           <View style={[styles.body, { paddingHorizontal: Math.round(12 * s), paddingVertical: Math.round(6 * s) }, expanded && { flexGrow: 1, flexShrink: 0, flexBasis: 'auto' }]}>
             <Text
+              ref={descriptionRef}
+              accessibilityRole={expanded ? 'header' : undefined}
+              {...(expanded && Platform.OS === 'web' ? { tabIndex: -1 } as any : {})}
               testID={descriptionTestID}
               style={[styles.description, { fontSize: Math.max(10, Math.round(17 * s)) * (expanded ? readingScale : 1), lineHeight: Math.max(13, Math.round(22 * s)) * (expanded ? readingScale : 1) }, readableFont && { fontFamily: 'System' }]}
               numberOfLines={expanded ? undefined : fittedLines}
             >
               {task.description}
             </Text>
+            {expanded && !!task.flavorText && <Text style={{ color: INK, textAlign: 'center', fontSize: 16 * readingScale, lineHeight: 24 * readingScale, marginTop: 12 }}>{task.flavorText}</Text>}
           </View>
         )}
 

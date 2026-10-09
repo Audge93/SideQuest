@@ -1,5 +1,5 @@
 import { useReducedMotion, useReadingPreferences } from '../theme/useAccessibility';
-import ReadingModal, { FocusHeading } from './ReadingModal';
+import { FocusHeading } from './ReadingModal';
 import { openSupport } from '../utils/support';
 import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 /**
@@ -303,7 +303,7 @@ function TriviaModal({
                   ? <GameButton testID="trivia-fifty-fifty-btn" label="Help: 50/50" multiline stretch
                       tone="blue" disabled={fiftyFiftyUses <= 0 || eliminatedChoices.length > 0} onPress={onFiftyFifty} style={{ flex: 1 }} />
                   : <View style={{ flex: 1 }} />}
-                <GameButton testID="trivia-not-now-btn" label="Not Now" multiline stretch tone="gray" onPress={onClose} style={{ flex: 1 }} />
+                <GameButton testID="trivia-not-now-btn" label="Deselect" multiline stretch tone="gray" onPress={onClose} style={{ flex: 1 }} />
               </View>
             </View>
           )}
@@ -390,7 +390,6 @@ export default function CardCarousel({
   const [activeIndex, setActiveIndex] = useState(0);
   const [triviaTask, setTriviaTask] = useState<Task | null>(null);
   const [reading, setReading] = useState<Task | null>(null);
-  const { scale: readingScale } = useReadingPreferences();
   const [triviaPassed, setTriviaPassed] = useState(false);
   const [exiting, setExiting] = useState<{ id: string; kind: ExitKind } | null>(null);
   const [bursts, setBursts] = useState<
@@ -592,12 +591,23 @@ export default function CardCarousel({
         <Text testID="hand-position" style={{ color: COLORS.textBody, fontSize: 12 }}>{activeIndex + 1} of {items.length}</Text>
         <TouchableOpacity testID="hand-next" accessibilityRole="button" accessibilityLabel="Next card" disabled={activeIndex >= items.length - 1} accessibilityState={{ disabled: activeIndex >= items.length - 1 }} style={{ minHeight: 44, justifyContent: 'center', opacity: activeIndex >= items.length - 1 ? 0.5 : 1 }} onPress={() => focusCard(activeIndex + 1)}><Text style={styles.triviaLaterText}>Next</Text></TouchableOpacity>
       </View>
-      {reading && <ReadingModal dismissOnBackdrop title={reading.displayCategory + ' · ' + reading.points + ' points'} onClose={() => setReading(null)}>
-        <View testID="hand-enlarged-card" style={{ alignItems: 'center', paddingTop: 12 }}>
-          <CardFace task={reading} width={Math.min(SCREEN_W - 84, 330)} variant="reading" descriptionTestID="hand-full-description" />
-        </View>
-        {!!reading.flavorText && <Text style={{ color: COLORS.textBody, fontSize: 16 * readingScale, lineHeight: 24 * readingScale }}>{reading.flavorText}</Text>}
-      </ReadingModal>}
+      {reading && <Modal transparent visible animationType={reduced ? 'none' : 'fade'} onRequestClose={() => setReading(null)}>
+        <Pressable testID="reading-panel-backdrop" accessible={false} onPress={() => setReading(null)} style={styles.overlay}>
+          <Pressable testID="reading-panel" accessible={false} accessibilityViewIsModal onPress={e => e.stopPropagation()} style={{ width: Math.min(SCREEN_W - 32, 380), maxHeight: '92%', gap: 12 }}>
+            <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
+              <View testID="hand-enlarged-card">
+                <CardFace task={reading} width={Math.min(SCREEN_W - 64, 330)} variant="reading" descriptionTestID="hand-full-description" />
+              </View>
+            </ScrollView>
+            <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 12 }}>
+              <GameButton testID="enlarged-discard-btn" label="Discard" sublabel={`${discardsRemaining} left`} tone="red" multiline stretch
+                disabled={busy || discardsRemaining <= 0} style={{ flex: 1 }} onPress={() => { const task = reading; setReading(null); beginExit(task, 'discard', () => onDiscard(task.id)); }} />
+              <GameButton testID="enlarged-complete-btn" label="Complete" sublabel={`+${reading.points} pts`} tone="green" multiline stretch
+                disabled={busy} style={{ flex: 1 }} onPress={() => { const task = reading; setReading(null); beginExit(task, 'complete', () => onComplete(task.id)); }} />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>}
 
       <View style={styles.actionBar}>
         <GameButton

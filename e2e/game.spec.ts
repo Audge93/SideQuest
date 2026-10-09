@@ -420,6 +420,7 @@ test('card taps open activities or trivia directly and outside taps return to th
     const state = JSON.parse(localStorage.getItem('parkquest_state')!);
     const activity = { id: 'tap-activity', category: 'find', displayCategory: 'Find', size: 'small', points: 5, difficulty: 'easy', description: 'Find a hidden star in a sign or decoration. Look closely at its shape and tell your party where you spotted it.' };
     state.session.hand[1] = activity; state.saveSlots.find((s: any) => s.id === state.activeSlotId).session.hand[1] = activity;
+    state.session.hand[2] = { ...activity, id: 'tap-discard' }; state.saveSlots.find((s: any) => s.id === state.activeSlotId).session.hand[2] = state.session.hand[2];
     state.settings.reduceMotion = 'on'; state.settings.textSize = 'extra-large'; state.settings.readableFont = true;
     localStorage.setItem('parkquest_state', JSON.stringify(state));
   });
@@ -429,6 +430,10 @@ test('card taps open activities or trivia directly and outside taps return to th
   await byId(page, 'hand-select-tap-activity').click();
   await expect(byId(page, 'hand-full-description')).toHaveText(original.hand[1].description);
   await expect(byId(page, 'hand-enlarged-card')).toBeVisible();
+  await expect(byId(page, 'enlarged-discard-btn')).toBeVisible(); await expect(byId(page, 'enlarged-complete-btn')).toBeVisible();
+  const completeBounds = await byId(page, 'enlarged-complete-btn').boundingBox();
+  expect(completeBounds!.y + completeBounds!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  await expect(byId(page, 'reading-close')).toHaveCount(0);
   await byId(page, 'hand-full-description').click(); await expect(byId(page, 'reading-panel')).toBeVisible();
   await snap(page, '60-tap-enlarged-activity');
   await byId(page, 'reading-panel-backdrop').click({ position: { x: 4, y: 4 } });
@@ -436,7 +441,7 @@ test('card taps open activities or trivia directly and outside taps return to th
   await byId(page, 'hand-previous').click(); await byId(page, 'hand-select-test-trivia').click();
   await expect(byId(page, 'trivia-panel')).toBeVisible(); await expect(byId(page, 'reading-panel')).toHaveCount(0);
   await expect(byId(page, 'trivia-fifty-fifty-btn')).toHaveText('Help: 50/50');
-  await expect(byId(page, 'trivia-not-now-btn')).toHaveText('Not Now');
+  await expect(byId(page, 'trivia-not-now-btn')).toHaveText('Deselect');
   await expect(byId(page, 'trivia-panel')).not.toContainText('Earn 1 every');
   const left = await byId(page, 'trivia-fifty-fifty-btn').boundingBox(); const right = await byId(page, 'trivia-not-now-btn').boundingBox();
   expect(Math.abs(left!.width - right!.width)).toBeLessThan(1); expect(left!.x + left!.width).toBeLessThan(right!.x);
@@ -451,6 +456,14 @@ test('card taps open activities or trivia directly and outside taps return to th
   await expect(byId(page, 'trivia-result')).toContainText('Not quite');
   await byId(page, 'trivia-backdrop').click({ position: { x: 4, y: 4 } });
   await expect(byId(page, 'trivia-panel')).toHaveCount(0); await expect(byId(page, 'draft-option')).toHaveCount(3);
+  await pickFirstDraftOption(page);
+  await byId(page, 'hand-select-tap-activity').click(); await byId(page, 'enlarged-complete-btn').click();
+  await expect(byId(page, 'reading-panel')).toHaveCount(0); await expect.poll(() => score(page)).toBe(5);
+  await pickFirstDraftOption(page);
+  await byId(page, 'hand-select-tap-discard').click(); await byId(page, 'enlarged-discard-btn').click();
+  await expect(byId(page, 'reading-panel')).toHaveCount(0); await expect(byId(page, 'draft-option')).toHaveCount(3);
+  expect((await savedState(page)).session.discardsRemaining).toBe(original.discardsRemaining - 1);
+  expect(await score(page)).toBe(5);
 });
 
 test('multiple-answer selection can be changed without choosing too many answers', async ({ page }) => {
@@ -544,7 +557,7 @@ test('comfort preferences persist, readable views fit, and cards have button nav
   await byId(page, `hand-select-${card.id}`).click();
   await expect(byId(page, 'hand-full-description')).toHaveText(card.description);
   await snap(page, '31-readable-card');
-  await byId(page, 'reading-close').click();
+  await byId(page, 'reading-panel-backdrop').click({ position: { x: 4, y: 4 } });
   await page.reload();
   await byId(page, 'continue-game-btn').click();
   await page.getByText('Select', { exact: true }).first().click();
