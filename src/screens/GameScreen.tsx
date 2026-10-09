@@ -54,7 +54,7 @@ const GAME_TIPS: { id: string; title: string; message: string; icon: IconName | 
   {
     id: 'tip-hand',
     title: 'Your Hand',
-    message: 'Swipe or use Previous and Next to browse your hand. Tap Read Card for the full instructions. Complete an activity after you’ve done it, or Answer a trivia question.',
+    message: 'Swipe or use Previous and Next to browse your hand. Tap an activity card to enlarge it, or tap trivia to answer. Complete an activity after you’ve done it.',
     icon: 'card',
   },
   {

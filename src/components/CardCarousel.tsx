@@ -220,8 +220,8 @@ function TriviaModal({
 
   return (
     <Modal transparent animationType={reduced ? 'none' : 'fade'} visible onRequestClose={answered ? finish : onClose}>
-      <View style={styles.overlay}>
-        <View testID="trivia-panel" accessibilityViewIsModal style={[styles.triviaPanel, { maxHeight: '92%' }]}>
+      <Pressable testID="trivia-backdrop" accessible={false} onPress={answered ? finish : onClose} style={styles.overlay}>
+        <Pressable testID="trivia-panel" accessible={false} onPress={e => e.stopPropagation()} accessibilityViewIsModal style={[styles.triviaPanel, { maxHeight: '92%' }]}>
           <ScrollView contentContainerStyle={{ gap: 14 }} style={{ flexShrink: 1 }}>
           <View style={styles.triviaHeader}>
             <View style={[styles.triviaRibbon, { backgroundColor: color }]}>
@@ -296,22 +296,19 @@ function TriviaModal({
             <GameButton testID="trivia-dismiss-btn" label="Dismiss" tone="blue" onPress={finish} style={{ flexGrow: 0 }} />
           ) : (
             <View style={{ gap: 10 }}>
-              {task.triviaChoices?.length === 4 && answers.length === 1 && (
-                <>
-                  <GameButton testID="trivia-fifty-fifty-btn" label={eliminatedChoices.length ? '50/50 used' : `50/50 (${fiftyFiftyUses} left)`}
-                    tone="blue" disabled={fiftyFiftyUses <= 0 || eliminatedChoices.length > 0} onPress={onFiftyFifty} style={{ flexGrow: 0 }} />
-                  <Text style={styles.triviaLaterText}>Earn 1 every 5 completed cards. Hold up to 3.</Text>
-                </>
-              )}
               {multiple && <GameButton testID="trivia-submit-btn" label="Submit answers" tone="gold"
                 disabled={selectedChoices.length !== required} onPress={() => reveal(selectedChoices)} style={{ flexGrow: 0 }} />}
-              <TouchableOpacity testID="trivia-not-now-btn" accessibilityRole="button" onPress={onClose} style={[styles.triviaLater, { minHeight: 44, justifyContent: 'center' }]}>
-                <Text style={styles.triviaLaterText}>Not now</Text>
-              </TouchableOpacity>
+              <View testID="trivia-footer" style={{ flexDirection: 'row', gap: 10 }}>
+                {task.triviaChoices?.length === 4 && answers.length === 1
+                  ? <GameButton testID="trivia-fifty-fifty-btn" label="Help: 50/50" multiline stretch
+                      tone="blue" disabled={fiftyFiftyUses <= 0 || eliminatedChoices.length > 0} onPress={onFiftyFifty} style={{ flex: 1 }} />
+                  : <View style={{ flex: 1 }} />}
+                <GameButton testID="trivia-not-now-btn" label="Not Now" multiline stretch tone="gray" onPress={onClose} style={{ flex: 1 }} />
+              </View>
             </View>
           )}
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
@@ -514,6 +511,14 @@ export default function CardCarousel({
     setActiveIndex(index);
     flatListRef.current?.scrollToOffset({ offset: index * SNAP_INTERVAL, animated: !reduced });
   };
+  const openCard = (task: Task, index: number) => {
+    if (busy) return;
+    focusCard(index);
+    if (task.category === 'trivia' && task.triviaChoices) {
+      setTriviaPassed(false);
+      setTriviaTask(task);
+    } else setReading(task);
+  };
 
   return (
     <View style={styles.container}>
@@ -544,7 +549,7 @@ export default function CardCarousel({
               extrapolate: 'clamp',
             });
             return (
-              <Pressable accessibilityRole="button" accessibilityLabel={isOpenSlot(item) ? "Choosing next card" : `${item.displayCategory}: ${item.description}, ${item.points} points. ${index === activeIndex ? "Read card" : "Select card"}`} onPress={() => index === activeIndex && !isOpenSlot(item) ? setReading(item) : focusCard(index)}>
+              <Pressable testID={`hand-select-${item.id}`} accessibilityRole="button" accessibilityLabel={isOpenSlot(item) ? "Choosing next card" : `${item.displayCategory}: ${item.description}, ${item.points} points. ${item.category === 'trivia' && item.triviaChoices ? 'Answer trivia' : 'Enlarge card'}`} disabled={busy || isOpenSlot(item)} onPress={() => !isOpenSlot(item) && openCard(item, index)}>
                 <Animated.View
                   style={{
                     width: cardWidth,
@@ -584,11 +589,13 @@ export default function CardCarousel({
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, gap: 8 }}>
         <TouchableOpacity testID="hand-previous" accessibilityRole="button" accessibilityLabel="Previous card" disabled={activeIndex === 0} accessibilityState={{ disabled: activeIndex === 0 }} style={{ minHeight: 44, justifyContent: 'center', opacity: activeIndex === 0 ? 0.5 : 1 }} onPress={() => focusCard(activeIndex - 1)}><Text style={styles.triviaLaterText}>Previous</Text></TouchableOpacity>
-        <TouchableOpacity testID="hand-read" accessibilityRole="button" accessibilityLabel={`Read card ${activeIndex + 1} of ${items.length}`} disabled={!activeTask} style={{ minHeight: 44, justifyContent: 'center', alignItems: 'center' }} onPress={() => activeTask && setReading(activeTask)}><Text style={styles.triviaLaterText}>Read Card</Text><Text testID="hand-position" style={{ color: COLORS.textBody, fontSize: 12 }}>{activeIndex + 1} of {items.length}</Text></TouchableOpacity>
+        <Text testID="hand-position" style={{ color: COLORS.textBody, fontSize: 12 }}>{activeIndex + 1} of {items.length}</Text>
         <TouchableOpacity testID="hand-next" accessibilityRole="button" accessibilityLabel="Next card" disabled={activeIndex >= items.length - 1} accessibilityState={{ disabled: activeIndex >= items.length - 1 }} style={{ minHeight: 44, justifyContent: 'center', opacity: activeIndex >= items.length - 1 ? 0.5 : 1 }} onPress={() => focusCard(activeIndex + 1)}><Text style={styles.triviaLaterText}>Next</Text></TouchableOpacity>
       </View>
-      {reading && <ReadingModal title={reading.displayCategory + ' · ' + reading.points + ' points'} onClose={() => setReading(null)}>
-        <Text testID="hand-full-description" style={{ color: COLORS.textDark, fontSize: 18 * readingScale, lineHeight: 27 * readingScale }}>{reading.description}</Text>
+      {reading && <ReadingModal dismissOnBackdrop title={reading.displayCategory + ' · ' + reading.points + ' points'} onClose={() => setReading(null)}>
+        <View testID="hand-enlarged-card" style={{ alignItems: 'center', paddingTop: 12 }}>
+          <CardFace task={reading} width={Math.min(SCREEN_W - 84, 330)} variant="reading" descriptionTestID="hand-full-description" />
+        </View>
         {!!reading.flavorText && <Text style={{ color: COLORS.textBody, fontSize: 16 * readingScale, lineHeight: 24 * readingScale }}>{reading.flavorText}</Text>}
       </ReadingModal>}
 

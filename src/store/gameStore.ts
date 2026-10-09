@@ -181,7 +181,8 @@ interface GameState {
   startWhoAmI: () => void;
   revealWhoClue: () => void;
   answerWhoAmI: (choice: number) => void;
-  startTriviaSprint: (seconds: 30 | 60) => void;
+  startTriviaSprint: () => void;
+  resetTriviaSprint: () => void;
   answerSprint: (choice: number, questionId?: string) => void;
   finishSprint: () => void;
   reviewSprintQuestion: (index: number) => void;
@@ -782,15 +783,21 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ session: { ...session, sessionScore: session.sessionScore + earnedPoints,
       whoAmI: { ...round, answer: choice, finished: true, earnedPoints } } }); get().refreshBadges(); get().autoSave();
   },
-  startTriviaSprint: (seconds) => {
+  resetTriviaSprint: () => {
     const { session } = get();
-    if (!session || (seconds !== 30 && seconds !== 60) || (session.triviaSprint && !session.triviaSprint.finished)) return;
+    if (!session?.triviaSprint) return;
+    set({ session: { ...session, triviaSprint: undefined } });
+    get().autoSave();
+  },
+  startTriviaSprint: () => {
+    const { session } = get();
+    if (!session || (session.triviaSprint && !session.triviaSprint.finished)) return;
     const pool = TRIVIA_TASKS.filter(t => t.triviaChoices && correctTriviaAnswers(t).length === 1 && t.description.length <= 180 && t.triviaChoices.every(c => c.length <= 60));
     const recent = new Set(session.recentSprintQuestions ?? []);
     const questions = [...shuffle(pool.filter(t => !recent.has(t.id))), ...shuffle(pool.filter(t => recent.has(t.id)))].slice(0, 10);
     if (questions.length !== 10) return;
     set({ session: { ...session, recentSprintQuestions: [...(session.recentSprintQuestions ?? []), ...questions.map(t => t.id)].slice(-50),
-      triviaSprint: { id: String(Date.now()) + Math.random(), questions, answers: [], deadline: Date.now() + seconds * 1000, durationSeconds: seconds, finished: false, earnedPoints: 0 } } });
+      triviaSprint: { id: String(Date.now()) + Math.random(), questions, answers: [], deadline: Date.now() + 60_000, durationSeconds: 60, finished: false, earnedPoints: 0 } } });
     get().autoSave();
   },
   answerSprint: (choice, questionId) => {

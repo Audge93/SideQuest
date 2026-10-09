@@ -140,7 +140,7 @@ test('Sprint nine-correct scoring, paged review, report drafts, and review resum
   await page.reload(); await byId(page, 'continue-game-btn').click(); await byId(page, 'save-select-0').click();
   const hand = (await savedState(page)).session.hand;
   await byId(page, 'minigames-btn').click();
-  await expect(byId(page, 'choose-sprint')).toContainText('Resume');
+  await expect(byId(page, 'choose-sprint')).toContainText('60 seconds');
   await byId(page, 'choose-sprint').click();
   await byId(page, 'sprint-choice-1').click();
   await expect(byId(page, 'sprint-results')).toContainText('9/10 correct');
@@ -153,16 +153,18 @@ test('Sprint nine-correct scoring, paged review, report drafts, and review resum
   await snap(page, '46-sprint-paged-review');
   await byId(page, 'sprint-report-btn').click();
   expect(decodeURIComponent(await page.evaluate(() => (window as any).openedLinks.at(-1)))).toContain('Card ID: review-fixture-9');
-  await byId(page, 'minigames-close').click(); await byId(page, 'minigames-close').click();
   await page.reload(); await byId(page, 'continue-game-btn').click(); await byId(page, 'save-select-0').click();
   await byId(page, 'minigames-btn').click(); await byId(page, 'choose-sprint').click();
   await expect(byId(page, 'sprint-review-position')).toHaveText('Review 10 of 10');
-  await expect(byId(page, 'sprint-60')).toBeChecked();
+  await expect(byId(page, 'sprint-60')).toHaveCount(0);
   await byId(page, 'sprint-review-previous').click();
   await expect(byId(page, 'sprint-review-question')).toHaveText('Review question 9: choose the first answer.');
   const session = (await savedState(page)).session;
   expect(session).toMatchObject({ sessionScore: 110, currentStreak: 3, totalCompletions: 4, discardsRemaining: 1, fiftyFiftyUses: 1 });
   expect(session.hand).toEqual(hand);
+  await byId(page, 'minigames-close').click();
+  expect((await savedState(page)).session.triviaSprint).toBeUndefined();
+  expect(await score(page)).toBe(110);
 });
 
 test('largest-text minigames keep the clock and exit visible and preserve a running Sprint through Help', async ({ page }) => {
@@ -171,9 +173,9 @@ test('largest-text minigames keep the clock and exit visible and preserve a runn
   await byId(page, 'settings-tab-accessibility').click();
   await byId(page, 'text-extra-large').click(); await byId(page, 'comfort-readableFont').click(); await page.getByText('‹ Back').click();
   await byId(page, 'minigames-btn').click(); await byId(page, 'choose-sprint').click(); await byId(page, 'minigame-tips-dismiss').click();
-  await byId(page, 'sprint-60').click(); await expect(byId(page, 'sprint-60')).toBeChecked(); await byId(page, 'sprint-start').click();
+  await expect(byId(page, 'sprint-30')).toHaveCount(0); await expect(byId(page, 'sprint-60')).toHaveCount(0); await byId(page, 'sprint-start').click();
   const round = (await savedState(page)).session.triviaSprint;
-  await byId(page, 'sprint-choice-3').scrollIntoViewIfNeeded();
+  await page.locator('[data-testid^="sprint-choice-"]').last().scrollIntoViewIfNeeded();
   const timer = await byId(page, 'sprint-timer').boundingBox();
   const exit = await byId(page, 'minigames-close').boundingBox();
   expect(timer!.y).toBeGreaterThanOrEqual(0); expect(timer!.y + timer!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
@@ -183,9 +185,6 @@ test('largest-text minigames keep the clock and exit visible and preserve a runn
   await byId(page, 'minigame-help').click(); await expect(byId(page, 'sprint-help-clock')).toHaveCount(1);
   await page.clock.fastForward(5000); await byId(page, 'minigame-tips-dismiss').click();
   expect((await savedState(page)).session.triviaSprint.deadline).toBe(round.deadline);
-  await byId(page, 'minigames-close').click(); await expect(byId(page, 'sprint-resume-status')).toBeVisible();
-  await byId(page, 'choose-sprint').click();
-  expect((await savedState(page)).session.triviaSprint.id).toBe(round.id);
   await page.clock.fastForward(61_000); await expect(byId(page, 'sprint-results')).toContainText('Time’s Up!');
   await expect(byId(page, 'sprint-results')).toContainText('10 unanswered');
   await snap(page, '48-readable-sprint-review');
@@ -415,6 +414,45 @@ test('hand navigation and park cancel preserve the hand without a duplicate tuto
   expect((await savedState(page)).session.hand.map((t: any) => t.id)).toEqual(original);
 });
 
+test('card taps open activities or trivia directly and outside taps return to the hand', async ({ page }) => {
+  await triviaGame(page, 'single');
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('parkquest_state')!);
+    const activity = { id: 'tap-activity', category: 'find', displayCategory: 'Find', size: 'small', points: 5, difficulty: 'easy', description: 'Find a hidden star in a sign or decoration. Look closely at its shape and tell your party where you spotted it.' };
+    state.session.hand[1] = activity; state.saveSlots.find((s: any) => s.id === state.activeSlotId).session.hand[1] = activity;
+    state.settings.reduceMotion = 'on'; state.settings.textSize = 'extra-large'; state.settings.readableFont = true;
+    localStorage.setItem('parkquest_state', JSON.stringify(state));
+  });
+  await page.reload(); await byId(page, 'continue-game-btn').click(); await byId(page, 'save-select-0').click();
+  const original = (await savedState(page)).session;
+  await expect(byId(page, 'hand-read')).toHaveCount(0);
+  await byId(page, 'hand-select-tap-activity').click();
+  await expect(byId(page, 'hand-full-description')).toHaveText(original.hand[1].description);
+  await expect(byId(page, 'hand-enlarged-card')).toBeVisible();
+  await byId(page, 'hand-full-description').click(); await expect(byId(page, 'reading-panel')).toBeVisible();
+  await snap(page, '60-tap-enlarged-activity');
+  await byId(page, 'reading-panel-backdrop').click({ position: { x: 4, y: 4 } });
+  await expect(byId(page, 'reading-panel')).toHaveCount(0); await expect(byId(page, 'hand-position')).toHaveText('2 of 5');
+  await byId(page, 'hand-previous').click(); await byId(page, 'hand-select-test-trivia').click();
+  await expect(byId(page, 'trivia-panel')).toBeVisible(); await expect(byId(page, 'reading-panel')).toHaveCount(0);
+  await expect(byId(page, 'trivia-fifty-fifty-btn')).toHaveText('Help: 50/50');
+  await expect(byId(page, 'trivia-not-now-btn')).toHaveText('Not Now');
+  await expect(byId(page, 'trivia-panel')).not.toContainText('Earn 1 every');
+  const left = await byId(page, 'trivia-fifty-fifty-btn').boundingBox(); const right = await byId(page, 'trivia-not-now-btn').boundingBox();
+  expect(Math.abs(left!.width - right!.width)).toBeLessThan(1); expect(left!.x + left!.width).toBeLessThan(right!.x);
+  expect(right!.y + right!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  await snap(page, '61-trivia-footer');
+  await byId(page, 'trivia-backdrop').click({ position: { x: 4, y: 4 } });
+  await expect(byId(page, 'trivia-panel')).toHaveCount(0);
+  expect((await savedState(page)).session.hand).toEqual(original.hand);
+  expect((await savedState(page)).session.discardsRemaining).toBe(original.discardsRemaining);
+  expect(await score(page)).toBe(original.sessionScore);
+  await byId(page, 'hand-select-test-trivia').click(); await byId(page, 'trivia-choice-1').click();
+  await expect(byId(page, 'trivia-result')).toContainText('Not quite');
+  await byId(page, 'trivia-backdrop').click({ position: { x: 4, y: 4 } });
+  await expect(byId(page, 'trivia-panel')).toHaveCount(0); await expect(byId(page, 'draft-option')).toHaveCount(3);
+});
+
 test('multiple-answer selection can be changed without choosing too many answers', async ({ page }) => {
   await triviaGame(page);
   await byId(page, 'complete-btn').click();
@@ -500,8 +538,11 @@ test('comfort preferences persist, readable views fit, and cards have button nav
   await page.getByText('‹ Back').click();
   await byId(page, 'hand-next').click();
   await byId(page, 'hand-previous').click();
-  await byId(page, 'hand-read').click();
-  await expect(byId(page, 'hand-full-description')).toHaveText((await savedState(page)).session.hand[0].description);
+  await focusCompletableCard(page);
+  const cardIndex = Number((await byId(page, 'hand-position').innerText()).split(' ')[0]) - 1;
+  const card = (await savedState(page)).session.hand[cardIndex];
+  await byId(page, `hand-select-${card.id}`).click();
+  await expect(byId(page, 'hand-full-description')).toHaveText(card.description);
   await snap(page, '31-readable-card');
   await byId(page, 'reading-close').click();
   await page.reload();
@@ -749,7 +790,7 @@ for (const mode of ['single', 'alternative'] as const) {
 test('50/50 removes two wrong choices once and survives closing and resuming', async ({ page }) => {
   await triviaGame(page, 'single');
   await byId(page, 'complete-btn').click();
-  await expect(byId(page, 'trivia-fifty-fifty-btn')).toContainText('2 left');
+  await expect(byId(page, 'trivia-fifty-fifty-btn')).toHaveText('Help: 50/50');
   await byId(page, 'trivia-fifty-fifty-btn').click();
   await expect(byId(page, 'trivia-fifty-fifty-btn')).toBeDisabled();
   await expect(byId(page, 'trivia-choice-0')).toBeEnabled();
@@ -761,7 +802,8 @@ test('50/50 removes two wrong choices once and survives closing and resuming', a
   await snap(page, '14-trivia-fifty-fifty');
   await byId(page, 'trivia-not-now-btn').click();
   await byId(page, 'complete-btn').click();
-  await expect(byId(page, 'trivia-fifty-fifty-btn')).toContainText('used');
+  await expect(byId(page, 'trivia-fifty-fifty-btn')).toHaveText('Help: 50/50');
+  await expect(byId(page, 'trivia-fifty-fifty-btn')).toBeDisabled();
   await page.reload();
   await byId(page, 'continue-game-btn').click();
   await page.getByText('Select', { exact: true }).first().click();
@@ -957,7 +999,6 @@ test('minigames teach the rules, score a perfect sprint, and allow unlimited rep
   await expect(byId(page,'minigame-tips')).toBeVisible();
   await snap(page,'20-sprint-help');
   await byId(page,'minigame-tips-dismiss').click();
-  await byId(page,'sprint-60').click();
   await byId(page,'sprint-start').click();
   await snap(page,'21-sprint');
   const started=await savedState(page);
@@ -1011,15 +1052,37 @@ test('Who Am I reveals clues, preserves progress, and reviews the character at t
 });
 
 
-test('a sprint expires while its panel is closed and reviews unanswered questions', async ({page})=>{
+test('leaving a Sprint clears it permanently and every new round gets a full minute', async ({page})=>{
   await startGame(page);await byId(page,'minigames-btn').click();await byId(page,'choose-sprint').click();
-  await byId(page,'minigame-tips-dismiss').click();await byId(page,'sprint-start').click();
-  await page.clock.install();
-  await byId(page,'minigames-close').click();await byId(page,'minigames-close').click();
-  await page.clock.fastForward(31_000);
+  await byId(page,'minigame-tips-dismiss').click();
+  await expect(byId(page,'sprint-30')).toHaveCount(0); await expect(byId(page,'sprint-60')).toHaveCount(0);
+  await page.clock.install(); await byId(page,'sprint-start').click();
+  const before = (await savedState(page)).session;
+  expect(before.triviaSprint.durationSeconds).toBe(60);
+  const question = before.triviaSprint.questions[0];
+  await byId(page,`sprint-choice-${question.triviaAnswers?.[0] ?? question.triviaAnswer}`).click();
+  await page.clock.fastForward(15_000);
+  await expect(byId(page,'sprint-timer')).toContainText('45 seconds');
+  await byId(page,'minigames-close').click();
+  expect((await savedState(page)).session.triviaSprint).toBeUndefined();
+  await expect(byId(page,'choose-sprint')).not.toContainText('Resume');
+  await byId(page,'minigames-close').click();
+  await page.reload();await byId(page,'continue-game-btn').click();await byId(page,'save-select-0').click();
   await byId(page,'minigames-btn').click();await byId(page,'choose-sprint').click();
-  await expect(byId(page,'sprint-results')).toContainText('0/10 correct');
-  await expect(byId(page,'sprint-results')).toContainText('Unanswered');
-  expect((await savedState(page)).session.triviaSprint.earnedPoints).toBe(0);
+  await expect(byId(page,'sprint-results')).toHaveCount(0); await expect(byId(page,'sprint-timer')).toHaveCount(0);
+  await page.clock.install();
+  await byId(page,'sprint-start').click();
+  const fresh = (await savedState(page)).session;
+  expect(fresh.triviaSprint.id).not.toBe(before.triviaSprint.id);
+  expect(fresh.triviaSprint.answers).toEqual([]); expect(fresh.triviaSprint.durationSeconds).toBe(60);
+  await expect(byId(page,'sprint-timer')).toContainText('60 seconds');
+  await snap(page, '59-sprint-fresh-minute');
+  await byId(page,'minigames-close').click();await byId(page,'minigames-close').click();
+  await page.clock.fastForward(61_000);
+  await byId(page,'minigames-btn').click();await byId(page,'choose-sprint').click();
+  await expect(byId(page,'sprint-results')).toHaveCount(0);
+  expect((await savedState(page)).session.triviaSprint).toBeUndefined();
+  expect((await savedState(page)).session.sessionScore).toBe(before.sessionScore);
+  expect((await savedState(page)).session.hand).toEqual(before.hand);
   await expect(byId(page,'sprint-choice-0')).toHaveCount(0);
 });

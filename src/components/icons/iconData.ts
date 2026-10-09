@@ -20,7 +20,7 @@ const BODIES = {
  seek: path('M7 32V12h12v20M29 32V12h12v20',C.purple) + rect(19,18,10,8,C.purple) + circle(13,33,9,C.purple) + circle(35,33,9,C.purple) + circle(13,33,5,C.cream) + circle(35,33,5,C.cream),
  'park-mk': path('M7 42V21h9v21h16V21h9v21Z',C.cream) + path('M16 42V17h16v25Z',C.cream) + path('M5 21l6.5-11L18 21ZM14 17L24 4l10 13ZM30 21l6.5-11L43 21Z',C.blue) + path('M21 42v-8a3 3 0 0 1 6 0v8',INK),
  'park-hs': circle(14,13,8,C.purple) + circle(31,13,8,C.purple) + circle(14,13,2,C.cream) + circle(31,13,2,C.cream) + path('M35 28l8-5v17l-8-5Z',C.blue) + rect(5,23,30,18,C.purple),
- 'park-ep': path('M16 34l-5 9M32 34l5 9M8 43h32') + circle(24,21,16,C.steel) + path('M10 13l14-8 14 8v16l-14 8-14-8ZM10 13l14 8 14-8M10 29l14-8 14 8M24 5v32'),
+ 'park-ep': circle(24,24,19,C.steel) + `<path d="M14 9h20M8 16h32M5 24h38M8 32h32M14 39h20M24 5l-10 4 5 7-5 8 5 8-5 7 10 4M24 5l10 4-5 7 5 8-5 8 5 7-10 4M14 9l-6 7 6 8-6 8 6 7M34 9l6 7-6 8 6 8-6 7M24 9l-5 7 5 8-5 8 5 7M24 9l5 7-5 8 5 8-5 7" fill="none" stroke="${INK}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>`,
  'park-ak': path('M20 26h8v17h-8Z',C.gold) + path('M24 5c7 0 11 4 12 10 11 1 12 15 1 17H11C0 30 1 16 12 15 13 9 17 5 24 5Z',C.green),
  flame: path('M25 4c0 9 11 14 11 25 0 8-5 14-12 14S11 37 11 29c0-7 4-10 7-15l3 9c4-5 5-11 4-19Z',C.red),
  check: circle(24,24,18,C.green) + `<path d="M14 24l7 7 13-14" fill="none" stroke="${C.cream}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`,

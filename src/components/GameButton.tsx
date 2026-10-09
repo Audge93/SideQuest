@@ -17,6 +17,7 @@ export type ButtonTone = keyof typeof TONES;
 interface Props {
   label: string;
   multiline?: boolean;
+  stretch?: boolean;
   sublabel?: string;
   tone?: ButtonTone;
   onPress?: () => void;
@@ -29,7 +30,7 @@ interface Props {
   selected?: boolean;
 }
 
-export default function GameButton({ multiline, label, sublabel, tone = 'green', onPress, disabled, size = 'md', style, testID, accessibilityLabel, selected }: Props) {
+export default function GameButton({ multiline, stretch, label, sublabel, tone = 'green', onPress, disabled, size = 'md', style, testID, accessibilityLabel, selected }: Props) {
   const reduced = useReducedMotion();
   const { scale, readableFont, highContrast } = useReadingPreferences();
   const press = useRef(new Animated.Value(0)).current;
@@ -55,12 +56,14 @@ export default function GameButton({ multiline, label, sublabel, tone = 'green',
       <Animated.View
         style={[
           styles.edge,
+          stretch && { flexGrow: 1 },
           { backgroundColor: colors.edge, paddingBottom: depth },
         ]}
       >
         <Animated.View
           style={[
             styles.face,
+            stretch && { flexGrow: 1 },
             size === 'lg' && styles.faceLg,
             {
               backgroundColor: colors.face,

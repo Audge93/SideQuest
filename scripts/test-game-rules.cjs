@@ -45,7 +45,7 @@ assert.equal(state().saveSlots.find(s=>s?.id===slotId).settings.categoryToggles.
 console.log('Game rules passed: 50/50 eligibility, spending, persistence, rewards, cap, category safeguard, and saved preferences.');
 for (const count of [10, 9, 8, 0]) {
   store.setState({session:{...state().session,triviaSprint:undefined}});
-  state().startTriviaSprint(30);
+  state().startTriviaSprint();
   const round = state().session.triviaSprint;
   const before = state().session.sessionScore;
   const base = round.questions.slice(0,count).reduce((n,q)=>n+q.points,0);
@@ -59,10 +59,12 @@ for (const count of [10, 9, 8, 0]) {
   state().finishSprint(); assert.equal(state().session.sessionScore,before+earned);
 }
 store.setState({session:{...state().session,triviaSprint:undefined}});
-state().startTriviaSprint(30);
+state().startTriviaSprint();
 const inProgress=state().session.triviaSprint;
+assert.equal(inProgress.durationSeconds, 60);
+assert.ok(inProgress.deadline - Date.now() > 59_000 && inProgress.deadline - Date.now() <= 60_000);
 state().finishSprint(); assert.equal(state().session.triviaSprint.finished,false);
-state().startTriviaSprint(60); assert.equal(state().session.triviaSprint.id,inProgress.id);
+state().startTriviaSprint(); assert.equal(state().session.triviaSprint.id,inProgress.id);
 state().loadSlot(state().activeSlotId);assert.equal(state().session.triviaSprint.id,inProgress.id);
 store.setState({session:{...state().session,triviaSprint:{...inProgress,deadline:Date.now()-1}}});
 state().answerSprint(0);assert.equal(state().session.triviaSprint.finished,true);assert.equal(state().session.triviaSprint.answers.length,0);
@@ -71,13 +73,22 @@ state().reviewSprintQuestion(9); assert.equal(state().session.triviaSprint.revie
 for (const invalid of [-1, 10, 1.5]) state().reviewSprintQuestion(invalid);
 assert.equal(state().session.triviaSprint.reviewIndex, 9);
 state().loadSlot(state().activeSlotId);
-assert.equal(state().session.triviaSprint.reviewIndex, 9); assert.equal(state().session.triviaSprint.durationSeconds, 30);
+assert.equal(state().session.triviaSprint.reviewIndex, 9); assert.equal(state().session.triviaSprint.durationSeconds, 60);
 assert.equal(state().session.sessionScore, reviewScore);
-const finishedId = state().session.triviaSprint.id;
-state().startTriviaSprint(45); assert.equal(state().session.triviaSprint.id, finishedId);
-state().startTriviaSprint(60); assert.equal(state().session.triviaSprint.durationSeconds, 60);
+state().resetTriviaSprint(); assert.equal(state().session.triviaSprint, undefined);
+state().loadSlot(state().activeSlotId); assert.equal(state().session.triviaSprint, undefined);
+assert.equal(state().session.sessionScore, reviewScore);
+state().startTriviaSprint(); assert.equal(state().session.triviaSprint.durationSeconds, 60);
 state().reviewSprintQuestion(2); assert.equal(state().session.triviaSprint.reviewIndex, undefined);
-console.log('Trivia Sprint passed: multiplier thresholds, exactly-once scoring, expiration, unlimited replay, and save/resume.');
+const partial = state().session.triviaSprint; const cardHand = state().session.hand;
+state().answerSprint(partial.questions[0].triviaAnswers?.[0] ?? partial.questions[0].triviaAnswer);
+state().resetTriviaSprint(); state().loadSlot(state().activeSlotId);
+assert.equal(state().session.triviaSprint, undefined); assert.equal(state().session.sessionScore, reviewScore);
+assert.deepEqual(state().session.hand, cardHand);
+state().finishSprint(); assert.equal(state().session.sessionScore, reviewScore);
+state().startTriviaSprint(); assert.notEqual(state().session.triviaSprint.id, partial.id);
+assert.deepEqual(state().session.triviaSprint.answers, []);
+console.log('Trivia Sprint passed: multiplier thresholds, exactly-once scoring, expiration, fixed minute, and persisted reset without partial rewards.');
 const characters = load('src/data/whoAmI.ts').WHO_AM_I;
 for(const clues of [1,2,3]) {
   store.setState({session:{...state().session,whoAmI:undefined}});state().startWhoAmI();

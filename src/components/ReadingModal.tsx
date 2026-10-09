@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { AccessibilityInfo, findNodeHandle, Platform, Modal, View, Text, ScrollView } from 'react-native';
+import { AccessibilityInfo, findNodeHandle, Platform, Modal, View, Text, ScrollView, Pressable } from 'react-native';
 import { useAppTheme } from '../theme/useAppTheme';
 import { useReadingPreferences, useReducedMotion } from '../theme/useAccessibility';
 import GameButton from './GameButton';
@@ -19,19 +19,20 @@ export function FocusHeading({ title }: { title: string }) {
   return <Text ref={ref} accessibilityRole="header" accessible {...(Platform.OS === 'web' ? { tabIndex: -1 } as any : {})}
     style={{ fontSize: 24 * scale, fontWeight: '700', color: colors.textDark }}>{title}</Text>;
 }
-export default function ReadingModal({ title, children, onClose, testID = 'reading-panel', closeLabel = 'Close', closeTestID = 'reading-close' }: {
+export default function ReadingModal({ title, children, onClose, testID = 'reading-panel', closeLabel = 'Close', closeTestID = 'reading-close', dismissOnBackdrop = false }: {
   title: string; children: React.ReactNode; onClose: () => void; testID?: string; closeLabel?: string; closeTestID?: string;
+  dismissOnBackdrop?: boolean;
 }) {
   const { colors } = useAppTheme();
   const reduced = useReducedMotion();
   return <Modal transparent visible animationType={reduced ? 'none' : 'fade'} onRequestClose={onClose}>
-    <View style={{ flex: 1, padding: 16, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.8)' }}>
-      <View testID={testID} accessibilityViewIsModal style={{ backgroundColor: colors.surface, padding: 20, borderRadius: 18, maxHeight: '92%', gap: 16 }}>
+    <Pressable testID={`${testID}-backdrop`} accessible={false} onPress={dismissOnBackdrop ? onClose : undefined} style={{ flex: 1, padding: 16, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.8)' }}>
+      <Pressable testID={testID} accessible={false} onPress={e => e.stopPropagation()} accessibilityViewIsModal style={{ backgroundColor: colors.surface, padding: 20, borderRadius: 18, maxHeight: '92%', gap: 16 }}>
         <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 16 }}>
           <FocusHeading title={title} />{children}
         </ScrollView>
         <GameButton testID={closeTestID} label={closeLabel} onPress={onClose} tone="blue" style={{ flexGrow: 0 }} />
-      </View>
-    </View>
+      </Pressable>
+    </Pressable>
   </Modal>;
 }

@@ -21,14 +21,16 @@ interface Props {
   task: Task;
   width: number;
   // 'full' shows the task text; 'compact' is art-only for small slots like challenges.
-  variant?: 'full' | 'compact';
+  variant?: 'full' | 'compact' | 'reading';
+  descriptionTestID?: string;
   descriptionLines?: number;
   highlighted?: boolean;
   children?: React.ReactNode;
 }
 
-export default function CardFace({ task, width, variant = 'full', descriptionLines = 5, highlighted, children }: Props) {
-  const { highContrast, readableFont } = useReadingPreferences();
+export default function CardFace({ task, width, variant = 'full', descriptionLines = 5, descriptionTestID = 'card-description', highlighted, children }: Props) {
+  const { highContrast, readableFont, scale: readingScale } = useReadingPreferences();
+  const expanded = variant === 'reading';
   const height = Math.round(width * (variant === 'compact' ? 1.22 : CARD_ASPECT));
   const s = width / 260;
   const frame = CATEGORY_FRAME_COLORS[task.category] ?? '#666';
@@ -50,7 +52,8 @@ export default function CardFace({ task, width, variant = 'full', descriptionLin
         styles.frame,
         {
           width,
-          height,
+          height: expanded ? undefined : height,
+          minHeight: expanded ? height : undefined,
           backgroundColor: frame,
           borderRadius: Math.round(18 * s),
           borderWidth: border,
@@ -60,7 +63,7 @@ export default function CardFace({ task, width, variant = 'full', descriptionLin
         },
       ]}
     >
-      <View style={[styles.inner, { borderRadius: Math.round(12 * s) }]}>
+      <View style={[styles.inner, { borderRadius: Math.round(12 * s) }, expanded && { flexGrow: 1, flexShrink: 0, flexBasis: 'auto' }]}>
         <View style={[styles.art, { height: artHeight, backgroundColor: art }]}>
           {Array.from({ length: RAY_COUNT }, (_, i) => (
             <View
@@ -117,11 +120,11 @@ export default function CardFace({ task, width, variant = 'full', descriptionLin
         </View>
 
         {!compact && (
-          <View style={[styles.body, { paddingHorizontal: Math.round(12 * s), paddingVertical: Math.round(6 * s) }]}>
+          <View style={[styles.body, { paddingHorizontal: Math.round(12 * s), paddingVertical: Math.round(6 * s) }, expanded && { flexGrow: 1, flexShrink: 0, flexBasis: 'auto' }]}>
             <Text
-              testID="card-description"
-              style={[styles.description, { fontSize: Math.max(10, Math.round(17 * s)), lineHeight: Math.max(13, Math.round(22 * s)) }]}
-              numberOfLines={fittedLines}
+              testID={descriptionTestID}
+              style={[styles.description, { fontSize: Math.max(10, Math.round(17 * s)) * (expanded ? readingScale : 1), lineHeight: Math.max(13, Math.round(22 * s)) * (expanded ? readingScale : 1) }, readableFont && { fontFamily: 'System' }]}
+              numberOfLines={expanded ? undefined : fittedLines}
             >
               {task.description}
             </Text>

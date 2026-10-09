@@ -14,9 +14,9 @@ import { FONTS } from '../theme/theme';
 type Game = 'sprint' | 'who';
 const HELP = {
   sprint: { title: 'How to play Trivia Sprint', steps: [
-    'Choose 30 or 60 seconds, then tap Start. Answer 10 single-answer Disney questions before the clock runs out.',
+    'Tap Start. Answer 10 single-answer Disney questions in 60 seconds.',
     'Each correct answer earns that question’s normal points. Get all 10 right for 3× those points, or 9 right for 2×. Unanswered questions earn no points.',
-    'Closing the panel or opening Help does not pause the clock. Review each answer afterward using Previous and Next, at your own pace. Play unlimited rounds!',
+    'Leaving Trivia Sprint clears the round. An unfinished round earns no points. Help keeps the clock running. Review each answer afterward at your own pace. Play unlimited rounds!',
     'Minigame points add to your score. They do not change your card streak, passes, 50/50 uses, or card-completion totals.'], },
   who: { title: 'How to play Who Am I?', steps: [
     'Identify a Disney character from the clues. You start with one clue and four possible characters.',
@@ -29,11 +29,10 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
   const { colors } = useAppTheme();
   const reduced = useReducedMotion();
   const styles = useThemedStyles(BASE_STYLES);
-  const { session, startTriviaSprint, answerSprint, finishSprint, reviewSprintQuestion, startWhoAmI, revealWhoClue, answerWhoAmI, acknowledgeMinigameHelp } = useGameStore();
+  const { session, startTriviaSprint, resetTriviaSprint, answerSprint, finishSprint, reviewSprintQuestion, startWhoAmI, revealWhoClue, answerWhoAmI, acknowledgeMinigameHelp } = useGameStore();
   const [game, setGame] = useState<Game | null>(null);
   const [help, setHelp] = useState<Game | null>(null);
   const [now, setNow] = useState(Date.now());
-  const [seconds, setSeconds] = useState<30 | 60>(session?.triviaSprint?.durationSeconds ?? 30);
   const scroll = useRef<ScrollView>(null);
   const round = session?.triviaSprint;
   const who = session?.whoAmI;
@@ -56,6 +55,10 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
     setGame(selected);
     if (!session?.minigameHelpSeen?.includes(selected)) setHelp(selected);
   };
+  const leave = () => {
+    if (game === 'sprint' || !game) resetTriviaSprint();
+    if (game) setGame(null); else onClose();
+  };
   const question = round?.questions[round.answers.length];
   const correctCount = round?.questions.filter((q, i) => correctTriviaAnswers(q).includes(round.answers[i])).length ?? 0;
   const basePoints = round?.questions.reduce((sum, q, i) => sum + (correctTriviaAnswers(q).includes(round.answers[i]) ? q.points : 0), 0) ?? 0;
@@ -64,7 +67,7 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
   const reviewed = round?.questions[reviewIndex];
   const text = [styles.text, { color: colors.textDark }];
   const title = [text, styles.title];
-  return <Modal transparent animationType={reduced ? 'none' : 'fade'} onRequestClose={() => help ? setHelp(null) : game ? setGame(null) : onClose()}>
+  return <Modal transparent animationType={reduced ? 'none' : 'fade'} onRequestClose={() => help ? setHelp(null) : leave()}>
     <View style={styles.overlay}>
       <View accessibilityViewIsModal aria-hidden={!!help} accessibilityElementsHidden={!!help} importantForAccessibility={help ? 'no-hide-descendants' : 'auto'} testID="minigames-panel" style={[styles.panel, { backgroundColor: colors.surface }]}>
         <View style={styles.heading}>
@@ -75,8 +78,7 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
         <ScrollView ref={scroll} style={styles.body} contentContainerStyle={styles.content}>
           {!game && <>
             <Text style={text}>A little Disney fun, wherever you are. Play as often as you like and add points to your game.</Text>
-            <GameButton testID="choose-sprint" label="Trivia Sprint" sublabel={round ? round.finished ? 'View your results or play again' : `Resume · ${round.answers.length}/10 answered` : '10 questions against the clock'} tone="blue" onPress={() => select('sprint')} />
-            {round && !round.finished && <Text testID="sprint-resume-status" style={text}>Your Sprint has {remaining} seconds left. Its clock is still running.</Text>}
+            <GameButton testID="choose-sprint" label="Trivia Sprint" sublabel="10 questions · 60 seconds" tone="blue" onPress={() => select('sprint')} />
             <GameButton testID="choose-who" label="Who Am I?" sublabel={who ? who.finished ? 'View your answer or play again' : `Resume · ${who.cluesRevealed}/3 clues revealed` : 'Guess the character · no timer'} tone="gold" onPress={() => select('who')} />
             <Text style={text}>These games add score without changing your card streak or earning passes and 50/50 uses.</Text>
           </>}
@@ -101,7 +103,7 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
                 <GameButton testID="sprint-report-btn" multiline label="Report Question (public GitHub draft)" tone="gray" onPress={() => openSupport(reviewed)} />
               </View>}
             </View>}
-            {!round && <Text style={text}>10 questions. 10 right earns 3× points; 9 right earns 2×. Choose your timer below.</Text>}
+            {!round && <Text style={text}>10 questions in 60 seconds. 10 right earns 3× points; 9 right earns 2×.</Text>}
           </>}
           {game === 'sprint' && round && !round.finished && question && <>
             <View testID="sprint-question"><FocusHeading title={question.description} /></View>
@@ -122,19 +124,12 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
               <GameButton testID="who-give-up" label="Show Answer" tone="gray" onPress={() => answerWhoAmI(-1)} />
             </>}
           </>}
-          {game === 'sprint' && (!round || round.finished) && <>
-            <Text testID="sprint-duration-label" style={text}>Timer for your next round: {seconds} seconds</Text>
-            <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel="Trivia Sprint duration">
-              <GameButton testID="sprint-30" label="30 seconds" selected={seconds === 30} tone={seconds === 30 ? 'blue' : 'gray'} onPress={() => setSeconds(30)} />
-              <GameButton testID="sprint-60" label="60 seconds" selected={seconds === 60} tone={seconds === 60 ? 'blue' : 'gray'} onPress={() => setSeconds(60)} />
-            </View>
-          </>}
         </ScrollView>
         {game === 'sprint' && (!round || round.finished) && <>
-          <GameButton testID="sprint-start" label={round ? 'Play Again' : 'Start Trivia Sprint'} onPress={() => { setNow(Date.now()); startTriviaSprint(seconds); }} />
+          <GameButton testID="sprint-start" label={round ? 'Play Again' : 'Start Trivia Sprint'} onPress={() => { setNow(Date.now()); startTriviaSprint(); }} />
         </>}
         {game === 'who' && (!who || who.finished) && <GameButton testID="who-start" label={who ? 'Play Again' : 'Start Who Am I?'} tone="gold" onPress={startWhoAmI} />}
-        <GameButton testID="minigames-close" label={game ? 'Back to Minigames' : 'Back to Challenges'} onPress={() => game ? setGame(null) : onClose()} tone="gray" />
+        <GameButton testID="minigames-close" label={game ? 'Back to Minigames' : 'Back to Challenges'} onPress={leave} tone="gray" />
       </View>
       {help && <View style={[styles.helpOverlay, styles.overlay]}>
         <View testID="minigame-tips" accessibilityViewIsModal style={[styles.panel, { backgroundColor: colors.surface }]}>
