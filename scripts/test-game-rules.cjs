@@ -127,3 +127,27 @@ assert.equal(state().settings.reduceMotion,'on');assert.equal(state().settings.t
 assert.equal(state().updateSettings({seatedOnly:false,lessWalking:true}),true);
 assert.equal(matchesActivityPreferences(BIG_TASKS.find(t=>t.id==='treat-expansion-1'),state().settings),true);
 console.log('Comfort rules passed: reviewed activity filtering, four-park full boards/refills, incompatible-setting safeguard, and persistence.');
+
+const originalSave = JSON.parse(JSON.stringify(state().saveSlots.find(Boolean)));
+store.setState({ saveSlots: [originalSave, null, null], activeSlotId: originalSave.id, session: originalSave.session, settings: originalSave.settings });
+const setupSettings = { ...state().settings, parkIds: ['wdw-ak'], seatedOnly: false, lessWalking: false, noPerforming: false,
+  heightFilterEnabled: true, minHeightInches: 0, categoryToggles: { ...state().settings.categoryToggles, pins: false } };
+const beforeSetup = JSON.stringify({ settings: state().settings, player: state().player, session: state().session, saves: state().saveSlots });
+assert.equal(state().startSession('Invalid name', { settings: setupSettings, playerName: '  ' }), false);
+assert.equal(state().startSession('Invalid pool', { settings: { ...setupSettings, categoryToggles: Object.fromEntries(Object.keys(setupSettings.categoryToggles).map(key => [key, false])) }, playerName: 'New Player' }), false);
+assert.equal(JSON.stringify({ settings: state().settings, player: state().player, session: state().session, saves: state().saveSlots }), beforeSetup);
+assert.equal(state().startSession('  Family Day  ', { settings: setupSettings, playerName: '  New Player  ' }), true);
+assert.deepEqual(state().saveSlots[0], originalSave);
+assert.equal(state().player.name, 'New Player');
+assert.equal(state().saveSlots[1].name, 'Family Day');
+assert.deepEqual(state().session.parkIds, ['wdw-ak']);
+assert.equal(state().session.hand.length, 5); assert.equal(state().session.challengeTasks.length, 3);
+assert.ok(state().session.challengeTasks.every(task => task.category !== 'pins' && (task.category !== 'ride' || !task.heightRequirement)));
+state().loadSlot(originalSave.id);
+assert.deepEqual(state().settings.parkIds, originalSave.settings.parkIds);
+assert.equal(state().settings.categoryToggles.pins, originalSave.settings.categoryToggles.pins);
+store.setState({ saveSlots: [originalSave, { ...originalSave, id: 'full-2' }, { ...originalSave, id: 'full-3' }] });
+const fullBefore = JSON.stringify(state().saveSlots);
+assert.equal(state().startSession('No space', { settings: setupSettings, playerName: 'Another Player' }), false);
+assert.equal(JSON.stringify(state().saveSlots), fullBefore);
+console.log('New-game setup passed: atomic creation, validation, prior-save isolation, zero-height filtering, and full-slot protection.');

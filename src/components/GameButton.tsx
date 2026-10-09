@@ -24,9 +24,10 @@ interface Props {
   size?: 'md' | 'lg';
   style?: StyleProp<ViewStyle>;
   testID?: string;
+  accessibilityLabel?: string;
 }
 
-export default function GameButton({ multiline, label, sublabel, tone = 'green', onPress, disabled, size = 'md', style, testID }: Props) {
+export default function GameButton({ multiline, label, sublabel, tone = 'green', onPress, disabled, size = 'md', style, testID, accessibilityLabel }: Props) {
   const reduced = useReducedMotion();
   const { scale, readableFont, highContrast } = useReadingPreferences();
   const press = useRef(new Animated.Value(0)).current;
@@ -44,7 +45,7 @@ export default function GameButton({ multiline, label, sublabel, tone = 'green',
       onPressIn={() => !disabled && animate(1)}
       onPressOut={() => animate(0)}
       accessibilityRole="button"
-      accessibilityLabel={[label, sublabel].filter(Boolean).join(', ')}
+      accessibilityLabel={accessibilityLabel ?? [label, sublabel].filter(Boolean).join(', ')}
       accessibilityState={{ disabled: !!disabled }}
       style={[styles.wrap, style]}
     >

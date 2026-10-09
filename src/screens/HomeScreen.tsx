@@ -9,7 +9,7 @@ import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
  *   Page 2 — Pin trading toggle & height filter
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -19,25 +19,19 @@ import {
   StatusBar,
   SafeAreaView,
   ImageBackground,
-  Alert,
-  Switch,
   Modal,
-  TextInput,
-  LayoutAnimation,
-  Platform,
-  UIManager,
   Dimensions,
 } from 'react-native';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-import Slider from '@react-native-community/slider';
 import { useNavigation } from '@react-navigation/native';
 import { useGameStore } from '../store/gameStore';
-// CategoryToggles type used indirectly via updateCategoryToggle
+
 import { SaveSlot } from '../types';
-import { PARKS } from '../data/parks';
+
+import NewGameSetup from '../components/NewGameSetup';
+import GameButton from '../components/GameButton';
+import { useReducedMotion } from '../theme/useAccessibility';
+import { FocusHeading } from '../components/ReadingModal';
 import GameIcon from '../components/icons/GameIcon';
 import { COLORS, FONTS, INK, TABLE } from '../theme/theme';
 
@@ -61,12 +55,8 @@ export default function HomeScreen() {
   const styles = useThemedStyles(BASE_STYLES, true, []);
 
   const navigation = useNavigation<any>();
+  const reduced = useReducedMotion();
   const {
-    settings,
-    updateSettings,
-    updateCategoryToggle,
-    updatePlayerName,
-    session,
     startSession,
     player,
     saveSlots,
@@ -77,70 +67,20 @@ export default function HomeScreen() {
   const activeSaves = saveSlots.filter((s): s is SaveSlot => s !== null);
   const allSlotsFull = activeSaves.length >= 3;
 
-  // ─── Modal state ────────────────────────────────────────────────────────
   const [showNewGameModal, setShowNewGameModal] = useState(false);
   const [showContinueModal, setShowContinueModal] = useState(false);
   const [confirmDeleteSlotId, setConfirmDeleteSlotId] = useState<string | null>(null);
-  const [modalPage, setModalPage] = useState<1 | 2>(1);
-  const [gameNameInput, setGameNameInput] = useState('');
-  const [nameInput, setNameInput] = useState(player.name);
-
-  const selectedParkId = settings.parkIds?.[0];
-  const selectedPark = PARKS.find(p => p.id === selectedParkId);
-  const canAdvance = !!selectedPark;
-
-  const animateLayout = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  }, []);
-
-  // ─── Handlers ───────────────────────────────────────────────────────────
-
+  const [saveNotice, setSaveNotice] = useState(false);
   const handleOpenNewGame = () => {
     if (allSlotsFull) {
-      Alert.alert('Save Slots Full', 'Please delete a save to start a new game.');
+      setConfirmDeleteSlotId(null);
+      setSaveNotice(true);
+      setShowContinueModal(true);
       return;
     }
-    setNameInput(player.name);
-    setGameNameInput('');
-    setModalPage(1);
+    setSaveNotice(false);
     setShowNewGameModal(true);
   };
-
-  const handleModalNext = () => {
-    const trimmedName = nameInput.trim();
-    if (!trimmedName) {
-      Alert.alert('Name Required', 'Please enter a player or team name.');
-      return;
-    }
-    if (!canAdvance) {
-      Alert.alert('Select a Park', 'Please pick a park before continuing.');
-      return;
-    }
-    animateLayout();
-    setModalPage(2);
-  };
-
-  const handleModalBack = () => {
-    if (modalPage === 2) {
-      animateLayout();
-      setModalPage(1);
-    } else {
-      setShowNewGameModal(false);
-    }
-  };
-
-  const handleConfirmStart = () => {
-    const trimmedName = nameInput.trim();
-    if (!trimmedName) {
-      Alert.alert('Name Required', 'Please enter a player or team name.');
-      return;
-    }
-    updatePlayerName(trimmedName);
-    setShowNewGameModal(false);
-    startSession(gameNameInput.trim() || undefined);
-    navigation.navigate('Game');
-  };
-
   const handleLoadSlot = (slotId: string) => {
     loadSlot(slotId);
     navigation.navigate('Game');
@@ -171,6 +111,8 @@ export default function HomeScreen() {
           <View style={styles.topNav}>
             <TouchableOpacity
               testID="home-profile-btn"
+              accessibilityRole="button"
+              accessibilityLabel="Profile"
               style={styles.topNavBtn}
               onPress={() => navigation.navigate('Profile')}
               activeOpacity={0.7}
@@ -178,6 +120,9 @@ export default function HomeScreen() {
               <GameIcon name="profile" size={28} />
             </TouchableOpacity>
             <TouchableOpacity
+              testID="home-settings-btn"
+              accessibilityRole="button"
+              accessibilityLabel="Settings"
               style={styles.topNavBtn}
               onPress={() => navigation.navigate('Settings')}
               activeOpacity={0.7}
@@ -214,14 +159,16 @@ export default function HomeScreen() {
             {activeSaves.length > 0 && (
               <TouchableOpacity
                 testID="continue-game-btn"
+                accessibilityRole="button"
                 style={styles.continueBtn}
-                onPress={() => setShowContinueModal(true)}
+                onPress={() => { setSaveNotice(false); setConfirmDeleteSlotId(null); setShowContinueModal(true); }}
               >
                 <Text style={styles.continueBtnText}>Continue Game</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity
               testID="new-game-btn"
+              accessibilityRole="button"
               style={styles.startBtn}
               onPress={handleOpenNewGame}
             >
@@ -235,19 +182,22 @@ export default function HomeScreen() {
       <Modal
         visible={showContinueModal}
         transparent
-        animationType="fade"
+        animationType={reduced ? 'none' : 'fade'}
         onRequestClose={() => setShowContinueModal(false)}
       >
         <View style={styles.modalOverlay}>
           <ScrollView
+            testID="saved-games-panel"
+            accessibilityViewIsModal
             style={styles.modalCard}
             contentContainerStyle={styles.modalCardContent}
             bounces={false}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <Text style={styles.modalTitle}>Continue Game</Text>
-            <Text style={styles.modalSubtitle}>Choose a saved game</Text>
+            <FocusHeading title={saveNotice ? 'Saved Games' : 'Continue Game'} />
+            <Text style={styles.modalSubtitle}>{saveNotice ? (allSlotsFull ? 'All 3 save slots are full' : 'A save slot is available') : 'Choose a saved game'}</Text>
+            {saveNotice && <Text testID="save-slots-full" style={styles.saveNotice}>{allSlotsFull ? 'To start a new game, delete a save you no longer need. Deletion requires confirmation. You can also continue an existing game.' : 'You now have room for a new game. Your remaining saves are still available.'}</Text>}
             <View style={styles.modalDivider} />
 
             {activeSaves.map((slot, i) => (
@@ -266,6 +216,8 @@ export default function HomeScreen() {
                     <View style={styles.deleteConfirmRow}>
                       <Text style={styles.deleteConfirmText}>Delete this save?</Text>
                       <TouchableOpacity
+                        testID={`save-delete-confirm-${i}`}
+                        accessibilityRole="button"
                         style={styles.deleteConfirmYes}
                         onPress={() => handleDeleteSlot(slot.id)}
                         activeOpacity={0.7}
@@ -273,6 +225,8 @@ export default function HomeScreen() {
                         <Text style={styles.deleteConfirmYesText}>Yes, Delete</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
+                        testID={`save-delete-cancel-${i}`}
+                        accessibilityRole="button"
                         style={styles.deleteConfirmNo}
                         onPress={() => setConfirmDeleteSlotId(null)}
                         activeOpacity={0.7}
@@ -283,6 +237,8 @@ export default function HomeScreen() {
                   ) : (
                     <View style={styles.slotButtonRow}>
                       <TouchableOpacity
+                        testID={`save-select-${i}`}
+                        accessibilityRole="button"
                         style={styles.selectSlotBtn}
                         onPress={() => {
                           setShowContinueModal(false);
@@ -293,6 +249,8 @@ export default function HomeScreen() {
                         <Text style={styles.selectSlotBtnText}>Select</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
+                        testID={`save-delete-${i}`}
+                        accessibilityRole="button"
                         style={styles.deleteSlotBtn}
                         onPress={() => setConfirmDeleteSlotId(slot.id)}
                         activeOpacity={0.7}
@@ -307,7 +265,10 @@ export default function HomeScreen() {
             ))}
 
             <View style={styles.modalActions}>
+              {saveNotice && !allSlotsFull && <GameButton testID="save-slots-new-game" label="Create New Game" onPress={() => { setShowContinueModal(false); handleOpenNewGame(); }} />}
               <TouchableOpacity
+                testID="saved-games-back"
+                accessibilityRole="button"
                 style={styles.modalBackBtn}
                 onPress={() => setShowContinueModal(false)}
               >
@@ -318,195 +279,12 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* ── New Game Setup Modal (2 pages) ── */}
-      <Modal
-        visible={showNewGameModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowNewGameModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <ScrollView
-            style={styles.modalCard}
-            contentContainerStyle={styles.modalCardContent}
-            bounces={false}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Text style={styles.modalTitle}>New Game</Text>
-            <Text style={styles.modalSubtitle}>
-              {modalPage === 1 ? 'Step 1 of 2' : 'Step 2 of 2'}
-            </Text>
-
-            {/* ── PAGE 1: Name + Park ── */}
-            {modalPage === 1 && (
-              <View>
-                {/* Welcome tooltip */}
-                {!SHORT_SCREEN && (
-                <View style={styles.tooltip}>
-                  <Text style={styles.tooltipText}>
-                    Welcome to Side Quest, the theme park scavenger hunt.
-                    You can play solo or co-op. Pick your park and let's go!
-                  </Text>
-                </View>
-                )}
-
-                {/* Player / Team Name */}
-                <View style={styles.modalDivider} />
-                <Text style={styles.modalFieldLabel}>PLAYER / TEAM NAME</Text>
-                <TextInput
-                  style={styles.modalNameInput}
-                  value={nameInput}
-                  onChangeText={setNameInput}
-                  placeholder="Enter your name..."
-                  placeholderTextColor="rgba(42, 30, 63, 0.4)"
-                  maxLength={24}
-                  autoCapitalize="words"
-                  selectionColor={COLORS.green}
-                />
-
-                {/* Game Name */}
-                <Text style={styles.modalFieldLabel}>GAME NAME</Text>
-                <TextInput
-                  style={styles.modalNameInput}
-                  value={gameNameInput}
-                  onChangeText={setGameNameInput}
-                  placeholder={
-                    selectedPark
-                      ? `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date().getMonth()]} ${new Date().getDate()} – ${selectedPark.name}`
-                      : 'e.g. Magic Kingdom Day…'
-                  }
-                  placeholderTextColor="rgba(42, 30, 63, 0.4)"
-                  maxLength={30}
-                  autoCapitalize="words"
-                  selectionColor={COLORS.green}
-                />
-
-                {/* Park picker — Walt Disney World only for now */}
-                <Text style={styles.modalFieldLabel}>WALT DISNEY WORLD PARK</Text>
-                <View style={styles.parkGrid}>
-                  {PARKS.map(park => {
-                    const isSelected = park.id === selectedParkId;
-                    return (
-                      <TouchableOpacity
-                        key={park.id}
-                        testID={`park-option-${park.id}`}
-                        style={[styles.parkTile, isSelected && styles.parkTileSelected]}
-                        onPress={() => updateSettings({ parkIds: [park.id] })}
-                        activeOpacity={0.8}
-                      >
-                        <GameIcon name={park.icon} size={44} />
-                        <Text style={[styles.parkTileName, isSelected && styles.parkTileNameSelected]} numberOfLines={2}>
-                          {park.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {/* Page 1 Buttons: Back (dismiss) / Next */}
-                <View style={styles.modalActions}>
-                  <View style={styles.modalButtonRow}>
-                    <TouchableOpacity style={styles.modalBackBtn} onPress={handleModalBack}>
-                      <Text style={styles.modalBackBtnText}>Back</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      testID="new-game-next-btn"
-                      style={[styles.modalNextBtn, !canAdvance && styles.modalBtnDisabled]}
-                      onPress={handleModalNext}
-                      disabled={!canAdvance}
-                    >
-                      <Text style={styles.modalNextBtnText}>Next</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            )}
-
-            {/* ── PAGE 2: Toggles (Pin Trading + Height Filter) ── */}
-            {modalPage === 2 && (
-              <View>
-                <View style={styles.modalDivider} />
-
-                {/* Pin Trading Toggle */}
-                <>
-                    <View style={styles.toggleRow}>
-                      <GameIcon name="pins" size={34} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.toggleLabel}>Pin Trading Tasks</Text>
-                        <Text style={styles.toggleDesc}>Include pin trading challenges</Text>
-                      </View>
-                      <Switch
-                        value={settings.categoryToggles.pins}
-                        onValueChange={v => updateCategoryToggle('pins', v)}
-                        trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
-                        thumbColor="#fff"
-                        style={styles.toggleSwitch}
-                      />
-                    </View>
-                    <View style={styles.modalDivider} />
-                </>
-
-                {/* Height Filter */}
-                <>
-                    <View style={styles.toggleRow}>
-                      <GameIcon name="ruler" size={34} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.toggleLabel}>Filter by height</Text>
-                        <Text style={styles.toggleDesc}>Hides rides above your shortest rider</Text>
-                      </View>
-                      <Switch
-                        value={settings.heightFilterEnabled}
-                        onValueChange={v => { updateSettings({ heightFilterEnabled: v }); }}
-                        trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
-                        thumbColor="#fff"
-                        style={styles.toggleSwitch}
-                      />
-                    </View>
-
-                    {settings.heightFilterEnabled && (
-                      <View style={styles.sliderArea}>
-                        <View style={styles.heightDisplay}>
-                          <Text style={styles.heightValue}>{settings.minHeightInches}"</Text>
-                          <Text style={styles.heightFeet}>
-                            ({Math.floor(settings.minHeightInches / 12)}'{settings.minHeightInches % 12}")
-                          </Text>
-                        </View>
-                        <Slider
-                          style={styles.slider}
-                          minimumValue={32}
-                          maximumValue={54}
-                          step={1}
-                          value={settings.minHeightInches}
-                          onValueChange={v => updateSettings({ minHeightInches: v })}
-                          minimumTrackTintColor={COLORS.green}
-                          maximumTrackTintColor={COLORS.borderMedium}
-                          thumbTintColor={COLORS.green}
-                        />
-                        <View style={styles.sliderLabels}>
-                          <Text style={styles.sliderLabel}>32"</Text>
-                          <Text style={styles.sliderLabel}>54"</Text>
-                        </View>
-                      </View>
-                    )}
-                </>
-
-                {/* Page 2 Buttons: Back / Start Game */}
-                <View style={styles.modalActions}>
-                  <View style={styles.modalButtonRow}>
-                    <TouchableOpacity style={styles.modalBackBtn} onPress={handleModalBack}>
-                      <Text style={styles.modalBackBtnText}>Back</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity testID="start-game-btn" style={styles.modalStartBtn} onPress={handleConfirmStart}>
-                      <Text style={styles.modalStartBtnText}>Start Game</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            )}
-          </ScrollView>
-        </View>
-      </Modal>
+      {showNewGameModal && <NewGameSetup onClose={() => setShowNewGameModal(false)} onStart={(gameName, nextSettings, playerName) => {
+        if (!startSession(gameName || undefined, { settings: nextSettings, playerName })) return false;
+        setShowNewGameModal(false);
+        navigation.navigate('Game');
+        return true;
+      }} />}
     </ImageBackground>
   );
 }
@@ -682,58 +460,7 @@ const BASE_STYLES = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 4,
   },
-  parkGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  parkTile: {
-    width: '47%',
-    flexGrow: 1,
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: SHORT_SCREEN ? 8 : 12,
-    paddingHorizontal: 8,
-    borderRadius: 14,
-    borderWidth: 2.5,
-    borderBottomWidth: 5,
-    borderColor: INK,
-    backgroundColor: TABLE.panelLight,
-  },
-  parkTileSelected: {
-    borderColor: TABLE.gold,
-    backgroundColor: '#FFF8EC',
-  },
-  parkTileName: {
-    fontFamily: FONTS.display,
-    fontSize: 16,
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  parkTileNameSelected: {
-    color: INK,
-  },
-  modalFieldLabel: {
-    fontFamily: FONTS.display,
-    color: 'rgba(255, 255, 255, 0.6)',
-    fontSize: 13,
-    letterSpacing: 1.5,
-    alignSelf: 'flex-start',
-    marginBottom: 8,
-  },
-  modalNameInput: {
-    width: '100%',
-    backgroundColor: '#FFF8EC',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 17,
-    fontWeight: '800',
-    color: INK,
-    borderWidth: 2.5,
-    borderColor: INK,
-    marginBottom: 16,
-  },
+  saveNotice: { color: '#FFFFFF', fontSize: 16, lineHeight: 23, marginVertical: 12 },
   modalDivider: {
     height: 2,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
@@ -756,105 +483,6 @@ const BASE_STYLES = StyleSheet.create({
     ...displayLabel,
     fontSize: 20,
   },
-  modalNextBtn: {
-    flex: 1.4,
-    ...chunkyButton('#3DBE6E', '#23864A'),
-  },
-  modalNextBtnText: {
-    ...displayLabel,
-    fontSize: 20,
-  },
-  modalStartBtn: {
-    flex: 1.4,
-    ...chunkyButton('#3DBE6E', '#23864A'),
-  },
-  modalStartBtnText: {
-    ...displayLabel,
-    fontSize: 20,
-  },
-  modalBtnDisabled: {
-    opacity: 0.5,
-  },
-
-  // Toggle rows
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    paddingVertical: 10,
-  },
-  toggleLabel: {
-    fontFamily: FONTS.display,
-    color: '#FFFFFF',
-    fontSize: 17,
-  },
-  toggleDesc: {
-    color: 'rgba(255, 255, 255, 0.6)',
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  toggleSwitch: {
-    transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }],
-  },
-
-  // Height slider
-  sliderArea: {
-    paddingTop: 4,
-    paddingBottom: 4,
-  },
-  heightDisplay: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'center',
-    marginBottom: 4,
-    gap: 6,
-  },
-  heightValue: {
-    fontFamily: FONTS.display,
-    color: TABLE.gold,
-    fontSize: 32,
-  },
-  heightFeet: {
-    color: 'rgba(255, 255, 255, 0.6)',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  slider: {
-    width: '100%',
-    height: 40,
-  },
-  sliderLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: -8,
-  },
-  sliderLabel: {
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-
-  // Tooltip
-  tooltip: {
-    flexDirection: 'row',
-    backgroundColor: TABLE.panelLight,
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 14,
-    borderWidth: 2,
-    borderColor: INK,
-    alignItems: 'flex-start',
-  },
-  tooltipText: {
-    flex: 1,
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 13,
-    lineHeight: 19,
-    fontWeight: '700',
-  },
-
   // Actions
   actions: {
     gap: 14,
@@ -914,6 +542,8 @@ const BASE_STYLES = StyleSheet.create({
   },
   continueSlotDetails: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
@@ -930,10 +560,13 @@ const BASE_STYLES = StyleSheet.create({
   },
   slotButtonRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
     marginTop: 4,
   },
   selectSlotBtn: {
+    minHeight: 44,
+    justifyContent: 'center',
     ...chunkyButton('#3DBE6E', '#23864A'),
     borderRadius: 12,
     borderBottomWidth: 5,
@@ -945,6 +578,8 @@ const BASE_STYLES = StyleSheet.create({
     fontSize: 16,
   },
   deleteSlotBtn: {
+    minHeight: 44,
+    justifyContent: 'center',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 12,
@@ -959,6 +594,7 @@ const BASE_STYLES = StyleSheet.create({
   },
   deleteConfirmRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 8,
     marginTop: 4,
@@ -968,8 +604,11 @@ const BASE_STYLES = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     flex: 1,
+    minWidth: 100,
   },
   deleteConfirmYes: {
+    minHeight: 44,
+    justifyContent: 'center',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 10,
@@ -983,6 +622,8 @@ const BASE_STYLES = StyleSheet.create({
     fontWeight: '800',
   },
   deleteConfirmNo: {
+    minHeight: 44,
+    justifyContent: 'center',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 10,

@@ -15,6 +15,7 @@ import { WHO_AM_I } from '../data/whoAmI';
 import { TRIVIA_TASKS } from '../data/trivia';
 import { RIDES, PARKS } from '../data/parks';
 import { correctTriviaAnswers } from '../utils/trivia';
+import { defaultGameName } from '../utils/gameSetup';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -160,7 +161,7 @@ interface GameState {
   updatePlayerName: (name: string) => void;
 
   // Session lifecycle.
-  startSession: (customName?: string) => void;
+  startSession: (customName?: string, setup?: { settings: Settings; playerName: string }) => boolean;
   endSession: () => void;
 
   // Save/load management.
@@ -528,17 +529,22 @@ export const useGameStore = create<GameState>((set, get) => ({
   // ─── Session lifecycle ────────────────────────────────────────────────────
 
   /** Creates a new game session — builds task pools, draws initial hand + challenges, assigns to save slot */
-  startSession: (customName?: string) => {
-    const { settings, saveSlots } = get();
+  startSession: (customName, setup) => {
+    const { saveSlots, player } = get();
+    const source = setup?.settings ?? get().settings;
+    const settings = { ...source, parkIds: [...source.parkIds], categoryToggles: { ...source.categoryToggles } };
+    const playerName = setup ? setup.playerName.trim() : player.name;
+    if (!playerName || !settings.parkIds.length || settings.parkIds.some(id => !PARKS.some(park => park.id === id))) return false;
 
     // New sessions automatically claim the first empty save slot so the player
     // always has a resumable run even before manually saving.
     // Find the first empty slot
     const emptyIndex = saveSlots.findIndex(s => s === null);
-    if (emptyIndex === -1) return; // All slots full — cannot start a new session
+    if (emptyIndex === -1) return false; // All slots full — cannot start a new session
 
     // Build the eligible content pools from the current park selection and filters.
     const { small, big } = buildTaskPools(settings);
+    if (small.length < 5 || big.length < 3) return false;
 
     // Deal the opening hand and opening challenge board from those fresh pools.
     const hand = drawFromPool(small, [], 5);
@@ -561,11 +567,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     };
 
     // Build default slot name: "Mar 29 - Magic Kingdom" (overridden by customName if provided)
-    const date = new Date();
-    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const formatted = `${monthNames[date.getMonth()]} ${date.getDate()}`;
-    const parkName = PARKS.find(p => p.id === settings.parkIds[0])?.name ?? 'Unknown Park';
-    const slotName = customName?.trim() || `${formatted} - ${parkName}`;
+    const slotName = customName?.trim() || defaultGameName(settings.parkIds[0]);
 
     const slot: SaveSlot = {
       id: `slot-${Date.now()}`,
@@ -582,8 +584,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newSlots = [...saveSlots];
     newSlots[emptyIndex] = slot;
 
-    set({ session, saveSlots: newSlots, activeSlotId: slot.id, showTipsOnNext: true });
+    set({ settings, player: { ...player, name: playerName }, session, saveSlots: newSlots, activeSlotId: slot.id, showTipsOnNext: true, newlyEarnedBadges: [] });
     get().saveToStorage();
+    return true;
   },
 
   /** Ends the active session — finalises badge state on the save slot, marks inactive */

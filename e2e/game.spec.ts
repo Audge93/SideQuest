@@ -9,6 +9,143 @@ async function snap(page: Page, name: string) {
 
 const byId = (page: Page, id: string) => page.locator(`[data-testid="${id}"]`);
 
+test('canceling new-game setup preserves the current game and its settings', async ({ page }) => {
+  await startGame(page);
+  await page.getByText('Settings', { exact: true }).click();
+  await page.getByText('Main Menu', { exact: true }).click();
+  const before = await savedState(page);
+  await byId(page, 'new-game-btn').click();
+  await byId(page, 'setup-player-name').fill('Different Team');
+  await byId(page, 'park-option-wdw-ak').click();
+  await byId(page, 'new-game-next-btn').click();
+  await byId(page, 'setup-pins').click();
+  await byId(page, 'setup-height-filter').click();
+  await byId(page, 'setup-height-plus').click();
+  await byId(page, 'setup-back-btn').click();
+  await expect(byId(page, 'park-option-wdw-ak')).toBeChecked();
+  await byId(page, 'setup-back-btn').click();
+  await expect(byId(page, 'new-game-setup')).toHaveCount(0);
+  const after = await savedState(page);
+  expect(after.settings).toEqual(before.settings);
+  expect(after.player).toEqual(before.player);
+  expect(after.saveSlots).toEqual(before.saveSlots);
+  await byId(page, 'new-game-btn').click();
+  await expect(byId(page, 'setup-player-name')).toHaveValue('Test Party');
+  await expect(byId(page, 'park-option-wdw-mk')).toBeChecked();
+});
+
+test('new-game setup validates names and commits reviewed choices to a separate save', async ({ page }) => {
+  await startGame(page);
+  await page.getByText('Settings', { exact: true }).click();
+  await page.getByText('Main Menu', { exact: true }).click();
+  const previous = (await savedState(page)).saveSlots.find(Boolean);
+  await byId(page, 'new-game-btn').click();
+  await byId(page, 'setup-player-name').fill('   ');
+  await expect(byId(page, 'setup-name-error')).toBeVisible();
+  await expect(byId(page, 'new-game-next-btn')).toBeDisabled();
+  await byId(page, 'setup-player-name').fill('  Family Team  ');
+  await byId(page, 'setup-player-name').press('Enter');
+  await expect(byId(page, 'setup-game-name')).toBeFocused();
+  await byId(page, 'setup-game-name').fill('  EPCOT Adventure  ');
+  await byId(page, 'park-option-wdw-ep').click();
+  await byId(page, 'new-game-next-btn').click();
+  await expect(byId(page, 'setup-review')).toContainText('Playing as Family Team');
+  await expect(byId(page, 'setup-review')).toContainText('Saved as EPCOT Adventure');
+  await byId(page, 'setup-pins').click();
+  await byId(page, 'setup-height-filter').click();
+  await byId(page, 'setup-height-minus').click();
+  await expect(byId(page, 'setup-height-value')).toContainText('39 inches');
+  await snap(page, '43-setup-review');
+  await byId(page, 'start-game-btn').click();
+  await byId(page, 'game-tip-skip').click();
+  const state = await savedState(page);
+  expect(state.player.name).toBe('Family Team');
+  expect(state.settings).toMatchObject({ parkIds: ['wdw-ep'], heightFilterEnabled: true, minHeightInches: 39 });
+  expect(state.settings.categoryToggles.pins).toBe(false);
+  expect(state.saveSlots.filter(Boolean)).toHaveLength(2);
+  expect(state.saveSlots.find((s: any) => s?.id === previous.id)).toEqual(previous);
+  expect(state.saveSlots.find((s: any) => s?.id === state.activeSlotId).name).toBe('EPCOT Adventure');
+});
+
+test('new-game setup supports largest text with reachable fixed actions and automatic naming', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await byId(page, 'home-settings-btn').click();
+  await byId(page, 'text-extra-large').click();
+  await byId(page, 'comfort-readableFont').click();
+  await page.getByText('‹ Back').click();
+  await byId(page, 'new-game-btn').click();
+  await byId(page, 'setup-player-name').fill('Large Text Team');
+  await byId(page, 'park-option-wdw-ak').click();
+  await snap(page, '42-readable-setup');
+  let button = await byId(page, 'new-game-next-btn').boundingBox();
+  expect(button!.y + button!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  await byId(page, 'new-game-next-btn').click();
+  await byId(page, 'setup-height-filter').click();
+  for (let i = 0; i < 40; i++) await byId(page, 'setup-height-minus').click();
+  await expect(byId(page, 'setup-height-value')).toContainText('0 inches');
+  await snap(page, '44-readable-setup-options');
+  button = await byId(page, 'start-game-btn').boundingBox();
+  expect(button!.y + button!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  await byId(page, 'start-game-btn').click();
+  await byId(page, 'game-tip-skip').click();
+  const state = await savedState(page);
+  const active = state.saveSlots.find((s: any) => s?.id === state.activeSlotId);
+  expect(active.name).toMatch(/ - Animal Kingdom$/);
+  expect(active.settings.minHeightInches).toBe(0);
+  expect(state.session.challengeTasks.every((t: any) => t.category !== 'ride' || !t.heightRequirement)).toBe(true);
+  await page.getByText('Settings', { exact: true }).click();
+  await expect(byId(page, 'height-decrease-btn')).toBeDisabled();
+});
+
+test('full save slots explain the limit and require confirmed deletion', async ({ page }) => {
+  await startGame(page);
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('parkquest_state')!);
+    const first = state.saveSlots.find(Boolean);
+    state.saveSlots = [first, { ...first, id: 'fixture-save-2', name: 'Second Game' }, { ...first, id: 'fixture-save-3', name: 'Third Game' }];
+    localStorage.setItem('parkquest_state', JSON.stringify(state));
+  });
+  await page.reload();
+  await byId(page, 'new-game-btn').click();
+  await expect(byId(page, 'save-slots-full')).toBeVisible();
+  await expect(byId(page, 'new-game-setup')).toHaveCount(0);
+  await byId(page, 'save-delete-0').click();
+  await byId(page, 'save-delete-cancel-0').click();
+  expect((await savedState(page)).saveSlots.filter(Boolean)).toHaveLength(3);
+  await byId(page, 'save-delete-0').click();
+  await snap(page, '45-full-save-slots');
+  await byId(page, 'save-delete-confirm-0').click();
+  expect((await savedState(page)).saveSlots.filter(Boolean)).toHaveLength(2);
+  await expect(byId(page, 'save-slots-full')).toContainText('room for a new game');
+  await byId(page, 'save-slots-new-game').click();
+  await expect(byId(page, 'new-game-setup')).toBeVisible();
+});
+
+test('incompatible new-game options show a recoverable error without creating a save', async ({ page }) => {
+  await startGame(page);
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('parkquest_state')!);
+    for (const settings of [state.settings, state.saveSlots.find(Boolean).settings]) {
+      for (const key of ['ride', 'treat', 'meet', 'explore', 'seek']) settings.categoryToggles[key] = false;
+      settings.categoryToggles.pins = true;
+    }
+    localStorage.setItem('parkquest_state', JSON.stringify(state));
+  });
+  await page.reload();
+  const original = (await savedState(page)).saveSlots;
+  await byId(page, 'new-game-btn').click();
+  await byId(page, 'new-game-next-btn').click();
+  await byId(page, 'setup-pins').click();
+  await byId(page, 'start-game-btn').click();
+  await expect(byId(page, 'setup-error')).toBeVisible();
+  expect((await savedState(page)).saveSlots).toEqual(original);
+  await byId(page, 'setup-pins').click();
+  await byId(page, 'start-game-btn').click();
+  await expect(byId(page, 'game-tip-skip')).toBeVisible();
+  expect((await savedState(page)).saveSlots.filter(Boolean)).toHaveLength(2);
+});
+
 test('opening tips explain every game rule and wait for the player to advance', async ({ page }) => {
   await page.goto('/');
   await byId(page, 'new-game-btn').click();

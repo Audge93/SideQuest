@@ -146,28 +146,28 @@ export default function SettingsScreen() {
               </View>
               <Slider
                 testID="height-slider" accessibilityLabel="Shortest rider height in inches" style={styles.slider}
-                minimumValue={32}
+                minimumValue={0}
                 maximumValue={54}
                 step={1}
                 value={settings.minHeightInches}
-                onValueChange={v => updateSettings({ minHeightInches: v })}
+                onValueChange={v => applyPreference({ minHeightInches: v })}
                 minimumTrackTintColor={COLORS.green}
                 maximumTrackTintColor={COLORS.borderMedium}
                 thumbTintColor={COLORS.green}
               />
               <View style={styles.sliderLabels}>
-                <Text style={styles.sliderLabel}>32"</Text>
+                <Text style={styles.sliderLabel}>0"</Text>
                 <Text style={styles.sliderLabel}>54"</Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
                 <TouchableOpacity testID="height-decrease-btn" accessibilityRole="button" accessibilityLabel="Decrease rider height by one inch"
-                  disabled={settings.minHeightInches <= 32} style={styles.showTipsBtn}
-                  onPress={() => updateSettings({ minHeightInches: Math.max(32, settings.minHeightInches - 1) })}>
+                  disabled={settings.minHeightInches <= 0} style={styles.showTipsBtn}
+                  onPress={() => applyPreference({ minHeightInches: Math.max(0, settings.minHeightInches - 1) })}>
                   <Text style={styles.showTipsBtnText}>− 1 inch</Text>
                 </TouchableOpacity>
                 <TouchableOpacity testID="height-increase-btn" accessibilityRole="button" accessibilityLabel="Increase rider height by one inch"
                   disabled={settings.minHeightInches >= 54} style={styles.showTipsBtn}
-                  onPress={() => updateSettings({ minHeightInches: Math.min(54, settings.minHeightInches + 1) })}>
+                  onPress={() => applyPreference({ minHeightInches: Math.min(54, settings.minHeightInches + 1) })}>
                   <Text style={styles.showTipsBtnText}>+ 1 inch</Text>
                 </TouchableOpacity>
               </View>
