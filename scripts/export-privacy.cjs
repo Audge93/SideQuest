@@ -1,0 +1,7 @@
+const fs = require('fs'), ts = require('typescript');
+const moduleOutput = { exports: {} };
+const code = ts.transpileModule(fs.readFileSync('src/data/helpAndPrivacy.ts','utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+new Function('module', 'exports', code)(moduleOutput, moduleOutput.exports);
+const escape = text => text.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+fs.mkdirSync('public', { recursive: true });
+fs.writeFileSync('public/privacy.html', `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Side Quest Privacy Policy</title><style>body{font:1.1rem/1.6 system-ui,sans-serif;max-width:48rem;margin:auto;padding:1.5rem;color:#111;background:#fff}a{color:#174a9c}a:focus-visible{outline:3px solid #111} @media(prefers-color-scheme:dark){body{color:#fff;background:#111}a{color:#b5d4ff}}</style></head><body><main><h1>Side Quest Privacy Policy</h1>${moduleOutput.exports.PRIVACY_TEXT.map(text => `<p>${escape(text)}</p>`).join('')}<p><a href="https://github.com/Audge93/SideQuest/issues/new">Contact the maintainer on GitHub (public)</a></p><p><a href="https://www.netlify.com/privacy/">Netlify Privacy Policy</a> · <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub Privacy Statement</a></p></main></body></html>`);

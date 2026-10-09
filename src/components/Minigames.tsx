@@ -1,3 +1,7 @@
+import { useReducedMotion } from '../theme/useAccessibility';
+import { useThemedStyles } from '../theme/useAppTheme';
+import { FocusHeading } from './ReadingModal';
+import { openSupport } from '../utils/support';
 import React, { useEffect, useRef, useState } from 'react';
 import { Modal, View, Text, ScrollView, StyleSheet, AppState } from 'react-native';
 import GameButton from './GameButton';
@@ -21,6 +25,8 @@ const HELP = {
 
 export default function Minigames({ onClose }: { onClose: () => void }) {
   const { colors } = useAppTheme();
+  const reduced = useReducedMotion();
+  const styles = useThemedStyles(BASE_STYLES);
   const { session, startTriviaSprint, answerSprint, finishSprint, startWhoAmI, revealWhoClue, answerWhoAmI, acknowledgeMinigameHelp } = useGameStore();
   const [game, setGame] = useState<Game | null>(null);
   const [help, setHelp] = useState<Game | null>(null);
@@ -45,7 +51,7 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
   const correctCount = round?.questions.filter((q, i) => correctTriviaAnswers(q).includes(round.answers[i])).length ?? 0;
   const text = [styles.text, { color: colors.textDark }];
   const title = [text, styles.title];
-  return <Modal transparent animationType="fade" onRequestClose={() => help ? setHelp(null) : game ? setGame(null) : onClose()}>
+  return <Modal transparent animationType={reduced ? 'none' : 'fade'} onRequestClose={() => help ? setHelp(null) : game ? setGame(null) : onClose()}>
     <View style={styles.overlay}>
       <View accessibilityElementsHidden={!!help} importantForAccessibility={help ? 'no-hide-descendants' : 'auto'} testID="minigames-panel" style={[styles.panel, { backgroundColor: colors.surface }]}>
         <View style={styles.heading}>
@@ -60,7 +66,7 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
             <GameButton testID="choose-who" label="Who Am I?" sublabel="Guess the character from clues" tone="gold" onPress={() => select('who')} />
           </>}
           {game === 'sprint' && (!round || round.finished) && <>
-            {round?.finished && <View testID="sprint-results">
+            {round?.finished && <View testID="sprint-results" accessibilityLiveRegion="polite">
               <Text style={title}>{correctCount}/10 correct · +{round.earnedPoints} points</Text>
               <Text style={text}>{correctCount === 10 ? 'Perfect round! 3× points' : correctCount === 9 ? 'Great round! 2× points' : 'Normal points for every correct answer'}</Text>
               {round.questions.map((q, i) => <View key={q.id} style={styles.review}>
@@ -68,20 +74,21 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
                 <Text style={text}>{round.answers[i] === undefined ? 'Unanswered' : correctTriviaAnswers(q).includes(round.answers[i]) ? 'Correct' : `Your answer: ${q.triviaChoices?.[round.answers[i]]}`}</Text>
                 <Text style={[text, styles.answer]}>Correct answer: {correctTriviaAnswers(q).map(n => q.triviaChoices?.[n]).join(', ')}</Text>
                 {q.triviaExplanation && <Text style={text}>{q.triviaExplanation}</Text>}
+                <GameButton testID="sprint-report-btn" multiline label="Report Question (public GitHub draft)" tone="gray" onPress={() => openSupport(q)} />
               </View>)}
             </View>}
             {!round && <Text style={text}>10 questions. 10 right earns 3× points; 9 right earns 2×. Choose your timer below.</Text>}
           </>}
           {game === 'sprint' && round && !round.finished && question && <>
             <Text testID="sprint-timer" accessibilityRole="timer" style={title}>{Math.max(0, Math.ceil((round.deadline - now) / 1000))} seconds · {round.answers.length + 1}/10</Text>
-            <Text testID="sprint-question" style={[text, styles.question]}>{question.description}</Text>
+            <View testID="sprint-question"><FocusHeading title={question.description} /></View>
             {question.triviaChoices?.map((choice, i) => <GameButton key={`${question.id}-${i}`} testID={`sprint-choice-${i}`} multiline label={choice} onPress={() => answerSprint(i, question.id)} tone="blue" />)}
           </>}
           {game === 'who' && (!who || !character) && <Text style={text}>One character, three clues. Guess with fewer clues to earn more points. There is no timer.</Text>}
           {game === 'who' && who && character && <>
             <Text style={title}>{who.finished ? `+${who.earnedPoints} points` : `Clue ${who.cluesRevealed}/3 · ${5 * (4 - who.cluesRevealed)} points`}</Text>
             {character.clues.slice(0, who.finished ? 3 : who.cluesRevealed).map((clue, i) => <Text key={i} testID="who-clue" style={text}>{i + 1}. {clue}</Text>)}
-            {who.finished ? <View testID="who-results" style={styles.review}>
+            {who.finished ? <View testID="who-results" accessibilityLiveRegion="polite" style={styles.review}>
               <Text style={title}>{who.earnedPoints ? 'You got it!' : who.answer === -1 ? 'Character revealed' : 'Not quite!'}</Text>
               {who.answer !== undefined && who.answer >= 0 && !who.earnedPoints && <Text style={text}>Your answer: {who.choices[who.answer]}</Text>}
               <Text style={[text, styles.answer]}>Correct answer: {character.name}</Text>
@@ -104,7 +111,7 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
       </View>
       {help && <View style={[styles.helpOverlay, styles.overlay]}>
         <View testID="minigame-tips" accessibilityViewIsModal style={[styles.panel, { backgroundColor: colors.surface }]}>
-          <Text style={title}>{HELP[help].title}</Text>
+          <FocusHeading title={HELP[help].title} />
           <ScrollView style={styles.body} contentContainerStyle={styles.content}>{HELP[help].steps.map((step, i) => <Text key={i} style={text}>{i + 1}. {step}</Text>)}</ScrollView>
           <GameButton testID="minigame-tips-dismiss" label="Got It!" onPress={() => { acknowledgeMinigameHelp(help); setHelp(null); }} />
         </View>
@@ -112,7 +119,7 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
     </View>
   </Modal>;
 }
-const styles = StyleSheet.create({
+const BASE_STYLES = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center', padding: 16 },
   helpOverlay: { position: 'absolute', top: 0, left: 0, bottom: 0, right: 0 },
   panel: { width: '100%', maxWidth: 520, maxHeight: '92%', padding: 18, borderRadius: 22, gap: 12 },

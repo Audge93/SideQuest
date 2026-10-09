@@ -153,6 +153,13 @@ export interface Settings {
   darkMode: 'light' | 'dark' | 'system';
   soundEnabled: boolean;
   hapticsEnabled: boolean;
+  reduceMotion: 'system' | 'on' | 'off';
+  textSize: 'system' | 'large' | 'extra-large';
+  readableFont: boolean;
+  highContrast: boolean;
+  seatedOnly: boolean;
+  lessWalking: boolean;
+  noPerforming: boolean;
 }
 
 export interface SaveSlot {

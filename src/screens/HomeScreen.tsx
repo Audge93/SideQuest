@@ -457,7 +457,7 @@ export default function HomeScreen() {
                       </View>
                       <Switch
                         value={settings.heightFilterEnabled}
-                        onValueChange={v => updateSettings({ heightFilterEnabled: v })}
+                        onValueChange={v => { updateSettings({ heightFilterEnabled: v }); }}
                         trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
                         thumbColor="#fff"
                         style={styles.toggleSwitch}

@@ -8,6 +8,7 @@
 
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { matchesActivityPreferences } from '../data/activityPreferences';
 import { Task, Session, Settings, Player, Badge, BadgeTier, CategoryToggles, SaveSlot, Draft, MAX_SAVE_SLOTS } from '../types';
 import { SMALL_TASKS, BIG_TASKS, RIDE_ACTIVITY_TASKS, generateRideTasks } from '../data/tasks';
 import { WHO_AM_I } from '../data/whoAmI';
@@ -106,6 +107,8 @@ const DEFAULT_SETTINGS: Settings = {
   darkMode: 'system',
   soundEnabled: true,
   hapticsEnabled: true,
+  reduceMotion: 'system', textSize: 'system', readableFont: false, highContrast: false,
+  seatedOnly: false, lessWalking: false, noPerforming: false,
 };
 
 const DEFAULT_PLAYER: Player = {
@@ -152,7 +155,7 @@ interface GameState {
   activeSlotId: string | null;
 
   // Simple profile/settings mutations.
-  updateSettings: (patch: Partial<Settings>) => void;
+  updateSettings: (patch: Partial<Settings>) => boolean;
   updateCategoryToggle: (category: keyof CategoryToggles, value: boolean) => void;
   updatePlayerName: (name: string) => void;
 
@@ -183,7 +186,7 @@ interface GameState {
   useTriviaFiftyFifty: (taskId: string) => void;
   chooseDraftCard: (taskId: string) => void;
   clearNewBadges: () => void;
-  resetAllData: () => void;
+  resetAllData: () => Promise<void>;
   triggerTips: () => void;
   clearPendingTips: () => void;
 
@@ -232,7 +235,7 @@ function buildTaskPools(settings: Settings): { small: Task[]; big: Task[] } {
     big = [...big, ...rideActivityTasks];
   }
 
-  return { small: shuffle(small), big: shuffle(big) };
+  return { small: shuffle(small.filter(t => matchesActivityPreferences(t, settings))), big: shuffle(big.filter(t => matchesActivityPreferences(t, settings))) };
 }
 
 const MAX_TRIVIA_IN_HAND = 3;
@@ -500,9 +503,13 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   /** Partially update settings and persist */
   updateSettings: (patch) => {
+    const next = { ...get().settings, ...patch };
+    const pools = buildTaskPools(next);
+    if (pools.small.length < 5 || pools.big.length < 3) return false;
     set(s => ({ settings: { ...s.settings, ...patch } }));
     if (get().session && get().activeSlotId) get().autoSave();
     else get().saveToStorage();
+    return true;
   },
 
   updateCategoryToggle: (category, value) => {
@@ -650,7 +657,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       session: refreshSavedTrivia(slot.session, slot.settings),
       settings: { ...DEFAULT_SETTINGS, ...slot.settings,
         categoryToggles: { ...DEFAULT_SETTINGS.categoryToggles, ...slot.settings?.categoryToggles },
-        darkMode: settings.darkMode, soundEnabled: settings.soundEnabled, hapticsEnabled: settings.hapticsEnabled },
+        darkMode: settings.darkMode, soundEnabled: settings.soundEnabled, hapticsEnabled: settings.hapticsEnabled,
+        reduceMotion: settings.reduceMotion, textSize: settings.textSize, readableFont: settings.readableFont, highContrast: settings.highContrast },
       activeSlotId: slotId,
     });
     get().saveToStorage();
@@ -987,16 +995,16 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // ─── Data management ──────────────────────────────────────────────────────
 
-  /** Wipes all save data — preserves profile name, clears all games and badges */
+  /** Clears local games, profile, and preferences. */
   resetAllData: async () => {
-    const { player } = get();
     const freshPlayer: Player = {
       ...DEFAULT_PLAYER,
-      name: player.name,
+      name: DEFAULT_PLAYER.name,
     };
     await AsyncStorage.removeItem('parkquest_state');
     set({
       player: freshPlayer,
+      settings: { ...DEFAULT_SETTINGS, categoryToggles: { ...DEFAULT_SETTINGS.categoryToggles } },
       session: null,
       newlyEarnedBadges: [],
       saveSlots: [null, null, null],

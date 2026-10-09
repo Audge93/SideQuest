@@ -2,6 +2,7 @@ import { useMemo, useSyncExternalStore } from 'react';
 import { Platform, StyleSheet, useColorScheme } from 'react-native';
 import { useGameStore } from '../store/gameStore';
 import { COLORS, TABLE } from './theme';
+import { useReadingPreferences } from './useAccessibility';
 
 const DARK_COLORS: typeof COLORS = {
   ...COLORS,
@@ -27,15 +28,28 @@ export function useAppTheme() {
   const webSystemDark = useSyncExternalStore(subscribeWebSystem, webSystemSnapshot, () => false);
   const systemDark = Platform.OS === 'web' ? webSystemDark : system === 'dark';
   const dark = preference === 'dark' || (preference === 'system' && systemDark);
-  return { dark, colors: dark ? DARK_COLORS : LIGHT_COLORS, table: dark ? TABLE : LIGHT_TABLE };
+  const contrast = useGameStore(s => s.settings.highContrast);
+  const base = dark ? DARK_COLORS : LIGHT_COLORS;
+  const colors = useMemo(() => contrast ? { ...base,
+    bg: dark ? '#000000' : '#FFFFFF', surface: dark ? '#101010' : '#FFFFFF',
+    surfaceSecondary: dark ? '#202020' : '#FFFFFF', cardBg: dark ? '#101010' : '#FFFFFF',
+    textDark: dark ? '#FFFFFF' : '#000000', textBody: dark ? '#FFFFFF' : '#000000',
+    textMuted: dark ? '#FFFFFF' : '#222222', textLight: dark ? '#FFFFFF' : '#222222',
+    borderLight: dark ? '#FFFFFF' : '#000000', borderMedium: dark ? '#FFFFFF' : '#000000', borderPanel: dark ? '#FFFFFF' : '#000000',
+  } : base, [dark, contrast]);
+  return { dark, colors, table: dark ? TABLE : LIGHT_TABLE };
 }
 
 // Recolor existing shared styles without changing card artwork or action colors.
 // Text placed on saturated action surfaces stays white via keepWhite.
 export function useThemedStyles<T extends Record<string, any>>(base: T, table = false, keepWhite: string[] = []): T {
   const { dark, colors } = useAppTheme();
+  const { scale, readableFont, highContrast } = useReadingPreferences();
   return useMemo(() => StyleSheet.create(Object.fromEntries(Object.entries(base).map(([name, style]) => {
     const next = { ...style };
+    if (typeof style.fontSize === 'number') next.fontSize = style.fontSize * scale;
+    if (typeof style.lineHeight === 'number') next.lineHeight = style.lineHeight * scale;
+    if (readableFont && style.fontFamily) { next.fontFamily = 'System'; next.fontWeight = '600'; next.letterSpacing = 0; next.textShadowColor = 'transparent'; }
     for (const key of ['backgroundColor', 'color', 'borderColor', 'borderTopColor', 'borderBottomColor']) {
       const value = style[key];
       if (typeof value !== 'string') continue;
@@ -61,6 +75,14 @@ export function useThemedStyles<T extends Record<string, any>>(base: T, table = 
       }
     }
     if (table && name === 'backgroundTint') next.backgroundColor = dark ? 'rgba(18, 11, 36, 0.64)' : 'rgba(255, 248, 236, 0.9)';
+    if (highContrast && table) {
+      if ([TABLE.panel, TABLE.panelLight, TABLE.felt].includes(style.backgroundColor)) next.backgroundColor = dark ? '#101010' : '#FFFFFF';
+      if (keyIsText(style) && !keepWhite.includes(name) && (style.color === '#FFFFFF' || String(style.color).startsWith('rgba(255,'))) next.color = dark ? '#FFFFFF' : '#000000';
+      if (style.textShadowColor) next.textShadowColor = 'transparent';
+    }
+    if (highContrast && [COLORS.blue, COLORS.red, COLORS.green].includes(style.backgroundColor)) next.backgroundColor = '#111111';
+    if (highContrast && name === 'themeChipSelected') { next.borderColor = colors.textDark; next.borderWidth = 3; }
     return [name, next];
-  }))) as T, [base, dark, table, colors, keepWhite.join(',')]);
+  }))) as T, [base, dark, table, colors, scale, readableFont, highContrast, keepWhite.join(',')]);
 }
+function keyIsText(style: any) { return typeof style.color === 'string'; }

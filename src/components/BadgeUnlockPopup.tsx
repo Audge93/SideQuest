@@ -1,3 +1,5 @@
+import { useReducedMotion } from '../theme/useAccessibility';
+import { FocusHeading } from './ReadingModal';
 import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 /**
  * BadgeUnlockPopup.tsx — Animated badge earned celebration overlay
@@ -17,6 +19,8 @@ import {
   Animated,
   Dimensions,
   TouchableOpacity,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { Badge, BadgeTier } from '../types';
 import GameIcon, { badgeIconName } from './icons/GameIcon';
@@ -75,6 +79,7 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
   const { colors: COLORS, table: TABLE, dark } = useAppTheme();
   const styles = useThemedStyles(BASE_STYLES, true, []);
 
+  const reduced = useReducedMotion();
   const tierColor = TIER_COLORS[badge.tier];
   const tierGlow = TIER_GLOW[badge.tier];
 
@@ -106,15 +111,22 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
   const sparkles = useMemo(() => createSparkles(16), []);
 
   useEffect(() => {
+    const running: Animated.CompositeAnimation[] = [];
+    const start = (animation: Animated.CompositeAnimation) => { running.push(animation); animation.start(); };
+    if (reduced) {
+      for (const value of [overlayOpacity, cardScale, cardOpacity, badgeScale, titleOpacity, nameOpacity, descOpacity, btnOpacity, btnScale]) { value.stopAnimation(); value.setValue(1); }
+      for (const value of [cardTranslateY, badgeWiggle, titleTranslateY, nameTranslateY, glowOpacity]) { value.stopAnimation(); value.setValue(0); }
+      return;
+    }
     // 1. Overlay fades in
-    Animated.timing(overlayOpacity, {
+    start(Animated.timing(overlayOpacity, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
-    }).start();
+    }));
 
     // 2. Card pops in (slight delay)
-    Animated.sequence([
+    start(Animated.sequence([
       Animated.delay(150),
       Animated.parallel([
         Animated.spring(cardScale, {
@@ -135,19 +147,19 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
           useNativeDriver: true,
         }),
       ]),
-    ]).start();
+    ]));
 
     // 3. "Badge Unlocked!" title slides up
-    Animated.sequence([
+    start(Animated.sequence([
       Animated.delay(400),
       Animated.parallel([
         Animated.timing(titleOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
         Animated.spring(titleTranslateY, { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
       ]),
-    ]).start();
+    ]));
 
     // 4. Badge icon pops in with overshoot
-    Animated.sequence([
+    start(Animated.sequence([
       Animated.delay(550),
       Animated.spring(badgeScale, {
         toValue: 1,
@@ -155,19 +167,19 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
         tension: 100,
         useNativeDriver: true,
       }),
-    ]).start();
+    ]));
 
     // 5. Glow ring pulses
-    Animated.sequence([
+    start(Animated.sequence([
       Animated.delay(600),
       Animated.parallel([
         Animated.timing(glowOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
         Animated.spring(glowScale, { toValue: 1.3, friction: 5, tension: 40, useNativeDriver: true }),
       ]),
-    ]).start();
+    ]));
 
     // Repeat glow pulse
-    Animated.sequence([
+    start(Animated.sequence([
       Animated.delay(900),
       Animated.loop(
         Animated.sequence([
@@ -175,10 +187,10 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
           Animated.timing(glowScale, { toValue: 1.2, duration: 1200, useNativeDriver: true }),
         ]),
       ),
-    ]).start();
+    ]));
 
     // 6. Wiggle/jiggle animation on the badge
-    Animated.sequence([
+    start(Animated.sequence([
       Animated.delay(750),
       Animated.loop(
         Animated.sequence([
@@ -192,31 +204,31 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
         ]),
         { iterations: -1 },
       ),
-    ]).start();
+    ]));
 
     // 7. Badge name slides in
-    Animated.sequence([
+    start(Animated.sequence([
       Animated.delay(800),
       Animated.parallel([
         Animated.timing(nameOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
         Animated.spring(nameTranslateY, { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
       ]),
-    ]).start();
+    ]));
 
     // 8. Description fades in
-    Animated.sequence([
+    start(Animated.sequence([
       Animated.delay(1000),
       Animated.timing(descOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-    ]).start();
+    ]));
 
     // 9. Dismiss button appears
-    Animated.sequence([
+    start(Animated.sequence([
       Animated.delay(1200),
       Animated.parallel([
         Animated.timing(btnOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
         Animated.spring(btnScale, { toValue: 1, friction: 6, tension: 80, useNativeDriver: true }),
       ]),
-    ]).start();
+    ]));
 
     // 10. Sparkle particles burst outward
     sparkles.forEach((s, i) => {
@@ -226,7 +238,7 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
       const dy = Math.sin(angle) * distance;
       const delay = 600 + Math.random() * 200;
 
-      Animated.sequence([
+      start(Animated.sequence([
         Animated.delay(delay),
         Animated.parallel([
           Animated.sequence([
@@ -240,9 +252,14 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
             Animated.timing(s.opacity, { toValue: 0, duration: 400, useNativeDriver: true }),
           ]),
         ]),
-      ]).start();
+      ]));
     });
-  }, []);
+    return () => {
+      for (const animation of running) animation.stop();
+      for (const value of [overlayOpacity, cardScale, cardTranslateY, cardOpacity, badgeScale, badgeWiggle, glowScale, glowOpacity, titleOpacity, titleTranslateY, nameOpacity, nameTranslateY, descOpacity, btnOpacity, btnScale]) value.stopAnimation();
+      for (const sparkle of sparkles) for (const value of [sparkle.x, sparkle.y, sparkle.scale, sparkle.opacity]) value.stopAnimation();
+    };
+  }, [reduced]);
 
   const wiggleRotation = badgeWiggle.interpolate({
     inputRange: [-1, 0, 1],
@@ -250,6 +267,7 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
   });
 
   const handleDismiss = () => {
+    if (reduced) { onDismiss(); return; }
     Animated.parallel([
       Animated.timing(cardScale, { toValue: 0.8, duration: 200, useNativeDriver: true }),
       Animated.timing(cardOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
@@ -258,7 +276,7 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
   };
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    <Modal transparent visible animationType="none" onRequestClose={handleDismiss}>
       {/* Dark overlay */}
       <Animated.View
         style={[styles.overlay, { opacity: overlayOpacity }]}
@@ -296,6 +314,7 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
         <Animated.View
           style={[
             styles.card,
+            { maxHeight: '92%' },
             {
               borderColor: tierColor,
               transform: [
@@ -306,6 +325,7 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
             },
           ]}
         >
+          <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ alignItems: 'center' }}>
           {/* "Badge Unlocked!" header */}
           <Animated.View
             style={[
@@ -317,7 +337,7 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
             ]}
           >
             <GameIcon name="sparkle" size={22} />
-            <Text style={styles.unlockTitle}>Badge Unlocked!</Text>
+            <FocusHeading title="Badge Unlocked!" />
             <GameIcon name="sparkle" size={22} />
           </Animated.View>
 
@@ -397,16 +417,17 @@ export default function BadgeUnlockPopup({ badge, onDismiss }: Props) {
             }}
           >
             <TouchableOpacity
-              style={[styles.dismissBtn, { borderBottomColor: tierColor }]}
+              testID="badge-dismiss" accessibilityRole="button" style={[styles.dismissBtn, { borderBottomColor: tierColor, minHeight: 44 }]}
               onPress={handleDismiss}
               activeOpacity={0.8}
             >
               <Text style={styles.dismissBtnText}>Awesome!</Text>
             </TouchableOpacity>
           </Animated.View>
+          </ScrollView>
         </Animated.View>
       </Animated.View>
-    </View>
+    </Modal>
   );
 }
 

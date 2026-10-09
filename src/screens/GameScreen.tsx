@@ -1,3 +1,6 @@
+import { useReducedMotion, useReadingPreferences } from '../theme/useAccessibility';
+import { ScrollView } from 'react-native';
+import { FocusHeading } from '../components/ReadingModal';
 import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 /**
  * GameScreen.tsx
@@ -88,6 +91,8 @@ const GAME_TIPS: { id: string; title: string; message: string; icon: IconName | 
 
 export default function GameScreen() {
   const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const reduced = useReducedMotion();
+  const { scale: readingScale } = useReadingPreferences();
   const styles = useThemedStyles(BASE_STYLES, true, ['hudScoreLabel','hudScoreValue']);
 
   const navigation = useNavigation<any>();
@@ -109,6 +114,7 @@ export default function GameScreen() {
   } = useGameStore();
 
   const [showBigFirework, setShowBigFirework] = useState(false);
+  useEffect(() => { if (reduced) setShowBigFirework(false); }, [reduced]);
   const [challengeBurst, setChallengeBurst] = useState<{ key: number; task: Task; bonus: number } | null>(null);
   const [showDraft, setShowDraft] = useState(false);
   const [handHeight, setHandHeight] = useState(0);
@@ -194,7 +200,7 @@ export default function GameScreen() {
       setShowDraft(false);
       return;
     }
-    const timer = setTimeout(() => setShowDraft(true), 900);
+    const timer = setTimeout(() => setShowDraft(true), reduced ? 0 : 900);
     return () => clearTimeout(timer);
   }, [draft]);
 
@@ -283,7 +289,7 @@ export default function GameScreen() {
             <View style={styles.handArea} onLayout={e => setHandHeight(e.nativeEvent.layout.height)}>
               {handHeight > 0 && (
             <CardCarousel
-              cardWidth={handCardWidth(handHeight)}
+              cardWidth={readingScale > 1 ? Math.min(handCardWidth(handHeight), 110) : handCardWidth(handHeight)}
               cards={session.hand}
               openSlotIndex={draft?.slotIndex ?? null}
               currentStreak={session.currentStreak}
@@ -315,10 +321,10 @@ export default function GameScreen() {
           <DraftPicker key={draft.options.map(t => t.id).join('|')} options={draft.options} onChoose={chooseDraftCard} />
         )}
 
-        {showBigFirework && <Confetti type="big" onDone={() => setShowBigFirework(false)} />}
+        {showBigFirework && !reduced && <Confetti type="big" onDone={() => setShowBigFirework(false)} />}
 
         <View style={styles.navShell}>
-          <View style={styles.navBar}>
+          <View testID="game-nav-bar" style={styles.navBar}>
             <NavItem icon="cards" label="Game" active />
             <NavItem icon="park-mk" label="Park" onPress={openParkModal} />
             <NavItem icon="gear" label="Settings" onPress={() => navigation.navigate('Settings')} />
@@ -343,7 +349,7 @@ export default function GameScreen() {
         />
       )}
 
-      <Modal visible={showTips} transparent animationType="fade" onRequestClose={handleSkipTips}>
+      <Modal visible={showTips} transparent animationType={reduced ? 'none' : 'fade'} onRequestClose={handleSkipTips}>
         <View style={styles.modalOverlay}>
           <View style={styles.panel}>
             {GAME_TIPS[currentTipIndex].icon === 'card' ? (
@@ -384,7 +390,7 @@ export default function GameScreen() {
         </View>
       </Modal>
 
-      <Modal visible={showParkModal} transparent animationType="fade" onRequestClose={closeParkModal}>
+      <Modal visible={showParkModal} transparent animationType={reduced ? 'none' : 'fade'} onRequestClose={closeParkModal}>
         <View style={styles.modalOverlay}>
           <View style={styles.panel}>
             <Text style={styles.panelTitle}>Switch Parks</Text>
@@ -420,6 +426,7 @@ export default function GameScreen() {
 
 // Counts up to the new score and bumps whenever points are gained.
 function useCountUp(value: number) {
+  const reduced = useReducedMotion();
   const [display, setDisplay] = useState(value);
   const anim = useRef(new Animated.Value(value)).current;
   const bump = useRef(new Animated.Value(0)).current;
@@ -431,6 +438,7 @@ function useCountUp(value: number) {
   }, []);
 
   useEffect(() => {
+    if (reduced) { anim.stopAnimation(); bump.stopAnimation(); anim.setValue(value); bump.setValue(0); setDisplay(value); prev.current = value; return; }
     const gained = value > prev.current;
     prev.current = value;
     Animated.timing(anim, {
@@ -448,7 +456,7 @@ function useCountUp(value: number) {
         Animated.timing(bump, { toValue: 0, duration: 260, useNativeDriver: true }),
       ]).start();
     }
-  }, [value]);
+  }, [value, reduced]);
 
   return { display, bump };
 }
@@ -463,6 +471,7 @@ function ScoreHud({
   completed: number;
 }) {
   const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const reduced = useReducedMotion();
   const styles = useThemedStyles(BASE_STYLES, true, ['hudScoreLabel','hudScoreValue']);
 
   const { display, bump } = useCountUp(score);
@@ -518,6 +527,7 @@ function NavItem({
   onPress?: () => void;
 }) {
   const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const reduced = useReducedMotion();
   const styles = useThemedStyles(BASE_STYLES, true, ['hudScoreLabel','hudScoreValue']);
 
   return (
@@ -544,17 +554,20 @@ function ChallengeDetailModal({
   onClose: () => void;
 }) {
   const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const reduced = useReducedMotion();
   const styles = useThemedStyles(BASE_STYLES, true, ['hudScoreLabel','hudScoreValue']);
 
+  const { scale: readingScale } = useReadingPreferences();
   const appear = useRef(new Animated.Value(0)).current;
   useEffect(() => {
+    if (reduced) { appear.setValue(1); return; }
     Animated.spring(appear, { toValue: 1, friction: 7, tension: 90, useNativeDriver: true }).start();
   }, []);
 
   return (
-    <Modal transparent animationType="fade" visible onRequestClose={onClose}>
+    <Modal transparent animationType={reduced ? 'none' : 'fade'} visible onRequestClose={onClose}>
       <Pressable style={styles.modalOverlay} onPress={onClose}>
-        <Pressable onPress={e => e.stopPropagation()} style={styles.detailWrap}>
+        <Pressable accessibilityViewIsModal onPress={e => e.stopPropagation()} style={[styles.detailWrap, { maxHeight: '92%', backgroundColor: COLORS.surface, padding: 16, borderRadius: 18 }]}>
           <View style={styles.detailKickerPill}>
             <Text style={styles.detailKicker}>CHALLENGE</Text>
           </View>
@@ -568,8 +581,12 @@ function ChallengeDetailModal({
               opacity: appear,
             }}
           >
-            <CardFace task={task} width={DETAIL_CARD_W} />
+            <CardFace task={task} width={110} variant="compact" />
           </Animated.View>
+          <ScrollView style={{ maxHeight: 200, flexShrink: 1, alignSelf: 'stretch' }} contentContainerStyle={{ gap: 8 }}>
+            <FocusHeading title={task.description} />
+            {!!task.flavorText && <Text style={{ color: COLORS.textBody, fontSize: 16 * readingScale, lineHeight: 24 * readingScale }}>{task.flavorText}</Text>}
+          </ScrollView>
           <View style={styles.detailButtons}>
             <GameButton
               testID="challenge-swap-btn"
@@ -769,7 +786,7 @@ const BASE_STYLES = StyleSheet.create({
   },
   handArea: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
   },
 
   // ── Nav ──

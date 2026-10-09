@@ -1,3 +1,4 @@
+import { useReducedMotion, useReadingPreferences } from '../theme/useAccessibility';
 import React, { useRef } from 'react';
 import { Text, StyleSheet, Pressable, Animated, ViewStyle, StyleProp } from 'react-native';
 import { FONTS, INK } from '../theme/theme';
@@ -26,12 +27,14 @@ interface Props {
 }
 
 export default function GameButton({ multiline, label, sublabel, tone = 'green', onPress, disabled, size = 'md', style, testID }: Props) {
+  const reduced = useReducedMotion();
+  const { scale, readableFont, highContrast } = useReadingPreferences();
   const press = useRef(new Animated.Value(0)).current;
-  const colors = disabled ? TONES.gray : TONES[tone];
+  const colors = highContrast ? { face: disabled ? '#444444' : '#111111', edge: '#000000' } : disabled ? TONES.gray : TONES[tone];
   const depth = size === 'lg' ? 6 : 5;
 
   const animate = (to: number) =>
-    Animated.timing(press, { toValue: to, duration: 70, useNativeDriver: true }).start();
+    Animated.timing(press, { toValue: to, duration: reduced ? 0 : 70, useNativeDriver: true }).start();
 
   return (
     <Pressable
@@ -41,6 +44,7 @@ export default function GameButton({ multiline, label, sublabel, tone = 'green',
       onPressIn={() => !disabled && animate(1)}
       onPressOut={() => animate(0)}
       accessibilityRole="button"
+      accessibilityLabel={[label, sublabel].filter(Boolean).join(', ')}
       accessibilityState={{ disabled: !!disabled }}
       style={[styles.wrap, style]}
     >
@@ -60,10 +64,10 @@ export default function GameButton({ multiline, label, sublabel, tone = 'green',
             },
           ]}
         >
-          <Text style={[styles.label, size === 'lg' && styles.labelLg, disabled && styles.dimmed]} numberOfLines={multiline ? undefined : 1}>
+          <Text style={[styles.label, size === 'lg' && styles.labelLg, disabled && styles.dimmed, { fontSize: (size === 'lg' ? 22 : 20) * scale, fontFamily: readableFont ? 'System' : FONTS.display, textAlign: 'center', textShadowColor: highContrast || readableFont ? 'transparent' : 'rgba(42,30,63,0.55)' }]} numberOfLines={multiline || scale > 1 ? undefined : 1}>
             {label}
           </Text>
-          {sublabel ? <Text style={[styles.sublabel, disabled && styles.dimmed]}>{sublabel}</Text> : null}
+          {sublabel ? <Text style={[styles.sublabel, disabled && styles.dimmed, { fontSize: 11 * scale }]}>{sublabel}</Text> : null}
         </Animated.View>
       </Animated.View>
     </Pressable>

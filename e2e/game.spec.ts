@@ -9,6 +9,107 @@ async function snap(page: Page, name: string) {
 
 const byId = (page: Page, id: string) => page.locator(`[data-testid="${id}"]`);
 
+test('device reduced motion and largest reading size work through drafts and minigames', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await startGame(page);
+  await page.getByText('Settings', { exact: true }).click();
+  await expect(byId(page, 'motion-system')).toBeChecked();
+  await byId(page, 'text-extra-large').click();
+  await byId(page, 'comfort-readableFont').click();
+  await page.getByText('‹ Back').click();
+  await focusCompletableCard(page);
+  await byId(page, 'complete-btn').click();
+  await expect(byId(page, 'draft-option')).toHaveCount(3);
+  await byId(page, 'draft-option').first().click();
+  await byId(page, 'add-to-hand').scrollIntoViewIfNeeded();
+  await snap(page, '34-readable-draft');
+  await byId(page, 'add-to-hand').click();
+  await page.getByText('Awesome!', { exact: true }).click();
+  await byId(page, 'minigames-btn').click();
+  await byId(page, 'choose-sprint').click();
+  await snap(page, '35-readable-minigame-help');
+  await byId(page, 'minigame-tips-dismiss').click();
+  await byId(page, 'sprint-start').click();
+  await expect(byId(page, 'sprint-question')).toBeVisible();
+  await snap(page, '36-readable-sprint');
+  expect((await savedState(page)).settings.reduceMotion).toBe('system');
+});
+
+test('comfort preferences persist, readable views fit, and cards have button navigation', async ({ page }) => {
+  await startGame(page);
+  await page.getByText('Settings', { exact: true }).click();
+  await byId(page, 'motion-on').click();
+  await byId(page, 'comfort-readableFont').click();
+  await byId(page, 'comfort-highContrast').click();
+  await byId(page, 'text-extra-large').click();
+  await expect(byId(page, 'motion-on')).toBeChecked();
+  await expect(byId(page, 'text-extra-large')).toBeChecked();
+  await snap(page, '30-comfort-settings');
+  await page.getByText('‹ Back').click();
+  await byId(page, 'hand-next').click();
+  await byId(page, 'hand-previous').click();
+  await byId(page, 'hand-read').click();
+  await expect(byId(page, 'hand-full-description')).toHaveText((await savedState(page)).session.hand[0].description);
+  await snap(page, '31-readable-card');
+  await byId(page, 'reading-close').click();
+  await page.reload();
+  await byId(page, 'continue-game-btn').click();
+  await page.getByText('Select', { exact: true }).first().click();
+  const settings = (await savedState(page)).settings;
+  expect(settings).toMatchObject({ reduceMotion: 'on', textSize: 'extra-large', readableFont: true, highContrast: true });
+  await byId(page, 'challenge-card').first().click();
+  await snap(page, '32-readable-challenge');
+  const button = byId(page, 'challenge-complete-btn');
+  const bounds = await button.boundingBox();
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  await button.click();
+});
+
+test('seated and quiet activity filters apply to new cards without emptying the board', async ({ page }) => {
+  await startGame(page);
+  await page.getByText('Settings', { exact: true }).click();
+  await byId(page, 'comfort-seatedOnly').click();
+  await byId(page, 'comfort-noPerforming').click();
+  await byId(page, 'comfort-lessWalking').click();
+  await expect(byId(page, 'filter-error')).toHaveCount(0);
+  await startGame(page);
+  const state = await savedState(page);
+  expect(state.session.hand).toHaveLength(5);
+  expect(state.session.hand.every((t: any) => !['act','ride','meet'].includes(t.category))).toBe(true);
+  expect(state.session.challengeTasks).toHaveLength(3);
+  expect(state.session.challengeTasks.every((t: any) => t.id.startsWith('comfort-') || t.id.startsWith('explore-e-1'))).toBe(true);
+  await byId(page, 'challenge-card').first().click();
+  await byId(page, 'challenge-complete-btn').click();
+  expect((await savedState(page)).session.challengeTasks.every((t: any) => t.id.startsWith('comfort-') || t.id.startsWith('explore-e-1'))).toBe(true);
+});
+
+test('help, privacy, reporting drafts, and confirmed local deletion work', async ({ page }) => {
+  await page.addInitScript(() => { (window as any).openedLinks = []; window.open = ((url: any) => { (window as any).openedLinks.push(String(url)); return null; }) as any; });
+  await triviaGame(page, 'single');
+  await byId(page, 'complete-btn').click();
+  await byId(page, 'trivia-report-btn').click();
+  const url = await page.evaluate(() => (window as any).openedLinks.at(-1));
+  expect(url).toContain('https://github.com/Audge93/SideQuest/issues/new?');
+  expect(decodeURIComponent(url)).toContain('Card ID: test-trivia');
+  await byId(page, 'trivia-not-now-btn').click();
+  await page.getByText('Settings', { exact: true }).click();
+  for (const key of ['help', 'report', 'privacy']) {
+    await byId(page, `settings-${key}-btn`).click();
+    await expect(byId(page, `settings-${key}-panel`)).toBeVisible();
+    await snap(page, `33-${key}`);
+    await byId(page, 'reading-close').click();
+  }
+  await byId(page, 'settings-delete-btn').click();
+  await byId(page, 'reading-close').click();
+  expect((await savedState(page)).session).not.toBeNull();
+  await byId(page, 'settings-delete-btn').click();
+  await byId(page, 'clear-data-confirm').click();
+  await expect(byId(page, 'new-game-btn')).toBeVisible();
+  await expect.poll(async () => (await savedState(page)).session).toBeNull();
+  expect((await savedState(page)).saveSlots).toEqual([null, null, null]);
+  expect((await savedState(page)).player.name).toBe('Player 1');
+});
+
 async function startGame(page: Page, parkId = 'wdw-mk') {
   await page.goto('/');
   await byId(page, 'new-game-btn').click();
@@ -33,7 +134,7 @@ async function focusCompletableCard(page: Page) {
   const complete = byId(page, 'complete-btn');
   for (let i = 0; i < 5; i++) {
     if ((await complete.innerText()).includes('Complete')) return;
-    await byId(page, 'hand-card').nth(Math.min(i + 1, 4)).click({ force: true });
+    await byId(page, 'hand-next').click();
     await page.waitForTimeout(500);
   }
   throw new Error('No completable card in hand');
@@ -140,6 +241,9 @@ test('wrong multi-answer trivia reveals every answer and waits for dismissal', a
   await byId(page, 'trivia-dismiss-btn').click();
   await pickFirstDraftOption(page);
   expect(await score(page)).toBe(0);
+  const action = await byId(page, 'complete-btn').boundingBox();
+  const navigation = await byId(page, 'game-nav-bar').boundingBox();
+  expect(action!.y + action!.height).toBeLessThanOrEqual(navigation!.y);
 });
 
 test('correct multi-answer selection scores only after dismissal', async ({ page }) => {

@@ -8,6 +8,7 @@
 import React from 'react';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { useAppTheme } from '../theme/useAppTheme';
+import { useReducedMotion } from '../theme/useAccessibility';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import HomeScreen from '../screens/HomeScreen';
@@ -19,13 +20,14 @@ const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
   const { dark, colors } = useAppTheme();
+  const reduced = useReducedMotion();
   const navigationTheme = dark ? DarkTheme : DefaultTheme;
   return (
     <NavigationContainer theme={{ ...navigationTheme, colors: { ...navigationTheme.colors, background: colors.bg, card: colors.surface } }}>
       {/* The app uses a simple stack flow instead of nested navigators.
           Home is the entry point, while Game, Settings, and Profile are
           pushed on top as full-screen destinations. */}
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, animation: reduced ? 'none' : 'default' }}>
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Game" component={GameScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />

@@ -1,4 +1,5 @@
 import { EXTRA_SMALL_TASKS, EXTRA_BIG_TASKS, EXTRA_RIDE_TASKS } from './extraTasks';
+import { COMFORT_TASKS } from './activityPreferences';
 import { Task, Ride } from '../types';
 
 /**
@@ -136,6 +137,7 @@ export const SMALL_TASKS: Task[] = [
 // ─── Big Tasks ──────────────────────────────────────────────────────────────
 
 export const BIG_TASKS: Task[] = [
+  ...COMFORT_TASKS,
   ...EXTRA_BIG_TASKS,
   // ══════════════════════════════════════════════════════════════════════════
   // ── Treat 🍦 (food) ──────────────────────────────────────────────────────

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useReadingPreferences } from '../theme/useAccessibility';
 import { View, Text, StyleSheet } from 'react-native';
 import { Task } from '../types';
 import GameIcon, { IconName } from './icons/GameIcon';
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export default function CardFace({ task, width, variant = 'full', descriptionLines = 5, highlighted, children }: Props) {
+  const { highContrast, readableFont } = useReadingPreferences();
   const height = Math.round(width * (variant === 'compact' ? 1.22 : CARD_ASPECT));
   const s = width / 260;
   const frame = CATEGORY_FRAME_COLORS[task.category] ?? '#666';
@@ -93,7 +95,7 @@ export default function CardFace({ task, width, variant = 'full', descriptionLin
             style={[
               styles.ribbon,
               {
-                backgroundColor: frame,
+                backgroundColor: highContrast ? INK : frame,
                 borderWidth: Math.max(1.5, 2.5 * s),
                 borderRadius: Math.round(8 * s),
                 paddingHorizontal: Math.round(14 * s),
@@ -102,7 +104,7 @@ export default function CardFace({ task, width, variant = 'full', descriptionLin
             ]}
           >
             <Text
-              style={[styles.ribbonText, { fontSize: Math.max(10, Math.round(19 * s)), letterSpacing: 1.2 * s }]}
+              style={[styles.ribbonText, { fontSize: Math.max(10, Math.round(19 * s)), letterSpacing: 1.2 * s }, readableFont && { fontFamily: 'System', fontWeight: '700' }, highContrast && { textShadowColor: 'transparent' }]}
               numberOfLines={1}
             >
               {task.displayCategory.toUpperCase()}
@@ -134,7 +136,7 @@ export default function CardFace({ task, width, variant = 'full', descriptionLin
             ]}
           />
           {!compact && (
-            <Text style={[styles.footerText, { fontSize: Math.max(8, Math.round(12 * s)) }]}>{rarity.label}</Text>
+            <Text style={[styles.footerText, { fontSize: Math.max(8, Math.round(12 * s)) }, highContrast && { color: INK }]}>{rarity.label}</Text>
           )}
           {!compact && task.heightRequirement ? (
             <Text style={[styles.footerText, styles.footerRight, { fontSize: Math.max(8, Math.round(12 * s)) }]}>
@@ -161,6 +163,7 @@ export default function CardFace({ task, width, variant = 'full', descriptionLin
         <Text
           style={[
             styles.coinValue,
+            highContrast && { color: INK, textShadowColor: 'transparent' },
             showCoinLabel
               ? { fontSize: Math.round(gem * 0.42), lineHeight: Math.round(gem * 0.46) }
               : { fontSize: Math.round(gem * 0.5), lineHeight: Math.round(gem * 0.6) },

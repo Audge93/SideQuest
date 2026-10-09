@@ -1,3 +1,6 @@
+import { useReducedMotion, useReadingPreferences } from '../theme/useAccessibility';
+import ReadingModal, { FocusHeading } from './ReadingModal';
+import { openSupport } from '../utils/support';
 import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 /**
  * CardCarousel.tsx — The player's hand
@@ -23,6 +26,8 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   ScrollView,
+  AccessibilityInfo,
+  Platform,
 } from 'react-native';
 import { Task } from '../types';
 import { CATEGORY_FRAME_COLORS, FONTS, INK, TABLE } from '../theme/theme';
@@ -37,11 +42,11 @@ const { width: SCREEN_W } = Dimensions.get('window');
 
 const CARD_GAP = 14;
 // Vertical space the carousel uses besides the card itself: list padding, dots, action bar.
-const HAND_CHROME = 112;
+const HAND_CHROME = 150;
 
 // Largest hand card that fits the space the hand has been given.
 export function handCardWidth(availableHeight: number) {
-  return Math.round(Math.max(140, Math.min(SCREEN_W * 0.66, 270, (availableHeight - HAND_CHROME) / CARD_ASPECT)));
+  return Math.round(Math.max(90, Math.min(SCREEN_W * 0.66, 270, (availableHeight - HAND_CHROME) / CARD_ASPECT)));
 }
 const INACTIVE_SCALE = 0.88;
 const FAN_TILT = 7;
@@ -68,6 +73,7 @@ function TaskCard({
   onExited: () => void;
 }) {
   const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const reduced = useReducedMotion();
   const styles = useThemedStyles(BASE_STYLES, true, ['choiceTextLight']);
 
   const deal = useRef(new Animated.Value(0)).current;
@@ -79,16 +85,20 @@ function TaskCard({
   const flash = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.sequence([
+    if (reduced) { deal.stopAnimation(); deal.setValue(1); return; }
+    const animation = Animated.sequence([
       Animated.delay(dealDelay),
       Animated.spring(deal, { toValue: 1, friction: 6, tension: 60, useNativeDriver: true }),
-    ]).start();
-  }, []);
+    ]); animation.start(); return () => animation.stop();
+  }, [reduced]);
 
   useEffect(() => {
+    let exitAnimation: Animated.CompositeAnimation | undefined;
+    const runExit = (animation: Animated.CompositeAnimation) => { exitAnimation = animation; animation.start(({ finished }) => { if (finished) onExited(); }); };
+    if (reduced && exitKind) { onExited(); return; }
     if (exitKind === 'complete') {
       // Anticipation squash → overshoot punch with white flash → collapse into the burst.
-      Animated.sequence([
+      runExit(Animated.sequence([
         Animated.parallel([
           Animated.timing(exitScale, { toValue: 0.92, duration: 70, useNativeDriver: true }),
           Animated.timing(exitRotate, { toValue: -3, duration: 70, useNativeDriver: true }),
@@ -103,10 +113,10 @@ function TaskCard({
           Animated.timing(exitRotate, { toValue: 16, duration: 200, useNativeDriver: true }),
           Animated.timing(exitOpacity, { toValue: 0, duration: 200, easing: Easing.in(Easing.quad), useNativeDriver: true }),
         ]),
-      ]).start(onExited);
+      ]));
     } else if (exitKind === 'discard') {
       // Small lift, then toss the card off the bottom with a spin.
-      Animated.sequence([
+      runExit(Animated.sequence([
         Animated.parallel([
           Animated.timing(exitY, { toValue: -14, duration: 90, easing: Easing.out(Easing.quad), useNativeDriver: true }),
           Animated.timing(exitRotate, { toValue: 3, duration: 90, useNativeDriver: true }),
@@ -118,13 +128,14 @@ function TaskCard({
           Animated.timing(exitScale, { toValue: 0.85, duration: 340, useNativeDriver: true }),
           Animated.timing(exitOpacity, { toValue: 0, duration: 340, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
         ]),
-      ]).start(onExited);
+      ]));
     } else {
       for (const v of [exitRotate, exitY, exitX, flash]) v.setValue(0);
       exitScale.setValue(1);
       exitOpacity.setValue(1);
     }
-  }, [exitKind]);
+    return () => exitAnimation?.stop();
+  }, [exitKind, reduced]);
 
   return (
     <Animated.View
@@ -167,6 +178,7 @@ function TriviaModal({
   onFiftyFifty: () => void;
 }) {
   const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const reduced = useReducedMotion();
   const styles = useThemedStyles(BASE_STYLES, true, ['choiceTextLight']);
 
   const color = CATEGORY_FRAME_COLORS[task.category] ?? '#888';
@@ -177,6 +189,10 @@ function TriviaModal({
   const multiple = required > 1;
   const correct = !passed && isTriviaSelectionCorrect(task, selectedChoices);
   const submittedRef = useRef(false);
+  const { highContrast } = useReadingPreferences();
+  useEffect(() => {
+    if (answered && Platform.OS !== 'web') AccessibilityInfo.announceForAccessibility(`${passed ? 'Passed.' : correct ? 'Correct.' : 'Not quite.'} Correct ${answers.length > 1 ? 'answers' : 'answer'}: ${answers.map(i => task.triviaChoices?.[i]).join('; ')}. Dismiss when you are ready.`);
+  }, [answered]);
 
   const finish = () => {
     if (submittedRef.current) return;
@@ -201,9 +217,9 @@ function TriviaModal({
   };
 
   return (
-    <Modal transparent animationType="fade" visible onRequestClose={answered ? finish : onClose}>
+    <Modal transparent animationType={reduced ? 'none' : 'fade'} visible onRequestClose={answered ? finish : onClose}>
       <View style={styles.overlay}>
-        <View testID="trivia-panel" style={[styles.triviaPanel, { maxHeight: '92%' }]}>
+        <View testID="trivia-panel" accessibilityViewIsModal style={[styles.triviaPanel, { maxHeight: '92%' }]}>
           <ScrollView contentContainerStyle={{ gap: 14 }} style={{ flexShrink: 1 }}>
           <View style={styles.triviaHeader}>
             <View style={[styles.triviaRibbon, { backgroundColor: color }]}>
@@ -213,7 +229,7 @@ function TriviaModal({
               <Text style={styles.triviaCoinText}>{task.points}</Text>
             </View>
           </View>
-          <Text style={styles.triviaQuestion}>{task.description}</Text>
+          <FocusHeading title={task.description} />
           <Text style={styles.triviaLaterText}>
             {answered ? (answers.length > 1 ? 'Correct answers are highlighted below.' : 'The correct answer is highlighted below.')
               : multiple ? `Select ${required} answers, then submit.` : 'Choose one answer.'}
@@ -235,18 +251,20 @@ function TriviaModal({
                     state === 'right' && styles.choiceRight,
                     state === 'wrong' && styles.choiceWrong,
                     state === 'dim' && styles.choiceDim,
+                    highContrast && { backgroundColor: '#111111', borderColor: '#FFFFFF' },
                     eliminated && { opacity: 0.35 },
                   ]}
                   onPress={() => handleChoicePress(i)}
                   activeOpacity={0.8}
                   disabled={answered || eliminated}
                   accessibilityRole={multiple ? 'checkbox' : 'button'}
+                  accessibilityLabel={`${CHOICE_LETTERS[i]}: ${choice}${answered && isAnswer ? ', correct answer' : ''}${selected ? ', your selection' : ''}${eliminated ? ', removed by 50/50' : ''}`}
                   accessibilityState={{ checked: selected, disabled: answered || eliminated }}
                 >
                   <View style={[styles.choiceLetter, { backgroundColor: color }]}>
                     <Text style={styles.choiceLetterText}>{CHOICE_LETTERS[i]}</Text>
                   </View>
-                  <Text style={[styles.choiceText, (state === 'right' || state === 'wrong') && styles.choiceTextLight, !answered && selected && { color: INK }]}>
+                  <Text style={[styles.choiceText, (state === 'right' || state === 'wrong') && styles.choiceTextLight, !answered && selected && { color: INK }, highContrast && { color: '#FFFFFF' }]}>
                     {choice}
                   </Text>
                   {eliminated && <Text style={{ color: INK, fontSize: 12, fontWeight: '700' }}>Removed</Text>}
@@ -261,10 +279,12 @@ function TriviaModal({
           </View>
 
           {answered ? (
-            <Text testID="trivia-result" style={[styles.triviaResult, { color: passed ? (dark ? TABLE.gold : '#836211') : correct ? (dark ? '#5BE08F' : '#237B48') : (dark ? '#FF8A8A' : '#B62828') }]}>
+            <Text testID="trivia-result" accessibilityLiveRegion="polite" aria-live="polite" style={[styles.triviaResult, { color: passed ? (dark ? TABLE.gold : '#836211') : correct ? (dark ? '#5BE08F' : '#237B48') : (dark ? '#FF8A8A' : '#B62828') }]}>
               {passed ? 'Passed — here’s the answer' : correct ? `Correct! +${task.points}` : 'Not quite!'}
             </Text>
           ) : null}
+          {answered && <Text accessibilityLiveRegion="polite" aria-live="polite" style={styles.triviaLaterText}>{answers.length > 1 ? 'Correct answers: ' : 'Correct answer: '}{answers.map(i => task.triviaChoices?.[i]).join('; ')}</Text>}
+          <TouchableOpacity testID="trivia-report-btn" accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => openSupport(task)}><Text style={styles.triviaLaterText}>Report this question (public GitHub draft)</Text></TouchableOpacity>
           {answered && task.triviaExplanation ? <Text testID="trivia-explanation" style={styles.triviaLaterText}>{task.triviaExplanation}</Text> : null}
           </ScrollView>
           {answered ? (
@@ -294,11 +314,13 @@ function TriviaModal({
 // ── Open slot shown while the player drafts a replacement ────
 function OpenSlot({ height }: { height: number }) {
   const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const reduced = useReducedMotion();
   const styles = useThemedStyles(BASE_STYLES, true, ['choiceTextLight']);
 
   const pulse = useRef(new Animated.Value(0)).current;
   const appear = useRef(new Animated.Value(0)).current;
   useEffect(() => {
+    if (reduced) { appear.setValue(1); pulse.setValue(1); return; }
     Animated.timing(appear, { toValue: 1, duration: 260, useNativeDriver: true }).start();
     const loop = Animated.loop(
       Animated.sequence([
@@ -308,7 +330,7 @@ function OpenSlot({ height }: { height: number }) {
     );
     loop.start();
     return () => loop.stop();
-  }, []);
+  }, [reduced]);
   return (
     <Animated.View
       testID="open-slot"
@@ -358,12 +380,15 @@ export default function CardCarousel({
   onTriviaAnswer: (id: string, correct: boolean) => void;
 }) {
   const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const reduced = useReducedMotion();
   const styles = useThemedStyles(BASE_STYLES, true, ['choiceTextLight']);
 
   const SNAP_INTERVAL = cardWidth + CARD_GAP;
   const sidePadding = Math.round((SCREEN_W - cardWidth) / 2) - CARD_GAP / 2;
   const [activeIndex, setActiveIndex] = useState(0);
   const [triviaTask, setTriviaTask] = useState<Task | null>(null);
+  const [reading, setReading] = useState<Task | null>(null);
+  const { scale: readingScale } = useReadingPreferences();
   const [triviaPassed, setTriviaPassed] = useState(false);
   const [exiting, setExiting] = useState<{ id: string; kind: ExitKind } | null>(null);
   const [bursts, setBursts] = useState<
@@ -395,12 +420,13 @@ export default function CardCarousel({
     if (newIndex === -1) return;
     setActiveIndex(newIndex);
     requestAnimationFrame(() => {
-      flatListRef.current?.scrollToOffset({ offset: newIndex * SNAP_INTERVAL, animated: true });
+      flatListRef.current?.scrollToOffset({ offset: newIndex * SNAP_INTERVAL, animated: !reduced });
     });
   }, [cards]);
 
   const beginExit = (task: Task, kind: ExitKind, after: () => void) => {
     if (exiting) return;
+    if (reduced) { haptic(kind === 'complete' ? 'success' : 'thud'); after(); return; }
     const index = items.findIndex(c => c.id === task.id);
     afterExitRef.current = after;
     setExiting({ id: task.id, kind });
@@ -481,12 +507,12 @@ export default function CardCarousel({
   const focusCard = (index: number) => {
     if (index === activeIndex) return;
     setActiveIndex(index);
-    flatListRef.current?.scrollToOffset({ offset: index * SNAP_INTERVAL, animated: true });
+    flatListRef.current?.scrollToOffset({ offset: index * SNAP_INTERVAL, animated: !reduced });
   };
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.listWrap, { transform: [{ translateX: shake }] }]}>
+      <Animated.View style={[styles.listWrap, { transform: reduced ? [] : [{ translateX: shake }] }]}>
         <Animated.FlatList
           ref={flatListRef}
           data={items}
@@ -513,12 +539,12 @@ export default function CardCarousel({
               extrapolate: 'clamp',
             });
             return (
-              <Pressable onPress={() => focusCard(index)} disabled={index === activeIndex}>
+              <Pressable accessibilityRole="button" accessibilityLabel={isOpenSlot(item) ? "Choosing next card" : `${item.displayCategory}: ${item.description}, ${item.points} points. ${index === activeIndex ? "Read card" : "Select card"}`} onPress={() => index === activeIndex && !isOpenSlot(item) ? setReading(item) : focusCard(index)}>
                 <Animated.View
                   style={{
                     width: cardWidth,
                     marginHorizontal: CARD_GAP / 2,
-                    transform: [{ translateY }, { rotate }, { scale }],
+                    transform: reduced ? [] : [{ translateY }, { rotate }, { scale }],
                   }}
                 >
                   {isOpenSlot(item) ? (
@@ -551,11 +577,15 @@ export default function CardCarousel({
         ))}
       </Animated.View>
 
-      <View style={styles.dots}>
-        {items.map((item, i) => (
-          <View key={item.id} style={[styles.dot, isOpenSlot(item) && styles.dotOpen, i === activeIndex && styles.dotActive]} />
-        ))}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, gap: 8 }}>
+        <TouchableOpacity testID="hand-previous" accessibilityRole="button" accessibilityLabel="Previous card" disabled={activeIndex === 0} accessibilityState={{ disabled: activeIndex === 0 }} style={{ minHeight: 44, justifyContent: 'center', opacity: activeIndex === 0 ? 0.5 : 1 }} onPress={() => focusCard(activeIndex - 1)}><Text style={styles.triviaLaterText}>Previous</Text></TouchableOpacity>
+        <TouchableOpacity testID="hand-read" accessibilityRole="button" disabled={!activeTask} style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => activeTask && setReading(activeTask)}><Text style={styles.triviaLaterText}>Read Card</Text></TouchableOpacity>
+        <TouchableOpacity testID="hand-next" accessibilityRole="button" accessibilityLabel="Next card" disabled={activeIndex >= items.length - 1} accessibilityState={{ disabled: activeIndex >= items.length - 1 }} style={{ minHeight: 44, justifyContent: 'center', opacity: activeIndex >= items.length - 1 ? 0.5 : 1 }} onPress={() => focusCard(activeIndex + 1)}><Text style={styles.triviaLaterText}>Next</Text></TouchableOpacity>
       </View>
+      {reading && <ReadingModal title={reading.displayCategory + ' · ' + reading.points + ' points'} onClose={() => setReading(null)}>
+        <Text testID="hand-full-description" style={{ color: COLORS.textDark, fontSize: 18 * readingScale, lineHeight: 27 * readingScale }}>{reading.description}</Text>
+        {!!reading.flavorText && <Text style={{ color: COLORS.textBody, fontSize: 16 * readingScale, lineHeight: 24 * readingScale }}>{reading.flavorText}</Text>}
+      </ReadingModal>}
 
       <View style={styles.actionBar}>
         <GameButton

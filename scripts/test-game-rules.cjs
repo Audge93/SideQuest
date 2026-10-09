@@ -100,3 +100,30 @@ for(let i=0;i<8;i++){
   state().completeTask(state().session.challengeTasks[0].id,true);
 }
 console.log('Height filtering passed: initial and replacement ride activities respect park and shortest-rider height.');
+assert.equal(state().updateSettings({seatedOnly:true}),false);
+assert.equal(state().settings.seatedOnly,false);
+assert.equal(state().updateSettings({
+  seatedOnly:true,lessWalking:true,noPerforming:true,reduceMotion:'on',textSize:'extra-large',readableFont:true,highContrast:true,
+  categoryToggles:{find:true,photo:true,trivia:true,act:true,ride:true,treat:true,pins:true,meet:true,explore:true,seek:true},
+}),true);
+const {matchesActivityPreferences} = load('src/data/activityPreferences.ts');
+const {SMALL_TASKS,BIG_TASKS} = load('src/data/tasks.ts');
+assert.equal(matchesActivityPreferences(BIG_TASKS.find(t=>t.id==='pins-expansion-15'),{...state().settings,seatedOnly:false,lessWalking:false}),false);
+assert.equal(matchesActivityPreferences(SMALL_TASKS.find(t=>t.id==='act-m-2'),state().settings),false);
+assert.equal(matchesActivityPreferences(SMALL_TASKS.find(t=>t.id==='photo-m-4'),state().settings),false);
+assert.equal(matchesActivityPreferences({...fixture,id:'unknown-task',category:'find'},state().settings),false);
+for(const parkId of ['wdw-mk','wdw-ep','wdw-hs','wdw-ak']) {
+  state().updateSettings({parkIds:[parkId]});state().startSession('Comfort check');
+  for(let i=0;i<8;i++) {
+    assert.equal(state().session.hand.length,5);assert.equal(state().session.challengeTasks.length,3);
+    assert.ok(state().session.hand.every(t=>matchesActivityPreferences(t,state().settings)));
+    assert.ok(state().session.challengeTasks.every(t=>t.id.startsWith('comfort-') || t.id.startsWith('explore-e-1')));
+    state().completeTask(state().session.challengeTasks[0].id,true);
+  }
+}
+const comfortSlot=state().activeSlotId;
+state().loadSlot(comfortSlot);
+assert.equal(state().settings.reduceMotion,'on');assert.equal(state().settings.textSize,'extra-large');
+assert.equal(state().updateSettings({seatedOnly:false,lessWalking:true}),true);
+assert.equal(matchesActivityPreferences(BIG_TASKS.find(t=>t.id==='treat-expansion-1'),state().settings),true);
+console.log('Comfort rules passed: reviewed activity filtering, four-park full boards/refills, incompatible-setting safeguard, and persistence.');

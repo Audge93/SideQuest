@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
+import { useReducedMotion } from '../theme/useAccessibility';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { FONTS, INK as THEME_INK, TABLE } from '../theme/theme';
 
@@ -213,7 +214,17 @@ interface Props {
   onDone: () => void;
 }
 
-export default function CardBurst({ color, variant, points, bonus = 0, delay = 0, offsetX = 0, onDone }: Props) {
+export default function CardBurst(props: Props) {
+  const reduced = useReducedMotion();
+  return reduced ? <QuietFeedback {...props} /> : <AnimatedBurst {...props} />;
+}
+function QuietFeedback({ variant, points = 0, bonus = 0, onDone }: Props) {
+  useEffect(() => { const timer = setTimeout(onDone, 1000); return () => clearTimeout(timer); }, [onDone]);
+  return <View pointerEvents="none" style={{ position: 'absolute', top: 20, alignSelf: 'center', backgroundColor: '#111111', padding: 12, borderRadius: 8 }}>
+    <Text accessibilityLiveRegion="polite" style={{ color: '#FFFFFF', fontSize: 18 }}>{variant === 'complete' ? `+${points + bonus} points` : 'Card discarded'}</Text>
+  </View>;
+}
+function AnimatedBurst({ color, variant, points, bonus = 0, delay = 0, offsetX = 0, onDone }: Props) {
   const isComplete = variant === 'complete';
   const particles = useMemo(() => (isComplete ? makeShards(color, 26) : makeDust(color, 16)), []);
 

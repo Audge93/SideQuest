@@ -1,6 +1,7 @@
+import { useReducedMotion } from '../theme/useAccessibility';
 import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Modal, Pressable, Animated, Easing, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Modal, Pressable, Animated, Easing, Dimensions, ScrollView } from 'react-native';
 import { Task } from '../types';
 import { CATEGORY_FRAME_COLORS, FONTS, INK, RARITY, TABLE } from '../theme/theme';
 import { haptic } from '../utils/haptics';
@@ -38,6 +39,7 @@ function DraftCard({
   onPress: () => void;
 }) {
   const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const reduced = useReducedMotion();
   const styles = useThemedStyles(BASE_STYLES, true, []);
 
   const deal = useRef(new Animated.Value(0)).current;
@@ -46,10 +48,11 @@ function DraftCard({
   const exit = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.sequence([
+    if (reduced) { deal.setValue(1); sway.setValue(0.5); return; }
+    const entrance = Animated.sequence([
       Animated.delay(120 + index * 110),
       Animated.spring(deal, { toValue: 1, friction: 6, tension: 70, useNativeDriver: true }),
-    ]).start(() => haptic('tap'));
+    ]); entrance.start(() => haptic('tap'));
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(sway, { toValue: 1, duration: 1500 + index * 180, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
@@ -57,22 +60,25 @@ function DraftCard({
       ]),
     );
     loop.start();
-    return () => loop.stop();
-  }, []);
+    return () => { entrance.stop(); loop.stop(); };
+  }, [reduced]);
 
   useEffect(() => {
-    Animated.spring(lift, { toValue: selected ? 1 : 0, friction: 5, tension: 180, useNativeDriver: true }).start();
-  }, [selected]);
+    if (reduced) { lift.setValue(selected ? 1 : 0); return; }
+    const animation = Animated.spring(lift, { toValue: selected ? 1 : 0, friction: 5, tension: 180, useNativeDriver: true });
+    animation.start(); return () => animation.stop();
+  }, [selected, reduced]);
 
   useEffect(() => {
     if (!leaving) return;
+    if (reduced) { exit.setValue(1); return; }
     Animated.timing(exit, {
       toValue: 1,
       duration: chosen ? 460 : 300,
       easing: chosen ? Easing.in(Easing.back(1.4)) : Easing.in(Easing.quad),
       useNativeDriver: true,
     }).start();
-  }, [leaving]);
+  }, [leaving, reduced]);
 
   const fan = fanPosition(index, count);
   const baseRot = fan * 6;
@@ -100,7 +106,7 @@ function DraftCard({
   );
 
   return (
-    <Pressable testID="draft-option" onPress={onPress} disabled={leaving}>
+    <Pressable testID="draft-option" accessibilityRole="button" accessibilityLabel={`${task.displayCategory}: ${task.description}, ${task.points} points`} accessibilityState={{ selected }} onPress={onPress} disabled={leaving}>
       <Animated.View
         style={[
           {
@@ -128,6 +134,7 @@ function DraftCard({
 
 export default function DraftPicker({ options, onChoose }: { options: Task[]; onChoose: (taskId: string) => void }) {
   const { colors: COLORS, table: TABLE, dark } = useAppTheme();
+  const reduced = useReducedMotion();
   const styles = useThemedStyles(BASE_STYLES, true, []);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -136,12 +143,16 @@ export default function DraftPicker({ options, onChoose }: { options: Task[]; on
   const panel = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.timing(intro, { toValue: 1, duration: 260, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
-  }, []);
+    if (reduced) { intro.setValue(1); return; }
+    const animation = Animated.timing(intro, { toValue: 1, duration: 260, easing: Easing.out(Easing.quad), useNativeDriver: true });
+    animation.start(); return () => animation.stop();
+  }, [reduced]);
 
   useEffect(() => {
-    Animated.spring(panel, { toValue: selectedId ? 1 : 0, friction: 7, tension: 120, useNativeDriver: true }).start();
-  }, [selectedId]);
+    if (reduced) { panel.setValue(selectedId ? 1 : 0); return; }
+    const animation = Animated.spring(panel, { toValue: selectedId ? 1 : 0, friction: 7, tension: 120, useNativeDriver: true });
+    animation.start(); return () => animation.stop();
+  }, [selectedId, reduced]);
 
   const selected = options.find(t => t.id === selectedId) ?? null;
 
@@ -154,6 +165,7 @@ export default function DraftPicker({ options, onChoose }: { options: Task[]; on
   const handleConfirm = () => {
     if (!selectedId || leaving) return;
     haptic('thud');
+    if (reduced) { onChoose(selectedId); return; }
     setLeaving(true);
     Animated.timing(intro, { toValue: 0, duration: 380, delay: 160, useNativeDriver: true }).start();
     setTimeout(() => onChoose(selectedId), 520);
@@ -162,7 +174,7 @@ export default function DraftPicker({ options, onChoose }: { options: Task[]; on
   return (
     <Modal transparent visible animationType="none" onRequestClose={() => {}}>
       <Animated.View style={[styles.scrim, { opacity: intro }]} />
-      <View style={styles.content} pointerEvents="box-none">
+      <ScrollView accessibilityViewIsModal contentContainerStyle={[styles.content, { backgroundColor: COLORS.surface, flexGrow: 1, flex: undefined, paddingVertical: 28 }]} style={{ flex: 1 }}>
         <Animated.View
           style={{
             alignItems: 'center',
@@ -174,7 +186,7 @@ export default function DraftPicker({ options, onChoose }: { options: Task[]; on
             <Text style={styles.kicker}>A SLOT OPENED UP</Text>
           </View>
           <Text style={styles.title}>Choose Your Next Quest</Text>
-          <Text style={styles.subtitle}>Pick 1 of {options.length}</Text>
+          <Text style={[styles.subtitle, { color: COLORS.textBody }]}>Pick 1 of {options.length}</Text>
         </Animated.View>
 
         <View style={styles.row}>
@@ -222,8 +234,8 @@ export default function DraftPicker({ options, onChoose }: { options: Task[]; on
           )}
         </Animated.View>
 
-        {!selected && <Animated.Text style={[styles.hint, { opacity: intro }]}>Tap a card to inspect it</Animated.Text>}
-      </View>
+        {!selected && <Animated.Text style={[styles.hint, { opacity: intro, color: COLORS.textBody }]}>Tap a card to inspect it</Animated.Text>}
+      </ScrollView>
     </Modal>
   );
 }

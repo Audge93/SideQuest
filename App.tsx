@@ -1,3 +1,4 @@
+import { useReducedMotion } from './src/theme/useAccessibility';
 /**
  * App.tsx — Root entry point for Side Quest
  *
@@ -26,8 +27,10 @@ enableScreens();
  */
 function AppLoader() {
   useSoundEffects();
+  const reduced = useReducedMotion();
   const loadFromStorage = useGameStore(s => s.loadFromStorage);
   const [showSplash, setShowSplash] = useState(true);
+  useEffect(() => { if (reduced) setShowSplash(false); }, [reduced]);
   const [fontsLoaded, fontError] = useFonts({
     LilitaOne_400Regular: { uri: LilitaOne_400Regular, display: FontDisplay.SWAP },
   });
@@ -44,7 +47,7 @@ function AppLoader() {
     <View style={styles.root}>
       {ready && <AppNavigator />}
       {/* Splash animation overlay — unmounts after animation completes */}
-      {showSplash && <SplashAnimation onFinish={() => setShowSplash(false)} />}
+      {showSplash && !reduced && <SplashAnimation onFinish={() => setShowSplash(false)} />}
     </View>
   );
 }

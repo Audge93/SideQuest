@@ -20,6 +20,11 @@ import { useGameStore } from '../store/gameStore';
 import { CategoryToggles } from '../types';
 import GameIcon, { IconName } from '../components/icons/GameIcon';
 import { COLORS, RADII } from '../theme/theme';
+import ReadingModal from '../components/ReadingModal';
+import { HELP_TEXT, PRIVACY_TEXT } from '../data/helpAndPrivacy';
+import { openSupport } from '../utils/support';
+import { Settings } from '../types';
+import { useReadingPreferences, useReducedMotion } from '../theme/useAccessibility';
 
 // Metadata used to render the category toggle list without duplicating label
 // and icon markup for every individual row in the settings UI.
@@ -47,6 +52,15 @@ export default function SettingsScreen() {
     navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
   };
   const [showAbout, setShowAbout] = useState(false);
+  const [info, setInfo] = useState<'help' | 'report' | 'privacy' | 'delete' | null>(null);
+  const [filterError, setFilterError] = useState('');
+  const reduced = useReducedMotion();
+  const { scale } = useReadingPreferences();
+  const applyPreference = (patch: Partial<Settings>) => {
+    if (!updateSettings(patch)) setFilterError('These choices leave too few cards. Enable more task categories (Explore or Seek works with seated and less-walking modes), then try again.');
+    else setFilterError('');
+  };
+  const bodyStyle = { fontSize: 16 * scale, lineHeight: 24 * scale, color: COLORS.textBody };
 
   return (
     <SafeAreaView testID="settings-screen" style={styles.safe}>
@@ -55,7 +69,7 @@ export default function SettingsScreen() {
         {/* Header row: back on left, return-to-menu on right when in-game */}
         <View style={styles.headerRow}>
           <TouchableOpacity
-            style={styles.backBtn}
+            accessibilityRole="button" accessibilityLabel="Back" style={[styles.backBtn, { minHeight: 44, justifyContent: 'center' }]}
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
           >
@@ -63,7 +77,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
           {session && (
             <TouchableOpacity
-              style={styles.returnMenuBtn}
+              accessibilityRole="button" style={[styles.returnMenuBtn, { minHeight: 44, justifyContent: 'center' }]}
               onPress={handleReturnToMenu}
               activeOpacity={0.7}
             >
@@ -79,6 +93,33 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </SectionCard>
 
+        <SectionCard title="ACCESSIBILITY & COMFORT">
+          <Text style={styles.sectionDescription}>Choose what works for you. Your phone’s text size is also supported.</Text>
+          <Text style={styles.settingLabel}>Reduce Motion</Text>
+          <View style={[styles.themeRow, { flexWrap: 'wrap' }]}>
+            {(['system', 'on', 'off'] as const).map(mode => <TouchableOpacity key={mode} testID={`motion-${mode}`} accessibilityRole="radio" aria-checked={settings.reduceMotion === mode} accessibilityState={{ checked: settings.reduceMotion === mode }} style={[styles.themeChip, settings.reduceMotion === mode && styles.themeChipSelected]} onPress={() => applyPreference({ reduceMotion: mode })}>
+              <Text style={styles.themeChipText}>{mode === 'system' ? 'Use Device' : mode === 'on' ? 'On' : 'Off'}</Text>
+            </TouchableOpacity>)}
+          </View>
+          <Text style={styles.settingLabel}>Reading Size</Text>
+          <View style={[styles.themeRow, { flexWrap: 'wrap' }]}>
+            {(['system', 'large', 'extra-large'] as const).map(size => <TouchableOpacity key={size} testID={`text-${size}`} accessibilityRole="radio" aria-checked={settings.textSize === size} accessibilityState={{ checked: settings.textSize === size }} style={[styles.themeChip, settings.textSize === size && styles.themeChipSelected]} onPress={() => applyPreference({ textSize: size })}>
+              <Text style={styles.themeChipText}>{size === 'system' ? 'Device' : size === 'large' ? 'Larger' : 'Largest'}</Text>
+            </TouchableOpacity>)}
+          </View>
+          {([
+            ['readableFont', 'Readable Font', 'Use a simpler font for text and instructions.'],
+            ['highContrast', 'Higher Contrast', 'Stronger text, borders, and button contrast.'],
+            ['seatedOnly', 'Seated-Friendly Tasks', 'New cards use reviewed tasks you can attempt from your current spot; ride and travel tasks are excluded.'],
+            ['lessWalking', 'Less Walking', 'New cards favor observations in one area and exclude ride and multi-location tasks.'],
+            ['noPerforming', 'No Speaking or Performing', 'Exclude acting, character-meet, posed photos, and tasks that ask you to speak.'],
+          ] as const).map(([key, label, description]) => <SettingRow key={key} label={label} description={description}>
+            <Switch testID={`comfort-${key}`} accessibilityLabel={label} value={settings[key]} onValueChange={value => applyPreference({ [key]: value })} trackColor={{ true: COLORS.green, false: COLORS.borderMedium }} thumbColor="#fff" />
+          </SettingRow>)}
+          <Text style={styles.sectionDescription}>Task preferences apply to new cards. They describe the activity, not wheelchair access or attraction eligibility. Nearby details vary.</Text>
+          {!!filterError && <Text testID="filter-error" accessibilityLiveRegion="polite" style={styles.sectionDescription}>{filterError}</Text>}
+        </SectionCard>
+
         {/* Height filtering changes which ride tasks are allowed to appear when
             the store builds the ride task pool for the session. */}
         <SectionCard title="HEIGHT FILTER">
@@ -88,7 +129,7 @@ export default function SettingsScreen() {
           >
             <Switch
               testID="height-filter-switch" accessibilityLabel="Filter rides by height" value={settings.heightFilterEnabled}
-              onValueChange={v => updateSettings({ heightFilterEnabled: v })}
+              onValueChange={v => { applyPreference({ heightFilterEnabled: v }); }}
               trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
               thumbColor="#fff"
             />
@@ -152,7 +193,7 @@ export default function SettingsScreen() {
                       Alert.alert('Keep one category enabled', 'Your hand and challenge board each need at least one category.');
                       return;
                     }
-                    updateCategoryToggle(key, v);
+                    applyPreference({ categoryToggles: { ...settings.categoryToggles, [key]: v } });
                   }}
                   trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
                   thumbColor="#fff"
@@ -196,7 +237,7 @@ export default function SettingsScreen() {
           <SettingRow icon="vibrate" label="Haptic Feedback" description="Gentle vibration on supported phones.">
             <Switch
               testID="haptics-switch" accessibilityLabel="Haptic Feedback" value={settings.hapticsEnabled}
-              onValueChange={v => updateSettings({ hapticsEnabled: v })}
+              onValueChange={v => { updateSettings({ hapticsEnabled: v }); }}
               trackColor={{ true: COLORS.green, false: COLORS.borderMedium }}
               thumbColor="#fff"
             />
@@ -224,10 +265,22 @@ export default function SettingsScreen() {
           </SectionCard>
         )}
 
+        <SectionCard title="HELP & PRIVACY">
+          {(['help', 'report', 'privacy', 'delete'] as const).map(key => <TouchableOpacity key={key} testID={`settings-${key}-btn`} accessibilityRole="button" style={styles.showTipsBtn} onPress={() => setInfo(key)}><Text style={styles.showTipsBtnText}>{key === 'help' ? 'Help & Support' : key === 'report' ? 'Report a Question' : key === 'privacy' ? 'Privacy Policy' : 'Clear All Local Data'}</Text></TouchableOpacity>)}
+        </SectionCard>
       </ScrollView>
-      <Modal visible={showAbout} transparent animationType="fade" onRequestClose={() => setShowAbout(false)}>
+      {info && <ReadingModal title={info === 'help' ? 'Help & Support' : info === 'report' ? 'Report a Question' : info === 'privacy' ? 'Privacy Policy' : 'Clear All Local Data?'} testID={`settings-${info}-panel`} onClose={() => setInfo(null)}>
+        {(info === 'help' ? HELP_TEXT : info === 'privacy' ? PRIVACY_TEXT : info === 'report' ? ['Reports open a draft on GitHub for you to review and submit. GitHub may require an account. Issues are public: do not include private information. You can also report a specific question from its trivia card or Sprint review.'] : ['This permanently removes every saved game, your player name, and preferences on this device. It cannot be undone.']).map((paragraph, i) => <Text key={i} style={bodyStyle}>{paragraph}</Text>)}
+        {(info === 'help' || info === 'report' || info === 'privacy') && <TouchableOpacity testID="support-open" accessibilityRole="link" style={styles.showTipsBtn} onPress={() => openSupport()}><Text style={styles.showTipsBtnText}>{info === 'report' ? 'Open Report Draft' : 'Contact Support on GitHub'}</Text></TouchableOpacity>}
+        {info === 'privacy' && <>
+          <TouchableOpacity testID="privacy-netlify" accessibilityRole="link" style={styles.showTipsBtn} onPress={() => Linking.openURL('https://www.netlify.com/privacy/')}><Text style={styles.showTipsBtnText}>Netlify Privacy Policy</Text></TouchableOpacity>
+          <TouchableOpacity testID="privacy-github" accessibilityRole="link" style={styles.showTipsBtn} onPress={() => Linking.openURL('https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement')}><Text style={styles.showTipsBtnText}>GitHub Privacy Statement</Text></TouchableOpacity>
+        </>}
+        {info === 'delete' && <TouchableOpacity testID="clear-data-confirm" accessibilityRole="button" style={styles.showTipsBtn} onPress={async () => { await useGameStore.getState().resetAllData(); setInfo(null); navigation.reset({ index: 0, routes: [{ name: 'Home' }] }); }}><Text style={styles.showTipsBtnText}>Yes, Clear All Local Data</Text></TouchableOpacity>}
+      </ReadingModal>}
+      <Modal visible={showAbout} transparent animationType={reduced ? 'none' : 'fade'} onRequestClose={() => setShowAbout(false)}>
         <View style={aboutStyles.overlay}>
-          <View testID="about-panel" style={[aboutStyles.panel, { backgroundColor: COLORS.surface }]}>
+          <View accessibilityViewIsModal testID="about-panel" style={[aboutStyles.panel, { backgroundColor: COLORS.surface }]}>
             <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 16 }}>
               <Text style={styles.pageTitle}>About Side Quest</Text>
               <Text style={[aboutStyles.body, { color: COLORS.textBody }]}>Made by a Disney-loving person who wants to turn time in the parks into more memories, laughs, and little adventures.</Text>
@@ -265,7 +318,7 @@ function SectionCard({ title, children }: { title: string; children: React.React
   return (
     <View style={styles.sectionCard}>
       {/* Shared wrapper so each settings section uses the same visual structure. */}
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text accessibilityRole="header" style={styles.sectionTitle}>{title}</Text>
       {children}
     </View>
   );
@@ -467,6 +520,9 @@ const BASE_STYLES = StyleSheet.create({
   },
   themeChip: {
     flex: 1,
+    minHeight: 44,
+    minWidth: 80,
+    justifyContent: 'center',
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1.5,

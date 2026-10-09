@@ -1,6 +1,6 @@
 # Current content bank
 
-October 8, 2026. Shared categories are available at each park; these are not separate copies of the same content. Height and category settings can reduce the available pool.
+October 9, 2026. Shared categories are available at each park; these are not separate copies of the same content. Height, category, and activity preferences can reduce the available pool.
 
 | Category | Magic Kingdom | Hollywood Studios | EPCOT | Animal Kingdom |
 | --- | ---: | ---: | ---: | ---: |
@@ -12,10 +12,10 @@ October 8, 2026. Shared categories are available at each park; these are not sep
 | Treat | 20 | 20 | 20 | 20 |
 | Pin trading | 20 | 20 | 20 | 20 |
 | Character meet | 20 | 20 | 20 | 20 |
-| Explore | 20 | 20 | 20 | 20 |
-| Seek | 20 | 20 | 20 | 20 |
+| Explore | 26 | 26 | 26 | 26 |
+| Seek | 25 | 25 | 25 | 25 |
 
-2,579 unique task records overall. Each park has 2,489 available records before filters. There are 120 park-specific ride / attraction activity cards overall; the remaining categories share one bank.
+2,590 unique task records overall. Each park has 2,500 available records before filters. There are 120 park-specific ride / attraction activity cards overall; the remaining categories share one bank.
 
 Trivia: 91 original questions, 2 archive pilot questions, and 2,146 newly imported archive questions. Archive records are structurally screened and deduplicated by normalized wording, not individually fact-checked. See `archive-import-report.json` for excluded IDs and reasons.
 
