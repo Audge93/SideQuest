@@ -36,6 +36,10 @@ export default function CardFace({ task, width, variant = 'full', descriptionLin
   const rarity = RARITY[task.difficulty];
   const compact = variant === 'compact';
   const artHeight = Math.round(height * (compact ? 0.62 : 0.42));
+  // Small previews have less room than the full reading view. Reserve the
+  // ribbon, padding, and rarity footer before deciding how many lines fit.
+  const previewLineHeight = Math.max(13, Math.round(22 * s));
+  const fittedLines = Math.min(descriptionLines, Math.max(1, Math.floor((height - artHeight - 72 * s - 8) / previewLineHeight)));
   const gem = Math.max(30, Math.round((compact ? 64 : 58) * s));
   const showCoinLabel = gem >= 40;
   const border = Math.max(2, Math.round(3 * s));
@@ -115,15 +119,16 @@ export default function CardFace({ task, width, variant = 'full', descriptionLin
         {!compact && (
           <View style={[styles.body, { paddingHorizontal: Math.round(12 * s), paddingVertical: Math.round(6 * s) }]}>
             <Text
+              testID="card-description"
               style={[styles.description, { fontSize: Math.max(10, Math.round(17 * s)), lineHeight: Math.max(13, Math.round(22 * s)) }]}
-              numberOfLines={descriptionLines}
+              numberOfLines={fittedLines}
             >
               {task.description}
             </Text>
           </View>
         )}
 
-        <View style={[styles.footer, { paddingHorizontal: Math.round(10 * s), paddingBottom: Math.round(6 * s), gap: Math.round(5 * s) }]}>
+        <View testID="card-footer" style={[styles.footer, { paddingHorizontal: Math.round(10 * s), paddingBottom: Math.round(6 * s), gap: Math.round(5 * s) }]}>
           <View
             style={[
               styles.rarityGem,

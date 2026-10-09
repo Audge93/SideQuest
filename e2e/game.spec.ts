@@ -9,6 +9,85 @@ async function snap(page: Page, name: string) {
 
 const byId = (page: Page, id: string) => page.locator(`[data-testid="${id}"]`);
 
+test('opening tips explain every game rule and wait for the player to advance', async ({ page }) => {
+  await page.goto('/');
+  await byId(page, 'new-game-btn').click();
+  await page.getByPlaceholder('Enter your name...').fill('Test Party');
+  await byId(page, 'park-option-wdw-mk').click();
+  await byId(page, 'new-game-next-btn').click();
+  await byId(page, 'start-game-btn').click();
+  for (let step = 1; step <= 8; step++) {
+    await expect(byId(page, 'game-tip-position')).toHaveText(`${step} of 8`);
+    if (step === 4) await snap(page, '41-passes-tip');
+    const next = await byId(page, 'game-tip-next').boundingBox();
+    expect(next!.y + next!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+    await byId(page, 'game-tip-next').click();
+  }
+  await expect(byId(page, 'game-tip-position')).toHaveCount(0);
+  await expect(byId(page, 'hand-card')).toHaveCount(5);
+});
+
+test('game guide explains current reward progress and card position without changing the hand', async ({ page }) => {
+  await startGame(page);
+  const original = (await savedState(page)).session.hand.map((t: any) => t.id);
+  await expect(byId(page, 'hand-position')).toHaveText('1 of 5');
+  await byId(page, 'hand-next').click();
+  await expect(byId(page, 'hand-position')).toHaveText('2 of 5');
+  await byId(page, 'hand-previous').click();
+  await byId(page, 'game-help-btn').click();
+  await expect(byId(page, 'game-reward-progress')).toContainText('2 of 2 passes');
+  await expect(byId(page, 'game-reward-progress')).toContainText('2 of 3 50/50 uses');
+  await expect(byId(page, 'game-reward-progress')).toContainText('Complete 5 more cards');
+  await snap(page, '37-game-guide');
+  await byId(page, 'reading-close').click();
+  await byId(page, 'park-chip').click();
+  await expect(byId(page, 'switch-park-confirm')).toBeDisabled();
+  await page.getByText('Cancel', { exact: true }).click();
+  expect((await savedState(page)).session.hand.map((t: any) => t.id)).toEqual(original);
+});
+
+test('multiple-answer selection can be changed without choosing too many answers', async ({ page }) => {
+  await triviaGame(page);
+  await byId(page, 'complete-btn').click();
+  await byId(page, 'trivia-choice-0').click();
+  await byId(page, 'trivia-choice-1').click();
+  await expect(byId(page, 'trivia-choice-0')).toBeChecked();
+  await byId(page, 'trivia-choice-2').click();
+  await expect(byId(page, 'trivia-choice-2')).not.toBeChecked();
+  await expect(byId(page, 'trivia-submit-btn')).toBeEnabled();
+  await byId(page, 'trivia-choice-1').click();
+  await expect(byId(page, 'trivia-submit-btn')).toBeDisabled();
+  await byId(page, 'trivia-choice-2').click();
+  await byId(page, 'trivia-submit-btn').click();
+  await expect(byId(page, 'trivia-result')).toContainText('Correct!');
+  await expect(byId(page, 'trivia-outcome')).toContainText('Streak: 1');
+});
+
+test('fifth completion explains its streak bonus and refills passes and 50/50', async ({ page }) => {
+  await triviaGame(page, 'single');
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('parkquest_state')!);
+    for (const session of [state.session, state.saveSlots.find((s: any) => s?.id === state.activeSlotId).session]) {
+      Object.assign(session, { totalCompletions: 4, currentStreak: 4, discardsRemaining: 0, fiftyFiftyUses: 1 });
+    }
+    localStorage.setItem('parkquest_state', JSON.stringify(state));
+  });
+  await page.reload();
+  await byId(page, 'continue-game-btn').click();
+  await page.getByText('Select', { exact: true }).first().click();
+  await byId(page, 'game-help-btn').click();
+  await expect(byId(page, 'game-reward-progress')).toContainText('Complete 1 more card');
+  await byId(page, 'reading-close').click();
+  await byId(page, 'complete-btn').click();
+  await byId(page, 'trivia-choice-0').click();
+  await expect(byId(page, 'trivia-outcome')).toContainText('+10 streak bonus!');
+  await snap(page, '38-streak-reward');
+  await byId(page, 'trivia-dismiss-btn').click();
+  await expect.poll(() => score(page)).toBe(20);
+  const session = (await savedState(page)).session;
+  expect(session).toMatchObject({ currentStreak: 5, totalCompletions: 5, discardsRemaining: 1, fiftyFiftyUses: 2 });
+});
+
 test('device reduced motion and largest reading size work through drafts and minigames', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await startGame(page);
@@ -17,6 +96,16 @@ test('device reduced motion and largest reading size work through drafts and min
   await byId(page, 'text-extra-large').click();
   await byId(page, 'comfort-readableFont').click();
   await page.getByText('‹ Back').click();
+  await byId(page, 'game-help-btn').click();
+  await snap(page, '39-readable-game-guide');
+  const guideClose = await byId(page, 'reading-close').boundingBox();
+  expect(guideClose!.y + guideClose!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  await byId(page, 'reading-close').click();
+  await byId(page, 'park-chip').click();
+  await snap(page, '40-readable-park-switch');
+  const parkConfirm = await byId(page, 'switch-park-confirm').boundingBox();
+  expect(parkConfirm!.y + parkConfirm!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  await page.getByText('Cancel', { exact: true }).click();
   await focusCompletableCard(page);
   await byId(page, 'complete-btn').click();
   await expect(byId(page, 'draft-option')).toHaveCount(3);
@@ -166,6 +255,10 @@ test('only Walt Disney World parks are offered', async ({ page }) => {
 
 test('the game table renders a full hand and three challenges', async ({ page }) => {
   await startGame(page, 'wdw-hs');
+  const centered = byId(page, 'hand-card').first();
+  const description = await centered.getByTestId('card-description').boundingBox();
+  const footer = await centered.getByTestId('card-footer').boundingBox();
+  expect(description!.y + description!.height).toBeLessThanOrEqual(footer!.y + 1);
   await expect(byId(page, 'challenge-card')).toHaveCount(3);
   await expect(page.getByText('Hollywood Studios')).toBeVisible();
   expect(await score(page)).toBe(0);
@@ -231,6 +324,7 @@ test('wrong multi-answer trivia reveals every answer and waits for dismissal', a
   await byId(page, 'trivia-choice-1').click();
   await byId(page, 'trivia-submit-btn').click();
   await expect(byId(page, 'trivia-result')).toContainText('Not quite');
+  await expect(byId(page, 'trivia-outcome')).toContainText('your passes are unchanged');
   await expect(byId(page, 'trivia-choice-0')).toContainText('Correct');
   await expect(byId(page, 'trivia-choice-2')).toContainText('Correct');
   await expect(byId(page, 'trivia-choice-1')).toContainText('Your pick');
@@ -262,6 +356,7 @@ test('passing trivia reveals answers until dismissed, then spends a discard', as
   await triviaGame(page);
   await byId(page, 'discard-btn').click();
   await expect(byId(page, 'trivia-result')).toContainText('Passed');
+  await expect(byId(page, 'trivia-outcome')).toContainText('Uses 1 pass and resets your streak');
   await expect(byId(page, 'trivia-choice-0')).toContainText('Correct');
   await expect(byId(page, 'trivia-choice-2')).toContainText('Correct');
   await page.waitForTimeout(1600);

@@ -1,6 +1,6 @@
 import { useReducedMotion, useReadingPreferences } from '../theme/useAccessibility';
 import { ScrollView } from 'react-native';
-import { FocusHeading } from '../components/ReadingModal';
+import ReadingModal, { FocusHeading } from '../components/ReadingModal';
 import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 /**
  * GameScreen.tsx
@@ -54,7 +54,7 @@ const GAME_TIPS: { id: string; title: string; message: string; icon: IconName | 
   {
     id: 'tip-hand',
     title: 'Your Hand',
-    message: 'Swipe through your hand. The card in front is the one you play: Complete it when you’ve done it in the park, or Discard it if it’s not for you.',
+    message: 'Swipe or use Previous and Next to browse your hand. Tap Read Card for the full instructions. Complete an activity after you’ve done it, or Answer a trivia question.',
     icon: 'card',
   },
   {
@@ -71,9 +71,17 @@ const GAME_TIPS: { id: string; title: string; message: string; icon: IconName | 
   },
   {
     id: 'tip-discard',
-    title: 'Discards',
-    message: 'Discards are limited and reset your streak. You earn one back for every 5 tasks you complete.',
+    title: 'Passes & Discards',
+    message: 'Pass a trivia question to read its answer, or Discard an activity you don’t want. Both use one of your shared passes and reset your streak. You start with 2 and earn 1 every 5 completed cards, up to 2.',
     icon: 'swap',
+  },
+  {
+    id: 'tip-trivia', title: 'Trivia Answers', icon: 'trivia',
+    message: 'Correct trivia earns the card’s points and counts as a completion. A wrong answer earns no points and resets your streak, but doesn’t spend a pass. Answers stay visible until you dismiss them. Not now closes an unanswered question without spending a pass.',
+  },
+  {
+    id: 'tip-fifty', title: '50/50', icon: 'trivia',
+    message: '50/50 removes 2 wrong choices on a four-choice question with one correct answer. You start with 2 uses and earn 1 every 5 completed cards, up to 3. Wrong answers, passes, and minigames don’t count toward these rewards.',
   },
   {
     id: 'tip-streak',
@@ -84,7 +92,7 @@ const GAME_TIPS: { id: string; title: string; message: string; icon: IconName | 
   {
     id: 'tip-badges',
     title: 'Badges',
-    message: 'Consistent play unlocks badges over time. Your progress is tracked in your profile.',
+    message: 'Consistent play unlocks badges over time. See your progress in Profile. Minigames are available whenever you want to play and add to your score.',
     icon: 'medal',
   },
 ];
@@ -125,6 +133,7 @@ export default function GameScreen() {
   const [selectedParkId, setSelectedParkId] = useState<string>(PARKS[0].id);
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [showTips, setShowTips] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [badgeQueue, setBadgeQueue] = useState<Badge[]>([]);
   const [activeBadge, setActiveBadge] = useState<Badge | null>(null);
   const processedBadgeIdsRef = useRef(new Set<string>());
@@ -260,7 +269,7 @@ export default function GameScreen() {
             <View style={styles.sectionHeadingRow}>
               <Text style={styles.sectionTitle}>Challenges</Text>
               {currentPark ? (
-                <TouchableOpacity testID="park-chip" style={styles.parkChip} onPress={openParkModal} activeOpacity={0.8} hitSlop={8}>
+                <TouchableOpacity testID="park-chip" accessibilityRole="button" accessibilityLabel={`Switch parks. Current park: ${currentPark.name}`} style={styles.parkChip} onPress={openParkModal} activeOpacity={0.8} hitSlop={8}>
                   <GameIcon name={currentPark.icon} size={22} />
                   <Text style={styles.parkChipText} numberOfLines={1}>{currentPark.name}</Text>
                   <GameIcon name="chevron-down" size={14} />
@@ -272,6 +281,8 @@ export default function GameScreen() {
                 <Pressable
                   key={task.id}
                   testID="challenge-card"
+                  accessibilityRole="button"
+                  accessibilityLabel={`Challenge: ${task.description}. ${task.points} points. View details.`}
                   onPress={() => setExpandedChallenge(task)}
                   style={({ pressed }) => [{ transform: [{ translateY: pressed ? 2 : 0 }, { scale: pressed ? 0.97 : 1 }] }]}
                 >
@@ -283,7 +294,10 @@ export default function GameScreen() {
 
           <View style={styles.handSection}>
             <View style={[styles.sectionHeadingRow, styles.handHeading]}>
-              <Text style={styles.sectionTitle}>Your Hand</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1 }}>
+                <Text style={styles.sectionTitle}>Your Hand</Text>
+                <TouchableOpacity testID="game-help-btn" accessibilityRole="button" accessibilityLabel="How to play and reward progress" onPress={() => setShowGuide(true)} style={{ width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}><GameIcon name="trivia" size={24} /></TouchableOpacity>
+              </View>
               <TouchableOpacity testID="minigames-btn" accessibilityRole="button" onPress={() => setShowMinigames(true)} style={{ minHeight: 44, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: TABLE.gold, borderRadius: 10, borderWidth: 2, borderColor: INK }}><GameIcon name="controller" size={22}/><Text style={{ fontFamily: FONTS.display, fontSize: 16, color: INK }}>Minigames</Text></TouchableOpacity>
             </View>
             <View style={styles.handArea} onLayout={e => setHandHeight(e.nativeEvent.layout.height)}>
@@ -334,6 +348,10 @@ export default function GameScreen() {
       </SafeAreaView>
 
       {showMinigames && <Minigames onClose={() => setShowMinigames(false)} />}
+      {showGuide && <ReadingModal title="How to Play" testID="game-help-panel" onClose={() => setShowGuide(false)}>
+        <Text testID="game-reward-progress" style={styles.panelBody}>{`${session.discardsRemaining} of 2 passes · ${session.fiftyFiftyUses} of 3 50/50 uses\nComplete ${5 - session.totalCompletions % 5} more ${session.totalCompletions % 5 === 4 ? 'card' : 'cards'} for the next refill (up to each limit).\n${5 - session.currentStreak % 5} more in a row for a +10 streak bonus.`}</Text>
+        {GAME_TIPS.map(tip => <View key={tip.id} style={{ gap: 6 }}><Text accessibilityRole="header" style={[styles.panelBody, { fontWeight: '900' }]}>{tip.title}</Text><Text style={styles.panelBody}>{tip.message}</Text></View>)}
+      </ReadingModal>}
       {activeBadge && <BadgeUnlockPopup key={activeBadge.id} badge={activeBadge} onDismiss={handleBadgeDismiss} />}
 
       {expandedChallenge && (
@@ -351,7 +369,8 @@ export default function GameScreen() {
 
       <Modal visible={showTips} transparent animationType={reduced ? 'none' : 'fade'} onRequestClose={handleSkipTips}>
         <View style={styles.modalOverlay}>
-          <View style={styles.panel}>
+          <View style={[styles.panel, { maxHeight: '92%' }]}>
+            <ScrollView style={{ flexShrink: 1, alignSelf: 'stretch' }} contentContainerStyle={{ alignItems: 'center', gap: 12 }}>
             {GAME_TIPS[currentTipIndex].icon === 'card' ? (
               <View style={styles.tipLogoCard}>
                 <Text style={styles.tipLogoLetter}>S</Text>
@@ -362,8 +381,10 @@ export default function GameScreen() {
               <GameIcon name={GAME_TIPS[currentTipIndex].icon as IconName} size={64} />
             )}
 
-            <Text style={styles.panelTitle}>{GAME_TIPS[currentTipIndex].title}</Text>
+            <FocusHeading title={GAME_TIPS[currentTipIndex].title} />
             <Text style={styles.panelBody}>{GAME_TIPS[currentTipIndex].message}</Text>
+            <Text testID="game-tip-position" style={styles.panelBody}>{currentTipIndex + 1} of {GAME_TIPS.length}</Text>
+            </ScrollView>
 
             <View style={styles.tipDots}>
               {GAME_TIPS.map((_, i) => (
@@ -372,8 +393,9 @@ export default function GameScreen() {
             </View>
 
             <View style={styles.panelButtons}>
-              {currentTipIndex > 0 && <GameButton label="Back" tone="gray" onPress={handlePrevTip} style={styles.panelSecondary} />}
+              {currentTipIndex > 0 && <GameButton testID="game-tip-back" label="Back" tone="gray" onPress={handlePrevTip} style={styles.panelSecondary} />}
               <GameButton
+                testID="game-tip-next"
                 label={currentTipIndex < GAME_TIPS.length - 1 ? 'Next' : 'Let’s Play!'}
                 tone="green"
                 onPress={handleNextTip}
@@ -382,7 +404,7 @@ export default function GameScreen() {
             </View>
 
             {currentTipIndex < GAME_TIPS.length - 1 && (
-              <TouchableOpacity style={styles.textBtn} onPress={handleSkipTips}>
+              <TouchableOpacity testID="game-tip-skip" accessibilityRole="button" style={[styles.textBtn, { minHeight: 44, justifyContent: 'center' }]} onPress={handleSkipTips}>
                 <Text style={styles.textBtnLabel}>Skip Tips</Text>
               </TouchableOpacity>
             )}
@@ -392,9 +414,11 @@ export default function GameScreen() {
 
       <Modal visible={showParkModal} transparent animationType={reduced ? 'none' : 'fade'} onRequestClose={closeParkModal}>
         <View style={styles.modalOverlay}>
-          <View style={styles.panel}>
-            <Text style={styles.panelTitle}>Switch Parks</Text>
+          <View style={[styles.panel, { maxHeight: '92%' }]}>
+            <ScrollView style={{ flexShrink: 1, alignSelf: 'stretch' }} contentContainerStyle={{ alignItems: 'center', gap: 12 }}>
+            <FocusHeading title="Switch Parks" />
             <Text style={styles.panelKicker}>WALT DISNEY WORLD</Text>
+            <Text style={styles.panelBody}>Switching parks deals new cards. Your score, streak, and rewards carry over.</Text>
             <View style={styles.parkList}>
               {PARKS.map(park => {
                 const selected = selectedParkId === park.id;
@@ -402,6 +426,9 @@ export default function GameScreen() {
                   <TouchableOpacity
                     key={park.id}
                     testID={`switch-park-${park.id}`}
+                    accessibilityRole="radio"
+                    aria-checked={selected}
+                    accessibilityState={{ checked: selected }}
                     style={[styles.parkOption, selected && styles.parkOptionSelected]}
                     onPress={() => setSelectedParkId(park.id)}
                     activeOpacity={0.85}
@@ -413,9 +440,10 @@ export default function GameScreen() {
                 );
               })}
             </View>
+            </ScrollView>
             <View style={styles.panelButtons}>
               <GameButton label="Cancel" tone="gray" onPress={closeParkModal} style={styles.panelSecondary} />
-              <GameButton label="Switch" tone="green" onPress={handleConfirmSwitchPark} style={styles.panelPrimary} />
+              <GameButton testID="switch-park-confirm" label="Switch" tone="green" disabled={selectedParkId === currentPark?.id} onPress={handleConfirmSwitchPark} style={styles.panelPrimary} />
             </View>
           </View>
         </View>
@@ -531,7 +559,7 @@ function NavItem({
   const styles = useThemedStyles(BASE_STYLES, true, ['hudScoreLabel','hudScoreValue']);
 
   return (
-    <TouchableOpacity style={styles.navItem} onPress={onPress} activeOpacity={0.8} disabled={active}>
+    <TouchableOpacity accessibilityRole="button" accessibilityState={{ selected: active }} accessibilityLabel={label} style={styles.navItem} onPress={onPress} activeOpacity={0.8} disabled={active}>
       <View style={[styles.navIconWrap, active && styles.navIconWrapActive]}>
         <GameIcon name={icon} size={28} style={!active && styles.navIconIdle} />
       </View>

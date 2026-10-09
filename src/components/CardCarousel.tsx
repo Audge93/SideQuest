@@ -166,6 +166,7 @@ function TriviaModal({
   onClose,
   passed = false,
   fiftyFiftyUses,
+  currentStreak,
   eliminatedChoices,
   onFiftyFifty,
 }: {
@@ -174,6 +175,7 @@ function TriviaModal({
   onClose: () => void;
   passed?: boolean;
   fiftyFiftyUses: number;
+  currentStreak: number;
   eliminatedChoices: number[];
   onFiftyFifty: () => void;
 }) {
@@ -213,7 +215,7 @@ function TriviaModal({
       return;
     }
     setSelectedChoices(choices => choices.includes(index)
-      ? choices.filter(i => i !== index) : [...choices, index]);
+      ? choices.filter(i => i !== index) : choices.length < required ? [...choices, index] : choices);
   };
 
   return (
@@ -232,7 +234,7 @@ function TriviaModal({
           <FocusHeading title={task.description} />
           <Text style={styles.triviaLaterText}>
             {answered ? (answers.length > 1 ? 'Correct answers are highlighted below.' : 'The correct answer is highlighted below.')
-              : multiple ? `Select ${required} answers, then submit.` : 'Choose one answer.'}
+              : multiple ? `Select ${required} answers, then submit. ${selectedChoices.length} of ${required} selected. Tap a selected answer to change it.` : 'Choose one answer.'}
           </Text>
 
           <View style={styles.triviaChoices}>
@@ -258,6 +260,7 @@ function TriviaModal({
                   activeOpacity={0.8}
                   disabled={answered || eliminated}
                   accessibilityRole={multiple ? 'checkbox' : 'button'}
+                  aria-checked={multiple ? selected : undefined}
                   accessibilityLabel={`${CHOICE_LETTERS[i]}: ${choice}${answered && isAnswer ? ', correct answer' : ''}${selected ? ', your selection' : ''}${eliminated ? ', removed by 50/50' : ''}`}
                   accessibilityState={{ checked: selected, disabled: answered || eliminated }}
                 >
@@ -267,7 +270,8 @@ function TriviaModal({
                   <Text style={[styles.choiceText, (state === 'right' || state === 'wrong') && styles.choiceTextLight, !answered && selected && { color: INK }, highContrast && { color: '#FFFFFF' }]}>
                     {choice}
                   </Text>
-                  {eliminated && <Text style={{ color: INK, fontSize: 12, fontWeight: '700' }}>Removed</Text>}
+                  {eliminated && <Text style={{ color: highContrast ? '#FFFFFF' : INK, fontSize: 12, fontWeight: '700' }}>Removed</Text>}
+                  {!answered && selected && <Text style={{ color: highContrast ? '#FFFFFF' : INK, fontWeight: '800', fontSize: 12 }}>Selected</Text>}
                   {answered && (isAnswer || selected) && (
                     <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 12 }}>
                       {isAnswer ? 'Correct' : 'Your pick'}
@@ -284,6 +288,7 @@ function TriviaModal({
             </Text>
           ) : null}
           {answered && <Text accessibilityLiveRegion="polite" aria-live="polite" style={styles.triviaLaterText}>{answers.length > 1 ? 'Correct answers: ' : 'Correct answer: '}{answers.map(i => task.triviaChoices?.[i]).join('; ')}</Text>}
+          {answered && <Text testID="trivia-outcome" style={styles.triviaLaterText}>{passed ? 'No points. Uses 1 pass and resets your streak.' : correct ? `Streak: ${currentStreak + 1}.${(currentStreak + 1) % 5 === 0 ? ' +10 streak bonus!' : ''}` : 'No points this time. Your streak resets; your passes are unchanged.'}</Text>}
           <TouchableOpacity testID="trivia-report-btn" accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => openSupport(task)}><Text style={styles.triviaLaterText}>Report this question (public GitHub draft)</Text></TouchableOpacity>
           {answered && task.triviaExplanation ? <Text testID="trivia-explanation" style={styles.triviaLaterText}>{task.triviaExplanation}</Text> : null}
           </ScrollView>
@@ -300,7 +305,7 @@ function TriviaModal({
               )}
               {multiple && <GameButton testID="trivia-submit-btn" label="Submit answers" tone="gold"
                 disabled={selectedChoices.length !== required} onPress={() => reveal(selectedChoices)} style={{ flexGrow: 0 }} />}
-              <TouchableOpacity testID="trivia-not-now-btn" onPress={onClose} style={styles.triviaLater}>
+              <TouchableOpacity testID="trivia-not-now-btn" accessibilityRole="button" onPress={onClose} style={[styles.triviaLater, { minHeight: 44, justifyContent: 'center' }]}>
                 <Text style={styles.triviaLaterText}>Not now</Text>
               </TouchableOpacity>
             </View>
@@ -579,7 +584,7 @@ export default function CardCarousel({
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, gap: 8 }}>
         <TouchableOpacity testID="hand-previous" accessibilityRole="button" accessibilityLabel="Previous card" disabled={activeIndex === 0} accessibilityState={{ disabled: activeIndex === 0 }} style={{ minHeight: 44, justifyContent: 'center', opacity: activeIndex === 0 ? 0.5 : 1 }} onPress={() => focusCard(activeIndex - 1)}><Text style={styles.triviaLaterText}>Previous</Text></TouchableOpacity>
-        <TouchableOpacity testID="hand-read" accessibilityRole="button" disabled={!activeTask} style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => activeTask && setReading(activeTask)}><Text style={styles.triviaLaterText}>Read Card</Text></TouchableOpacity>
+        <TouchableOpacity testID="hand-read" accessibilityRole="button" accessibilityLabel={`Read card ${activeIndex + 1} of ${items.length}`} disabled={!activeTask} style={{ minHeight: 44, justifyContent: 'center', alignItems: 'center' }} onPress={() => activeTask && setReading(activeTask)}><Text style={styles.triviaLaterText}>Read Card</Text><Text testID="hand-position" style={{ color: COLORS.textBody, fontSize: 12 }}>{activeIndex + 1} of {items.length}</Text></TouchableOpacity>
         <TouchableOpacity testID="hand-next" accessibilityRole="button" accessibilityLabel="Next card" disabled={activeIndex >= items.length - 1} accessibilityState={{ disabled: activeIndex >= items.length - 1 }} style={{ minHeight: 44, justifyContent: 'center', opacity: activeIndex >= items.length - 1 ? 0.5 : 1 }} onPress={() => focusCard(activeIndex + 1)}><Text style={styles.triviaLaterText}>Next</Text></TouchableOpacity>
       </View>
       {reading && <ReadingModal title={reading.displayCategory + ' · ' + reading.points + ' points'} onClose={() => setReading(null)}>
@@ -614,6 +619,7 @@ export default function CardCarousel({
           task={triviaTask}
           passed={triviaPassed}
           fiftyFiftyUses={fiftyFiftyUses}
+          currentStreak={currentStreak}
           eliminatedChoices={triviaEliminatedChoices[triviaTask.id] ?? []}
           onFiftyFifty={() => onFiftyFifty(triviaTask.id)}
           onTriviaAnswer={correct => {
