@@ -404,9 +404,10 @@ test('hand navigation and park cancel preserve the hand without a duplicate tuto
   await expect(byId(page, 'challenges-heading').locator('[data-testid="minigames-btn"]')).toHaveCount(1);
   await expect(byId(page, 'game-help-btn')).toHaveCount(0);
   await expect(byId(page, 'game-help-panel')).toHaveCount(0);
-  await expect(byId(page, 'hand-position')).toHaveText('1 of 5');
+  await expect(byId(page, 'hand-position')).toHaveCount(0);
+  await expect(byId(page, `hand-select-${original[0]}`)).toHaveAttribute('aria-current', 'true');
   await byId(page, 'hand-next').click();
-  await expect(byId(page, 'hand-position')).toHaveText('2 of 5');
+  await expect(byId(page, `hand-select-${original[1]}`)).toHaveAttribute('aria-current', 'true');
   await byId(page, 'hand-previous').click();
   await page.getByText('Park', { exact: true }).click();
   await expect(byId(page, 'switch-park-confirm')).toBeDisabled();
@@ -437,7 +438,7 @@ test('card taps open activities or trivia directly and outside taps return to th
   await byId(page, 'hand-full-description').click(); await expect(byId(page, 'reading-panel')).toBeVisible();
   await snap(page, '60-tap-enlarged-activity');
   await byId(page, 'reading-panel-backdrop').click({ position: { x: 4, y: 4 } });
-  await expect(byId(page, 'reading-panel')).toHaveCount(0); await expect(byId(page, 'hand-position')).toHaveText('2 of 5');
+  await expect(byId(page, 'reading-panel')).toHaveCount(0); await expect(byId(page, 'hand-select-tap-activity')).toHaveAttribute('aria-current', 'true');
   await byId(page, 'hand-previous').click(); await byId(page, 'hand-select-test-trivia').click();
   await expect(byId(page, 'trivia-panel')).toBeVisible(); await expect(byId(page, 'reading-panel')).toHaveCount(0);
   await expect(byId(page, 'trivia-fifty-fifty-btn')).toHaveText('Help: 50/50');
@@ -552,8 +553,8 @@ test('comfort preferences persist, readable views fit, and cards have button nav
   await byId(page, 'hand-next').click();
   await byId(page, 'hand-previous').click();
   await focusCompletableCard(page);
-  const cardIndex = Number((await byId(page, 'hand-position').innerText()).split(' ')[0]) - 1;
-  const card = (await savedState(page)).session.hand[cardIndex];
+  const selectedId = (await page.locator('[data-testid^="hand-select-"][aria-current="true"]').getAttribute('data-testid'))!.slice('hand-select-'.length);
+  const card = (await savedState(page)).session.hand.find((t: any) => t.id === selectedId);
   await byId(page, `hand-select-${card.id}`).click();
   await expect(byId(page, 'hand-full-description')).toHaveText(card.description);
   await snap(page, '31-readable-card');
@@ -594,10 +595,7 @@ test('help, privacy, reporting drafts, and confirmed local deletion work', async
   await page.addInitScript(() => { (window as any).openedLinks = []; window.open = ((url: any) => { (window as any).openedLinks.push(String(url)); return null; }) as any; });
   await triviaGame(page, 'single');
   await byId(page, 'complete-btn').click();
-  await byId(page, 'trivia-report-btn').click();
-  const url = await page.evaluate(() => (window as any).openedLinks.at(-1));
-  expect(url).toContain('https://github.com/Audge93/SideQuest/issues/new?');
-  expect(decodeURIComponent(url)).toContain('Card ID: test-trivia');
+  await expect(byId(page, 'trivia-report-btn')).toHaveCount(0);
   await byId(page, 'trivia-not-now-btn').click();
   await page.getByText('Settings', { exact: true }).click();
   for (const key of ['help', 'report', 'privacy']) {
@@ -660,7 +658,10 @@ async function pickFirstDraftOption(page: Page) {
 }
 
 test('only Walt Disney World parks are offered', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
+  await expect(byId(page, 'new-game-btn')).toBeVisible();
+  await snap(page, '00-home');
   await byId(page, 'new-game-btn').click();
   await byId(page, 'new-game-next-btn').click();
   for (const id of ['wdw-mk', 'wdw-hs', 'wdw-ep', 'wdw-ak']) {

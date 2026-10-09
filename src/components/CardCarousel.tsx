@@ -1,6 +1,5 @@
 import { useReducedMotion, useReadingPreferences } from '../theme/useAccessibility';
 import { FocusHeading } from './ReadingModal';
-import { openSupport } from '../utils/support';
 import { useAppTheme, useThemedStyles } from '../theme/useAppTheme';
 /**
  * CardCarousel.tsx — The player's hand
@@ -289,7 +288,6 @@ function TriviaModal({
           ) : null}
           {answered && <Text accessibilityLiveRegion="polite" aria-live="polite" style={styles.triviaLaterText}>{answers.length > 1 ? 'Correct answers: ' : 'Correct answer: '}{answers.map(i => task.triviaChoices?.[i]).join('; ')}</Text>}
           {answered && <Text testID="trivia-outcome" style={styles.triviaLaterText}>{passed ? 'No points. Uses 1 pass and resets your streak.' : correct ? `Streak: ${currentStreak + 1}.${(currentStreak + 1) % 5 === 0 ? ' +10 streak bonus!' : ''}` : 'No points this time. Your streak resets; your passes are unchanged.'}</Text>}
-          <TouchableOpacity testID="trivia-report-btn" accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => openSupport(task)}><Text style={styles.triviaLaterText}>Report this question (public GitHub draft)</Text></TouchableOpacity>
           {answered && task.triviaExplanation ? <Text testID="trivia-explanation" style={styles.triviaLaterText}>{task.triviaExplanation}</Text> : null}
           </ScrollView>
           {answered ? (
@@ -548,7 +546,7 @@ export default function CardCarousel({
               extrapolate: 'clamp',
             });
             return (
-              <Pressable testID={`hand-select-${item.id}`} accessibilityRole="button" accessibilityLabel={isOpenSlot(item) ? "Choosing next card" : `${item.displayCategory}: ${item.description}, ${item.points} points. ${item.category === 'trivia' && item.triviaChoices ? 'Answer trivia' : 'Enlarge card'}`} disabled={busy || isOpenSlot(item)} onPress={() => !isOpenSlot(item) && openCard(item, index)}>
+              <Pressable testID={`hand-select-${item.id}`} accessibilityRole="button" accessibilityState={{ selected: index === activeIndex && !isOpenSlot(item) }} aria-current={index === activeIndex && !isOpenSlot(item)} accessibilityLabel={isOpenSlot(item) ? "Choosing next card" : `${item.displayCategory}: ${item.description}, ${item.points} points. ${item.category === 'trivia' && item.triviaChoices ? 'Answer trivia' : 'Enlarge card'}`} disabled={busy || isOpenSlot(item)} onPress={() => !isOpenSlot(item) && openCard(item, index)}>
                 <Animated.View
                   style={{
                     width: cardWidth,
@@ -588,7 +586,6 @@ export default function CardCarousel({
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, gap: 8 }}>
         <TouchableOpacity testID="hand-previous" accessibilityRole="button" accessibilityLabel="Previous card" disabled={activeIndex === 0} accessibilityState={{ disabled: activeIndex === 0 }} style={{ minHeight: 44, justifyContent: 'center', opacity: activeIndex === 0 ? 0.5 : 1 }} onPress={() => focusCard(activeIndex - 1)}><Text style={styles.triviaLaterText}>Previous</Text></TouchableOpacity>
-        <Text testID="hand-position" style={{ color: COLORS.textBody, fontSize: 12 }}>{activeIndex + 1} of {items.length}</Text>
         <TouchableOpacity testID="hand-next" accessibilityRole="button" accessibilityLabel="Next card" disabled={activeIndex >= items.length - 1} accessibilityState={{ disabled: activeIndex >= items.length - 1 }} style={{ minHeight: 44, justifyContent: 'center', opacity: activeIndex >= items.length - 1 ? 0.5 : 1 }} onPress={() => focusCard(activeIndex + 1)}><Text style={styles.triviaLaterText}>Next</Text></TouchableOpacity>
       </View>
       {reading && <Modal transparent visible animationType={reduced ? 'none' : 'fade'} onRequestClose={() => setReading(null)}>

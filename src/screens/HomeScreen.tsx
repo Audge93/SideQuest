@@ -347,7 +347,7 @@ const BASE_STYLES = StyleSheet.create({
   },
   logoSide: {
     fontFamily: FONTS.display,
-    fontSize: 46,
+    fontSize: 56,
     color: '#FFFFFF',
     letterSpacing: 12,
     textAlign: 'center',
