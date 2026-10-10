@@ -1,7 +1,6 @@
 import { useReducedMotion } from '../theme/useAccessibility';
 import { useThemedStyles } from '../theme/useAppTheme';
 import { FocusHeading } from './ReadingModal';
-import { openSupport } from '../utils/support';
 import React, { useEffect, useRef, useState } from 'react';
 import { Modal, View, Text, ScrollView, StyleSheet, AppState, AccessibilityInfo, Platform } from 'react-native';
 import GameButton from './GameButton';
@@ -16,7 +15,7 @@ const HELP = {
   sprint: { title: 'How to play Trivia Sprint', steps: [
     'Tap Start. Answer 10 single-answer Disney questions in 60 seconds.',
     'Each correct answer earns that question’s normal points. Get all 10 right for 3× those points, or 9 right for 2×. Unanswered questions earn no points.',
-    'Leaving Trivia Sprint clears the round. An unfinished round earns no points. Help keeps the clock running. Review each answer afterward at your own pace. Play unlimited rounds!',
+    'Leaving clears the round. Unfinished rounds earn no points. Help keeps the clock running. Review answers at your own pace, then play again.',
     'Minigame points add to your score. They do not change your card streak, passes, 50/50 uses, or card-completion totals.'], },
   who: { title: 'How to play Who Am I?', steps: [
     'Identify a Disney character from the clues. You start with one clue and four possible characters.',
@@ -34,6 +33,7 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
   const [help, setHelp] = useState<Game | null>(null);
   const [now, setNow] = useState(Date.now());
   const scroll = useRef<ScrollView>(null);
+  const clueFocus = useRef<Text>(null);
   const round = session?.triviaSprint;
   const who = session?.whoAmI;
   const reviewIndex = Math.max(0, Math.min(round?.reviewIndex ?? 0, (round?.questions.length ?? 1) - 1));
@@ -51,6 +51,11 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
     return () => { clearInterval(timer); listener.remove(); };
   }, [finishSprint]);
   useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [game, round?.answers.length, round?.finished, who?.characterId, who?.finished, reviewIndex]);
+  useEffect(() => {
+    if (Platform.OS !== 'web' || game !== 'who' || !who || who.finished || help) return;
+    const frame = requestAnimationFrame(() => (clueFocus.current as any)?.focus?.());
+    return () => cancelAnimationFrame(frame);
+  }, [game, help, who?.characterId, who?.cluesRevealed, who?.finished]);
   const select = (selected: Game) => {
     setGame(selected);
     if (!session?.minigameHelpSeen?.includes(selected)) setHelp(selected);
@@ -63,7 +68,7 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
   const correctCount = round?.questions.filter((q, i) => correctTriviaAnswers(q).includes(round.answers[i])).length ?? 0;
   const basePoints = round?.questions.reduce((sum, q, i) => sum + (correctTriviaAnswers(q).includes(round.answers[i]) ? q.points : 0), 0) ?? 0;
   const multiplier = correctCount === 10 ? 3 : correctCount === 9 ? 2 : 1;
-  const remaining = Math.max(0, Math.ceil(((round?.deadline ?? now) - now) / 1000));
+  const remaining = Math.min(60, Math.max(0, Math.ceil(((round?.deadline ?? now) - now) / 1000)));
   const reviewed = round?.questions[reviewIndex];
   const text = [styles.text, { color: colors.textDark }];
   const title = [text, styles.title];
@@ -80,15 +85,14 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
             <Text style={text}>A little Disney fun, wherever you are. Play as often as you like and add points to your game.</Text>
             <GameButton testID="choose-sprint" label="Trivia Sprint" sublabel="10 questions · 60 seconds" tone="blue" onPress={() => select('sprint')} />
             <GameButton testID="choose-who" label="Who Am I?" sublabel={who ? who.finished ? 'View your answer or play again' : `Resume · ${who.cluesRevealed}/3 clues revealed` : 'Guess the character · no timer'} tone="gold" onPress={() => select('who')} />
-            <Text style={text}>These games add score without changing your card streak or earning passes and 50/50 uses.</Text>
           </>}
           {game === 'sprint' && (!round || round.finished) && <>
             {round?.finished && <View testID="sprint-results" accessibilityLiveRegion="polite">
               {!help ? <FocusHeading title={round.answers.length < 10 ? 'Time’s Up!' : 'Sprint Complete!'} /> : <Text style={title}>{round.answers.length < 10 ? 'Time’s Up!' : 'Sprint Complete!'}</Text>}
               <Text style={title}>{correctCount}/10 correct · +{round.earnedPoints} points</Text>
-              <Text style={text}>{correctCount === 10 ? 'Perfect round! 3× points' : correctCount === 9 ? 'Great round! 2× points' : 'Normal points for every correct answer'}</Text>
+              {correctCount >= 9 && <Text style={text}>{correctCount === 10 ? 'Perfect round! 3× points' : 'Great round! 2× points'}</Text>}
               <Text testID="sprint-score-breakdown" style={text}>{basePoints} question points × {multiplier} = {round.earnedPoints} points added to your score.</Text>
-              <Text style={text}>{round.answers.length - correctCount} wrong · {10 - round.answers.length} unanswered. Your card streak and reward balances are unchanged.</Text>
+              <Text style={text}>{round.answers.length - correctCount} wrong · {10 - round.answers.length} unanswered</Text>
               {reviewed && <View testID="sprint-review-card" style={styles.review}>
                 <Text testID="sprint-review-position" style={text}>Review {reviewIndex + 1} of {round.questions.length}</Text>
                 <Text testID="sprint-review-question" accessibilityRole="header" accessibilityLiveRegion="polite" style={[text, styles.answer]}>{reviewed.description}</Text>
@@ -100,7 +104,6 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
                   <GameButton testID="sprint-review-previous" label="Previous" tone="gray" disabled={reviewIndex === 0} onPress={() => reviewSprintQuestion(reviewIndex - 1)} />
                   <GameButton testID="sprint-review-next" label="Next" tone="blue" disabled={reviewIndex >= round.questions.length - 1} onPress={() => reviewSprintQuestion(reviewIndex + 1)} />
                 </View>
-                <GameButton testID="sprint-report-btn" multiline label="Report Question (public GitHub draft)" tone="gray" onPress={() => openSupport(reviewed)} />
               </View>}
             </View>}
             {!round && <Text style={text}>10 questions in 60 seconds. 10 right earns 3× points; 9 right earns 2×.</Text>}
@@ -112,13 +115,14 @@ export default function Minigames({ onClose }: { onClose: () => void }) {
           {game === 'who' && (!who || !character) && <Text style={text}>One character, three clues. Guess with fewer clues to earn more points. There is no timer.</Text>}
           {game === 'who' && who && character && <>
             <Text testID="who-point-status" accessibilityLiveRegion="polite" style={title}>{who.finished ? `+${who.earnedPoints} points added` : `Clue ${who.cluesRevealed}/3 · ${5 * (4 - who.cluesRevealed)} points for a correct guess`}</Text>
-            {character.clues.slice(0, who.finished ? 3 : who.cluesRevealed).map((clue, i) => <Text key={i} testID="who-clue" style={text}>{i + 1}. {clue}</Text>)}
-            {who.finished ? <View testID="who-results" accessibilityLiveRegion="polite" style={styles.review}>
-              <Text style={title}>{who.earnedPoints ? 'You got it!' : who.answer === -1 ? 'Character revealed' : 'Not quite!'}</Text>
+            {who.finished && <View testID="who-results" accessibilityLiveRegion="polite" style={styles.review}>
+              <View testID="who-correct-answer">{!help ? <FocusHeading title={`Correct answer: ${character.name}`} /> : <Text style={[text, styles.answer]}>Correct answer: {character.name}</Text>}</View>
+              <Text style={text}>{who.earnedPoints ? 'You got it!' : who.answer === -1 ? 'Character revealed' : 'Not quite!'}</Text>
               {who.answer !== undefined && who.answer >= 0 && !who.earnedPoints && <Text style={text}>Your answer: {who.choices[who.answer]}</Text>}
-              <Text style={[text, styles.answer]}>Correct answer: {character.name}</Text>
-              <Text style={text}>{who.earnedPoints ? `Correct after ${who.cluesRevealed} ${who.cluesRevealed === 1 ? 'clue' : 'clues'}: ${who.earnedPoints} points.` : 'No points this round.'} Your card streak and reward balances are unchanged.</Text>
-            </View> : <>
+              <Text style={text}>{who.earnedPoints ? `Correct after ${who.cluesRevealed} ${who.cluesRevealed === 1 ? 'clue' : 'clues'}: ${who.earnedPoints} points.` : 'No points this round.'}</Text>
+            </View>}
+            {character.clues.slice(0, who.finished ? 3 : who.cluesRevealed).map((clue, i) => <Text key={i} ref={i === who.cluesRevealed - 1 ? clueFocus : undefined} {...(Platform.OS === 'web' ? { tabIndex: -1 } as any : {})} testID="who-clue" style={text}>{i + 1}. {clue}</Text>)}
+            {!who.finished && <>
               {who.choices.map((choice, i) => <GameButton key={`${character.id}-${i}`} testID={`who-choice-${i}`} label={choice} multiline tone="blue" onPress={() => answerWhoAmI(i)} />)}
               <GameButton testID="who-next-clue" label={who.cluesRevealed >= 3 ? 'All Clues Revealed' : 'Reveal Next Clue'} sublabel={who.cluesRevealed < 3 ? `${5 * (3 - who.cluesRevealed)} points if your next guess is correct` : undefined} disabled={who.cluesRevealed >= 3} tone="gold" onPress={revealWhoClue} />
               <GameButton testID="who-give-up" label="Show Answer" tone="gray" onPress={() => answerWhoAmI(-1)} />

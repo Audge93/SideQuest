@@ -125,8 +125,7 @@ test('largest-text profile badges and deletion confirmation fit and preserve oth
   expect(remaining).toHaveLength(1); expect(remaining[0].id).toBe('other-save');
 });
 
-test('Sprint nine-correct scoring, paged review, report drafts, and review resume preserve card rewards', async ({ page }) => {
-  await page.addInitScript(() => { (window as any).openedLinks = []; window.open = ((url: any) => { (window as any).openedLinks.push(String(url)); return null; }) as any; });
+test('Sprint nine-correct scoring, paged review, and review resume preserve card rewards', async ({ page }) => {
   await startGame(page);
   await page.evaluate(() => {
     const state = JSON.parse(localStorage.getItem('parkquest_state')!);
@@ -151,8 +150,7 @@ test('Sprint nine-correct scoring, paged review, report drafts, and review resum
   await expect(byId(page, 'sprint-review-card')).toContainText('Your answer: Wrong answer');
   await expect(byId(page, 'sprint-review-next')).toBeDisabled();
   await snap(page, '46-sprint-paged-review');
-  await byId(page, 'sprint-report-btn').click();
-  expect(decodeURIComponent(await page.evaluate(() => (window as any).openedLinks.at(-1)))).toContain('Card ID: review-fixture-9');
+  await expect(byId(page, 'sprint-report-btn')).toHaveCount(0);
   await page.reload(); await byId(page, 'continue-game-btn').click(); await byId(page, 'save-select-0').click();
   await byId(page, 'minigames-btn').click(); await byId(page, 'choose-sprint').click();
   await expect(byId(page, 'sprint-review-position')).toHaveText('Review 10 of 10');
@@ -189,8 +187,17 @@ test('largest-text minigames keep the clock and exit visible and preserve a runn
   await expect(byId(page, 'sprint-results')).toContainText('10 unanswered');
   await snap(page, '48-readable-sprint-review');
   await byId(page, 'minigames-close').click(); await byId(page, 'choose-who').click(); await byId(page, 'minigame-tips-dismiss').click(); await byId(page, 'who-start').click();
-  await byId(page, 'who-next-clue').click(); await byId(page, 'who-next-clue').click(); await byId(page, 'who-give-up').click();
+  await byId(page, 'who-next-clue').click();
+  await expect(byId(page, 'who-clue').last()).toBeFocused();
+  await byId(page, 'who-next-clue').click();
+  await expect(byId(page, 'who-clue').last()).toBeFocused();
+  await byId(page, 'who-give-up').click();
   await expect(byId(page, 'who-results')).toContainText('Correct answer:');
+  const answer = await byId(page, 'who-correct-answer').boundingBox();
+  const firstClue = await byId(page, 'who-clue').first().boundingBox();
+  expect(answer!.y + answer!.height).toBeLessThanOrEqual(firstClue!.y);
+  expect(answer!.y).toBeGreaterThanOrEqual(0);
+  expect(answer!.y + answer!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
   const whoExit = await byId(page, 'minigames-close').boundingBox();
   expect(whoExit!.y + whoExit!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
   await snap(page, '49-readable-who-review');
